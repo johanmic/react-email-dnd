@@ -53,7 +53,15 @@ export function Sidebar({
         <p className="email-dnd-sidebar-heading">Structure</p>
         <div className="email-dnd-sidebar-grid">
           {structureItems.map((item) => (
-            <SidebarItem id={item.id} key={item.id} className="email-dnd-sidebar-entry">
+            <SidebarItem
+              id={item.id}
+              key={item.id}
+              className="email-dnd-sidebar-entry"
+              data={{
+                category: 'structure',
+                label: item.label,
+              }}
+            >
               <div className="email-dnd-sidebar-tile">
                 <item.icon size={18} weight="duotone" />
                 <span>{item.label}</span>
@@ -70,6 +78,12 @@ export function Sidebar({
               id={`block-${block.type}`}
               key={block.type}
               className="email-dnd-sidebar-entry"
+              data={{
+                category: 'content',
+                blockType: block.type,
+                label: block.label,
+                defaults: block.defaults,
+              }}
             >
               <div className="email-dnd-sidebar-tile">
                 <block.icon size={18} weight="duotone" />

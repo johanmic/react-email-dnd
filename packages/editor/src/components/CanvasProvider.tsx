@@ -1,15 +1,11 @@
-import {
-  createContext,
-  useCallback,
-  useMemo,
-  useReducer,
-  type ReactNode,
-} from 'react';
-import type { CanvasDocument } from '../types/schema';
+import { createContext, useCallback, useMemo, useReducer, type ReactNode } from 'react';
+import type { CanvasDocument, CanvasContentBlock } from '../types/schema';
 import {
   cloneCanvasDocument,
   createEmptyDocument,
   documentsAreEqual,
+  findBlockById,
+  updateBlockProps,
 } from '../utils/document';
 
 interface CanvasState {
@@ -17,6 +13,7 @@ interface CanvasState {
   present: CanvasDocument;
   future: CanvasDocument[];
   savedSnapshot: CanvasDocument;
+  selectedBlockId: string | null;
 }
 
 type CanvasAction =
@@ -31,7 +28,9 @@ type CanvasAction =
     }
   | { type: 'updateTitle'; title: string }
   | { type: 'save'; snapshot: CanvasDocument }
-  | { type: 'undo' };
+  | { type: 'undo' }
+  | { type: 'selectBlock'; blockId: string | null }
+  | { type: 'updateBlockProps'; blockId: string; props: Record<string, unknown> };
 
 interface CanvasProviderProps {
   children: ReactNode;
@@ -43,6 +42,8 @@ export interface CanvasStoreValue {
   document: CanvasDocument;
   isDirty: boolean;
   canUndo: boolean;
+  selectedBlockId: string | null;
+  selectedBlock: CanvasContentBlock | null;
   updateTitle: (title: string) => void;
   setDocument: (
     document: CanvasDocument,
@@ -50,6 +51,8 @@ export interface CanvasStoreValue {
   ) => void;
   save: () => void;
   undo: () => void;
+  selectBlock: (blockId: string | null) => void;
+  updateBlockProps: (blockId: string, props: Record<string, unknown>) => void;
 }
 
 const CanvasStoreContext = createContext<CanvasStoreValue | null>(null);
@@ -62,6 +65,7 @@ function createInitialState(initialDocument?: CanvasDocument): CanvasState {
     present: base,
     future: [],
     savedSnapshot: cloneCanvasDocument(base),
+    selectedBlockId: null,
   };
 }
 
@@ -77,6 +81,7 @@ function pushToHistory(state: CanvasState, nextDocument: CanvasDocument): Canvas
     present: cloneCanvasDocument(nextDocument),
     future: [],
     savedSnapshot: state.savedSnapshot,
+    selectedBlockId: state.selectedBlockId,
   };
 }
 
@@ -92,6 +97,7 @@ function replaceHistory(
     present,
     future: [],
     savedSnapshot: markAsSaved ? cloneCanvasDocument(present) : state.savedSnapshot,
+    selectedBlockId: state.selectedBlockId,
   };
 }
 
@@ -150,7 +156,18 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         present: cloneCanvasDocument(previous),
         future: [cloneCanvasDocument(state.present), ...state.future],
         savedSnapshot: state.savedSnapshot,
+        selectedBlockId: state.selectedBlockId,
       };
+    }
+    case 'selectBlock': {
+      return {
+        ...state,
+        selectedBlockId: action.blockId,
+      };
+    }
+    case 'updateBlockProps': {
+      const updatedDocument = updateBlockProps(state.present, action.blockId, action.props);
+      return pushToHistory(state, updatedDocument);
     }
     default:
       return state;
@@ -194,20 +211,47 @@ export function CanvasProvider({ children, initialDocument, onSave }: CanvasProv
     dispatch({ type: 'undo' });
   }, [canUndo]);
 
+  const selectBlock = useCallback((blockId: string | null) => {
+    dispatch({ type: 'selectBlock', blockId });
+  }, []);
+
+  const updateBlockProps = useCallback((blockId: string, props: Record<string, unknown>) => {
+    dispatch({ type: 'updateBlockProps', blockId, props });
+  }, []);
+
   const document = state.present;
   const isDirty = !documentsAreEqual(state.present, state.savedSnapshot);
+  const selectedBlock = state.selectedBlockId
+    ? findBlockById(document, state.selectedBlockId)
+    : null;
 
   const value = useMemo<CanvasStoreValue>(
     () => ({
       document,
       isDirty,
       canUndo,
+      selectedBlockId: state.selectedBlockId,
+      selectedBlock,
       updateTitle,
       setDocument,
       save,
       undo,
+      selectBlock,
+      updateBlockProps,
     }),
-    [document, isDirty, canUndo, updateTitle, setDocument, save, undo],
+    [
+      document,
+      isDirty,
+      canUndo,
+      state.selectedBlockId,
+      selectedBlock,
+      updateTitle,
+      setDocument,
+      save,
+      undo,
+      selectBlock,
+      updateBlockProps,
+    ],
   );
 
   return <CanvasStoreContext.Provider value={value}>{children}</CanvasStoreContext.Provider>;

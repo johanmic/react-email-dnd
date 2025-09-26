@@ -1,5 +1,5 @@
 {
-  "name": "react-email-dnd",
+  "name": "@react-email-dnd/editor",
   "version": "0.1.0",
   "description": "Composable drag-and-drop primitives for email layout canvases in React.",
   "keywords": [

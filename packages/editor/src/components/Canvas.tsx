@@ -18,6 +18,7 @@ import { Divider } from './divider';
 import { Heading } from './heading';
 import { Image } from './image';
 import { Text } from './text';
+import { useCanvasStore } from '../hooks/useCanvasStore';
 
 export interface CanvasProps {
   sections: CanvasSection[];
@@ -47,6 +48,7 @@ function renderBlock(block: CanvasContentBlock) {
 }
 
 function CanvasBlockView({ block, columnId }: { block: CanvasContentBlock; columnId: string }) {
+  const { selectBlock, selectedBlockId } = useCanvasStore();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-block-${block.id}`,
     data: {
@@ -56,16 +58,28 @@ function CanvasBlockView({ block, columnId }: { block: CanvasContentBlock; colum
     },
   });
 
+  const isSelected = selectedBlockId === block.id;
+
   const style: CSSProperties = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.6 : undefined,
+  };
+
+  const handleBlockClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    selectBlock(block.id);
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={clsx('email-dnd-canvas-block', isDragging && 'email-dnd-canvas-block-dragging')}
+      className={clsx(
+        'email-dnd-canvas-block',
+        isDragging && 'email-dnd-canvas-block-dragging',
+        isSelected && 'email-dnd-canvas-block-selected',
+      )}
+      onClick={handleBlockClick}
     >
       <button
         type="button"
@@ -307,6 +321,7 @@ function CanvasSectionView({ section }: { section: CanvasSection }) {
 }
 
 export function Canvas({ sections }: CanvasProps) {
+  const { selectBlock } = useCanvasStore();
   const { isOver, setNodeRef } = useDroppable({
     id: 'canvas',
   });
@@ -314,6 +329,13 @@ export function Canvas({ sections }: CanvasProps) {
   const canvasStyles: CSSProperties = {
     minHeight: 400,
     padding: '0.625rem',
+  };
+
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    // Only deselect if clicking on the canvas itself, not on child elements
+    if (e.target === e.currentTarget) {
+      selectBlock(null);
+    }
   };
 
   console.log(
@@ -329,6 +351,7 @@ export function Canvas({ sections }: CanvasProps) {
         'w-full border email-dnd-canvas',
         isOver ? 'border-dashed border-2 border-green-500' : 'border-solid border-black',
       )}
+      onClick={handleCanvasClick}
     >
       {sections.length === 0 ? (
         <div className="email-dnd-canvas-empty">Drag a section to get started</div>

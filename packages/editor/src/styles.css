@@ -435,3 +435,201 @@
   border-color: var(--email-dnd-accent-color) !important;
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
+
+/* Block selection styles */
+.email-dnd-canvas-block-selected {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Properties Panel styles */
+.email-dnd-properties-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+}
+
+.email-dnd-properties-panel-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+.email-dnd-properties-panel-content {
+  position: relative;
+  width: 400px;
+  max-width: 90vw;
+  height: 100%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e5e7eb;
+  box-shadow: -20px 0 25px -5px rgba(0, 0, 0, 0.1), -8px 0 10px -6px rgba(0, 0, 0, 0.1);
+  animation: slide-in-right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.email-dnd-properties-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.5rem 1.25rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fafafa;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.email-dnd-properties-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.email-dnd-properties-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0;
+  line-height: 1.3;
+}
+
+.email-dnd-properties-close-btn {
+  padding: 0.375rem;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -0.125rem;
+}
+
+.email-dnd-properties-close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.email-dnd-properties-close-btn:active {
+  background: #e5e7eb;
+}
+
+.email-dnd-properties-body {
+  padding: 1.5rem 1.25rem 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Form Elements */
+.email-dnd-properties-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.email-dnd-properties-input,
+.email-dnd-properties-select,
+.email-dnd-properties-textarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #111827;
+  background: #ffffff;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.email-dnd-properties-input:focus,
+.email-dnd-properties-select:focus,
+.email-dnd-properties-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.email-dnd-properties-input:hover,
+.email-dnd-properties-select:hover,
+.email-dnd-properties-textarea:hover {
+  border-color: #9ca3af;
+}
+
+.email-dnd-properties-textarea {
+  resize: vertical;
+  min-height: 4rem;
+}
+
+.email-dnd-properties-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+.email-dnd-properties-color {
+  width: 3rem;
+  height: 2.5rem;
+  padding: 0.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  background: #ffffff;
+}
+
+.email-dnd-properties-color-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.email-dnd-properties-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.email-dnd-properties-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.375rem;
+  line-height: 1.3;
+}
+
+.email-dnd-properties-message {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+  padding: 2rem 1rem;
+  font-style: italic;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

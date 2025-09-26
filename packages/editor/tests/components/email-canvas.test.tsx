@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Canvas,
   Sidebar,
+  CanvasProvider,
   buttonDefinition,
   dividerDefinition,
   headingDefinition,
@@ -16,7 +17,11 @@ import {
 
 describe('Canvas', () => {
   it('renders a placeholder when no sections exist', () => {
-    render(<Canvas sections={[]} />);
+    render(
+      <CanvasProvider>
+        <Canvas sections={[]} />
+      </CanvasProvider>,
+    );
 
     expect(screen.getByText(/drag a section to get started/i)).toBeInTheDocument();
   });
@@ -66,7 +71,11 @@ describe('Canvas', () => {
       },
     ];
 
-    render(<Canvas sections={sections} />);
+    render(
+      <CanvasProvider>
+        <Canvas sections={sections} />
+      </CanvasProvider>,
+    );
 
     expect(screen.getByRole('heading', { name: 'Hello heading' })).toBeInTheDocument();
     expect(screen.getByText('Hello world')).toBeInTheDocument();
