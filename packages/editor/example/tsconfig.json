@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@utils/*": ["../src/utils/*"],
+      "react-email-dnd": ["../src/index.ts"],
+      "react-email-dnd/*": ["../src/*"]
+    }
+  },
+  "include": ["src"]
+}

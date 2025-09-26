@@ -1,0 +1,21 @@
+{
+  "author": "Johan Mickelin",
+  "name": "react-email-dnd",
+  "packageManager": "pnpm@9",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "release": "changeset version && pnpm -r build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1",
+    "typescript": "^5.6.0",
+    "eslint": "^9.0.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}
