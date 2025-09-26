@@ -200,7 +200,7 @@ function CanvasRowView({ row, sectionId }: { row: CanvasRow; sectionId: string }
   };
 
   const gridStyle: CSSProperties = {
-    gap: row.gutter ?? 16,
+    gap: row.gutter ?? 24,
     gridTemplateColumns: `repeat(${Math.max(row.columns.length, 1)}, minmax(0, 1fr))`,
   };
 
