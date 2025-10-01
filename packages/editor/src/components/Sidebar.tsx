@@ -61,8 +61,8 @@ export function Sidebar({
       <div className="flex flex-col gap-3 items-center">
         <p
           className={clsx({
-            'mb-2 text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
-            'text-xl font-bold uppercase mb-4 leading-none text-base-content/60': daisyui,
+            'mb-y text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
+            'text-sm font-bold uppercase mb-4 leading-none text-base-content/60': daisyui,
           })}
         >
           Structure
@@ -97,11 +97,11 @@ export function Sidebar({
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-5 items-center">
+      <div className="flex flex-col gap-3 items-center">
         <div
-          className={clsx({
-            'mb-2 text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
-            'text-xl font-bold uppercase mb-4 h-24 flex items-center justify-center leading-none text-base-content/60':
+          className={clsx('my-2', {
+            'text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
+            'text-sm font-bold uppercase flex items-center justify-center leading-none text-base-content/60':
               daisyui,
           })}
         >

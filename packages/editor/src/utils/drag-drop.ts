@@ -5,11 +5,7 @@ import type {
   CanvasContentBlock,
   BlockDefinition,
 } from '../types/schema';
-import {
-  createEmptySection,
-  createEmptyRow,
-  createContentBlock,
-} from './document';
+import { createEmptySection, createEmptyRow, createContentBlock } from './document';
 import { buttonDefinition } from '../components/button';
 import { dividerDefinition } from '../components/divider';
 import { headingDefinition } from '../components/heading';
@@ -239,6 +235,58 @@ export function replaceColumnStructure(
   return updated ? nextSections : sections;
 }
 
+// Replace the structure (number of columns) of a specific row.
+// All existing blocks in the row are preserved and moved into the first new column.
+export function replaceRowStructure(
+  sections: CanvasSection[],
+  targetRowId: string,
+  newColumnCount: number,
+): CanvasSection[] {
+  let updated = false;
+
+  const nextSections = sections.map((section) => {
+    let sectionUpdated = false;
+
+    const nextRows = section.rows.map((row) => {
+      if (row.id !== targetRowId) {
+        return row;
+      }
+
+      // Collect all blocks from all columns in this row
+      const allBlocks: CanvasContentBlock[] = [];
+      row.columns.forEach((column) => {
+        allBlocks.push(...column.blocks);
+      });
+
+      // Create new row with requested column count
+      const newRow = createEmptyRow(newColumnCount);
+
+      // Put all blocks in the first column
+      if (newRow.columns.length > 0) {
+        newRow.columns[0] = {
+          ...newRow.columns[0],
+          blocks: allBlocks,
+        };
+      }
+
+      // Keep the row ID and other properties
+      newRow.id = row.id;
+      if (row.gutter !== undefined) {
+        newRow.gutter = row.gutter;
+      }
+
+      sectionUpdated = true;
+      updated = true;
+
+      return newRow;
+    });
+
+    return sectionUpdated ? { ...section, rows: nextRows } : section;
+  });
+
+  return updated ? nextSections : sections;
+}
+
 // Canvas item position finding functions
 export interface BlockPosition {
   sectionId: string;
@@ -382,7 +430,12 @@ export function moveBlockToColumn(
     return sections;
   }
 
+  const sameColumn = sourceColumnId === targetColumnId;
   const normalizedTargetIndex = Number.isFinite(targetIndex) ? Math.max(0, targetIndex) : Infinity;
+  const adjustedTargetIndex =
+    sameColumn && normalizedTargetIndex > fromIndex
+      ? normalizedTargetIndex - 1
+      : normalizedTargetIndex;
 
   let inserted = false;
 
@@ -399,9 +452,9 @@ export function moveBlockToColumn(
 
         const nextBlocks = [...column.blocks];
         const insertionIndex =
-          normalizedTargetIndex === Infinity
+          adjustedTargetIndex === Infinity
             ? nextBlocks.length
-            : Math.min(normalizedTargetIndex, nextBlocks.length);
+            : Math.min(adjustedTargetIndex, nextBlocks.length);
         nextBlocks.splice(insertionIndex, 0, blockToMove!);
 
         rowUpdated = true;
@@ -631,10 +684,26 @@ export function handleSidebarDrop(
       return addRowToSection(sections, sectionId, columnCount);
     }
 
+    // Dropping a column layout on a specific row: change that row's layout
+    if (overId.startsWith('row-')) {
+      const rowId = overId.replace('row-', '');
+      return replaceRowStructure(sections, rowId, columnCount);
+    }
+
     // Handle dropping column structure on existing columns - replace the column layout
     if (overId.startsWith('column-')) {
       const columnId = overId.replace('column-', '');
       return replaceColumnStructure(sections, columnId, columnCount);
+    }
+
+    // If dropped on a block, resolve the owning column and replace that row's structure
+    if (overId.startsWith('canvas-block-')) {
+      const blockId = overId.replace('canvas-block-', '');
+      const pos = findBlockPosition(sections, blockId);
+      if (pos) {
+        // Change the row layout that contains this block
+        return replaceRowStructure(sections, pos.rowId, columnCount);
+      }
     }
 
     return null;
@@ -654,4 +723,57 @@ export function handleSidebarDrop(
   }
 
   return null;
+}
+
+// Deletion helpers
+export function removeSection(sections: CanvasSection[], sectionId: string): CanvasSection[] {
+  return sections.filter((section) => section.id !== sectionId);
+}
+
+export function removeRow(sections: CanvasSection[], rowId: string): CanvasSection[] {
+  let updated = false;
+
+  const next = sections.map((section) => {
+    const before = section.rows.length;
+    const rows = section.rows.filter((row) => row.id !== rowId);
+    if (rows.length !== before) updated = true;
+    return { ...section, rows };
+  });
+
+  return updated ? next : sections;
+}
+
+export function removeColumn(sections: CanvasSection[], columnId: string): CanvasSection[] {
+  let updated = false;
+
+  const next = sections.map((section) => {
+    const rows = section.rows.map((row) => {
+      const before = row.columns.length;
+      const columns = row.columns.filter((col) => col.id !== columnId);
+      if (columns.length !== before) updated = true;
+      return { ...row, columns };
+    });
+    return { ...section, rows };
+  });
+
+  return updated ? next : sections;
+}
+
+export function removeBlock(sections: CanvasSection[], blockId: string): CanvasSection[] {
+  let updated = false;
+
+  const next = sections.map((section) => {
+    const rows = section.rows.map((row) => {
+      const columns = row.columns.map((column) => {
+        const before = column.blocks.length;
+        const blocks = column.blocks.filter((block) => block.id !== blockId);
+        if (blocks.length !== before) updated = true;
+        return { ...column, blocks };
+      });
+      return { ...row, columns };
+    });
+    return { ...section, rows };
+  });
+
+  return updated ? next : sections;
 }

@@ -1,11 +1,12 @@
 import type { ChangeEvent } from 'react';
 import { useCanvasStore } from '../hooks/useCanvasStore';
-import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react';
+import { ArrowCounterClockwiseIcon, DeviceMobile, Desktop } from '@phosphor-icons/react';
 import clsx from 'clsx';
 const TITLE_INPUT_ID = 'email-dnd-title-input';
 
 export function Header({ daisyui = false }: { daisyui?: boolean }) {
-  const { document, updateTitle, save, undo, isDirty, canUndo } = useCanvasStore();
+  const { document, updateTitle, save, undo, isDirty, canUndo, previewMode, setPreviewMode } =
+    useCanvasStore();
 
   const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
     updateTitle(event.target.value);
@@ -18,7 +19,7 @@ export function Header({ daisyui = false }: { daisyui?: boolean }) {
         !daisyui &&
           'flex items-center justify-between gap-4 p-3 border-b border-slate-900/10 bg-white',
         // DaisyUI variant
-        daisyui && 'flex items-center justify-between gap-4 p-3 border-b bg-base-100',
+        daisyui && 'flex items-center justify-between gap-4 p-3 border-b bg-base-200',
       )}
       aria-label="Email editor header"
     >
@@ -41,11 +42,53 @@ export function Header({ daisyui = false }: { daisyui?: boolean }) {
           className={clsx(
             !daisyui &&
               'flex-1 px-3 py-2 border border-slate-300/60 rounded-lg text-[0.95rem] text-slate-900 bg-slate-50 transition focus:outline-none focus:border-green-500/60 focus:ring-2 focus:ring-green-500/20 focus:bg-white',
-            daisyui && 'input input-bordered input-sm w-full max-w-xl',
+            daisyui && 'input input-bordered input-sm rounded-box w-full max-w-xl',
           )}
         />
       </div>
       <div className="flex items-center gap-2">
+        <div
+          className={clsx('flex items-center gap-1 mr-2')}
+          role="group"
+          aria-label="Preview mode"
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewMode('desktop')}
+            aria-pressed={previewMode === 'desktop'}
+            title="Desktop preview"
+            className={clsx(
+              !daisyui &&
+                'inline-flex items-center gap-1 py-2 px-2.5 rounded-lg border text-sm transition',
+              !daisyui &&
+                (previewMode === 'desktop'
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'bg-white text-slate-900 border-slate-300/60 hover:border-green-500/60 hover:bg-green-500/10'),
+              daisyui && 'btn btn-ghost btn-sm',
+              daisyui && (previewMode === 'desktop' ? 'btn-active' : ''),
+            )}
+          >
+            <Desktop size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewMode('mobile')}
+            aria-pressed={previewMode === 'mobile'}
+            title="Mobile preview"
+            className={clsx(
+              !daisyui &&
+                'inline-flex items-center gap-1 py-2 px-2.5 rounded-lg border text-sm transition',
+              !daisyui &&
+                (previewMode === 'mobile'
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'bg-white text-slate-900 border-slate-300/60 hover:border-green-500/60 hover:bg-green-500/10'),
+              daisyui && 'btn btn-ghost btn-sm',
+              daisyui && (previewMode === 'mobile' ? 'btn-active' : ''),
+            )}
+          >
+            <DeviceMobile size={18} />
+          </button>
+        </div>
         <button
           type="button"
           onClick={undo}

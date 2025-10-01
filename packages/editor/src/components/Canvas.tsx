@@ -1,6 +1,6 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
-import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import { DotsSixVerticalIcon, Trash } from '@phosphor-icons/react';
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -18,6 +18,8 @@ import { Heading } from './heading';
 import { Image } from './image';
 import { Text } from './text';
 import { useCanvasStore } from '../hooks/useCanvasStore';
+import { ConfirmModal } from './ConfirmModal';
+import { removeColumn, removeRow, removeSection } from '../utils/drag-drop';
 
 export interface CanvasProps {
   sections: CanvasSection[];
@@ -120,6 +122,16 @@ function CanvasBlockView({
     },
   });
 
+  // Make each block a droppable target to support block-to-block reordering
+  const { setNodeRef: setBlockDroppableRef } = useDroppable({
+    id: `canvas-block-${block.id}`,
+    data: {
+      type: 'canvas-block',
+      blockId: block.id,
+      columnId,
+    },
+  });
+
   const isSelected = selectedBlockId === block.id;
 
   const style: CSSProperties = {
@@ -134,13 +146,16 @@ function CanvasBlockView({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        setBlockDroppableRef(node);
+      }}
       style={style}
       className={clsx(
         'relative flex items-start gap-3 border rounded-lg p-3 mb-3 shadow-sm transition',
         {
           'border-slate-300/20 bg-white/80': !daisyui,
-          'border-base-300/20 bg-base-200/50': daisyui,
+          'border-primary/10 bg-base-200/50': daisyui,
           'shadow-xl border-base-200/30': isDragging && !daisyui,
           'shadow-xl border-primary/30': isDragging && daisyui,
           'outline outline-base-200/60 outline-offset-2': isSelected && !daisyui,
@@ -156,7 +171,7 @@ function CanvasBlockView({
           {
             'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
               !daisyui,
-            'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+            'bg-base-200 border text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
               daisyui,
           },
         )}
@@ -219,14 +234,14 @@ function CanvasColumnView({
         'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition',
         {
           'border-purple-300/30 bg-purple-50/40': !daisyui,
-          'border-accent/30 border-secondary/50': daisyui,
+          'border-secondary/50': daisyui,
           'bg-purple-100/60 shadow-lg': isDragging && !daisyui,
           'bg-base-300/60 shadow-lg': isDragging && daisyui,
         },
       )}
     >
       <ElementTab type="Column" daisyui={daisyui} />
-      <div className="flex justify-end" {...attributes} {...listeners}>
+      <div className="flex justify-end gap-2" {...attributes} {...listeners}>
         <button
           type="button"
           className={clsx(
@@ -243,6 +258,7 @@ function CanvasColumnView({
         >
           <DotsSixVerticalIcon size={16} weight="bold" />
         </button>
+        <ColumnDeleteButton columnId={column.id} daisyui={daisyui} />
       </div>
       <SortableContext
         id={`column-${column.id}`}
@@ -291,6 +307,7 @@ function CanvasRowView({
   sectionId: string;
   daisyui?: boolean;
 }) {
+  const { previewMode } = useCanvasStore();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-row-${row.id}`,
     data: {
@@ -315,9 +332,12 @@ function CanvasRowView({
     opacity: isDragging ? 0.7 : undefined,
   };
 
+  const isMobile = previewMode === 'mobile';
   const gridStyle: CSSProperties = {
     gap: row.gutter ?? 24,
-    gridTemplateColumns: `repeat(${Math.max(row.columns.length, 1)}, minmax(0, 1fr))`,
+    gridTemplateColumns: isMobile
+      ? 'repeat(1, minmax(0, 1fr))'
+      : `repeat(${Math.max(row.columns.length, 1)}, minmax(0, 1fr))`,
   };
 
   const sortableColumnItems = row.columns.map((column) => `canvas-column-${column.id}`);
@@ -338,7 +358,7 @@ function CanvasRowView({
       )}
     >
       <ElementTab type="Row" daisyui={daisyui} />
-      <div className="flex justify-end" {...attributes} {...listeners}>
+      <div className="flex justify-end gap-2" {...attributes} {...listeners}>
         <button
           type="button"
           className={clsx(
@@ -355,6 +375,7 @@ function CanvasRowView({
         >
           <DotsSixVerticalIcon size={16} weight="bold" />
         </button>
+        <RowDeleteButton rowId={row.id} daisyui={daisyui} />
       </div>
       <SortableContext
         id={`row-${row.id}`}
@@ -435,7 +456,7 @@ function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisy
       onMouseDown={() => console.log('🟦 Section drag handle clicked:', section.id)}
     >
       <ElementTab type="Section" daisyui={daisyui} />
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <button
           type="button"
           className={clsx(
@@ -451,6 +472,7 @@ function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisy
         >
           <DotsSixVerticalIcon size={16} weight="bold" />
         </button>
+        <SectionDeleteButton sectionId={section.id} daisyui={daisyui} />
       </div>
       <section
         ref={setDroppableNodeRef}
@@ -545,5 +567,131 @@ export function Canvas({ sections, daisyui = false }: CanvasProps) {
         ))
       )}
     </div>
+  );
+}
+
+function ColumnDeleteButton({ columnId, daisyui }: { columnId: string; daisyui?: boolean }) {
+  const { document, setDocument } = useCanvasStore();
+  const [open, setOpen] = useState(false);
+
+  const onConfirm = () => {
+    const next = removeColumn(document.sections, columnId);
+    setDocument({ ...document, sections: next });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Delete column"
+        className={clsx(
+          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+          {
+            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
+            'bg-error/10 text-error hover:bg-error/20': daisyui,
+          },
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        <Trash size={16} weight="bold" />
+      </button>
+      <ConfirmModal
+        open={open}
+        daisyui={daisyui}
+        title="Delete column?"
+        description="This will remove the column and all its content blocks."
+        confirmLabel="Delete"
+        onCancel={() => setOpen(false)}
+        onConfirm={onConfirm}
+      />
+    </>
+  );
+}
+
+function RowDeleteButton({ rowId, daisyui }: { rowId: string; daisyui?: boolean }) {
+  const { document, setDocument } = useCanvasStore();
+  const [open, setOpen] = useState(false);
+
+  const onConfirm = () => {
+    const next = removeRow(document.sections, rowId);
+    setDocument({ ...document, sections: next });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Delete row"
+        className={clsx(
+          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+          {
+            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
+            'bg-error/10 text-error hover:bg-error/20': daisyui,
+          },
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        <Trash size={16} weight="bold" />
+      </button>
+      <ConfirmModal
+        open={open}
+        daisyui={daisyui}
+        title="Delete row?"
+        description="This will remove the row and all its columns and blocks."
+        confirmLabel="Delete"
+        onCancel={() => setOpen(false)}
+        onConfirm={onConfirm}
+      />
+    </>
+  );
+}
+
+function SectionDeleteButton({ sectionId, daisyui }: { sectionId: string; daisyui?: boolean }) {
+  const { document, setDocument } = useCanvasStore();
+  const [open, setOpen] = useState(false);
+
+  const onConfirm = () => {
+    const next = removeSection(document.sections, sectionId);
+    setDocument({ ...document, sections: next });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Delete section"
+        className={clsx(
+          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+          {
+            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
+            'bg-error/10 text-error hover:bg-error/20': daisyui,
+          },
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        <Trash size={16} weight="bold" />
+      </button>
+      <ConfirmModal
+        open={open}
+        daisyui={daisyui}
+        title="Delete section?"
+        description="This will remove the section and all its rows, columns, and blocks."
+        confirmLabel="Delete"
+        onCancel={() => setOpen(false)}
+        onConfirm={onConfirm}
+      />
+    </>
   );
 }

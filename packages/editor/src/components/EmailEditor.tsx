@@ -185,6 +185,25 @@ export function EmailEditor({
         );
         return;
       }
+
+      // Allow dropping a row on a specific column: insert after that column's row
+      if (overData?.type === 'canvas-column') {
+        const targetPosition = findColumnPosition(sections, overData.columnId);
+        if (!targetPosition) {
+          return;
+        }
+
+        commitSections((previous) =>
+          moveRowToSection(
+            previous,
+            sourcePosition.sectionId,
+            targetPosition.sectionId,
+            sourcePosition.rowIndex,
+            targetPosition.rowIndex + 1,
+          ),
+        );
+        return;
+      }
     }
 
     // Handle canvas column movements
@@ -278,6 +297,21 @@ export function EmailEditor({
         );
         return;
       }
+
+      // Allow dropping a block on a row: append to the first column of that row
+      if (overData?.type === 'canvas-row-container') {
+        const targetRow = findRowPosition(sections, overData.rowId);
+        if (!targetRow || targetRow.row.columns.length === 0) {
+          return;
+        }
+        const firstColumnId = targetRow.row.columns[0].id;
+        const targetIndex = targetRow.row.columns[0].blocks.length;
+
+        commitSections((previous) =>
+          moveBlockToColumn(previous, sourceColumnId, firstColumnId, blockIndex, targetIndex),
+        );
+        return;
+      }
     }
 
     // Handle canvas section movements
@@ -343,7 +377,7 @@ export function EmailEditor({
           <Sidebar daisyui={daisyui} />
           <Main sections={sections} daisyui={daisyui} />
         </div>
-        <PropertiesPanel />
+        <PropertiesPanel daisyui={daisyui} />
       </div>
       <DragOverlay>
         {activeId ? (

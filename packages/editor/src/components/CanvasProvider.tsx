@@ -15,6 +15,7 @@ interface CanvasState {
   future: CanvasDocument[];
   savedSnapshot: CanvasDocument;
   selectedBlockId: string | null;
+  previewMode: 'desktop' | 'mobile';
 }
 
 type CanvasAction =
@@ -31,7 +32,8 @@ type CanvasAction =
   | { type: 'save'; snapshot: CanvasDocument }
   | { type: 'undo' }
   | { type: 'selectBlock'; blockId: string | null }
-  | { type: 'updateBlockProps'; blockId: string; props: Record<string, unknown> };
+  | { type: 'updateBlockProps'; blockId: string; props: Record<string, unknown> }
+  | { type: 'setPreviewMode'; mode: 'desktop' | 'mobile' };
 
 interface CanvasProviderProps {
   children: ReactNode;
@@ -46,6 +48,7 @@ export interface CanvasStoreValue {
   canUndo: boolean;
   selectedBlockId: string | null;
   selectedBlock: CanvasContentBlock | null;
+  previewMode: 'desktop' | 'mobile';
   updateTitle: (title: string) => void;
   setDocument: (
     document: CanvasDocument,
@@ -55,6 +58,7 @@ export interface CanvasStoreValue {
   undo: () => void;
   selectBlock: (blockId: string | null) => void;
   updateBlockProps: (blockId: string, props: Record<string, unknown>) => void;
+  setPreviewMode: (mode: 'desktop' | 'mobile') => void;
 }
 
 const CanvasStoreContext = createContext<CanvasStoreValue | null>(null);
@@ -68,6 +72,7 @@ function createInitialState(initialDocument?: CanvasDocument): CanvasState {
     future: [],
     savedSnapshot: cloneCanvasDocument(base),
     selectedBlockId: null,
+    previewMode: 'desktop',
   };
 }
 
@@ -84,6 +89,7 @@ function pushToHistory(state: CanvasState, nextDocument: CanvasDocument): Canvas
     future: [],
     savedSnapshot: state.savedSnapshot,
     selectedBlockId: state.selectedBlockId,
+    previewMode: state.previewMode,
   };
 }
 
@@ -100,6 +106,7 @@ function replaceHistory(
     future: [],
     savedSnapshot: markAsSaved ? cloneCanvasDocument(present) : state.savedSnapshot,
     selectedBlockId: state.selectedBlockId,
+    previewMode: state.previewMode,
   };
 }
 
@@ -159,6 +166,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         future: [cloneCanvasDocument(state.present), ...state.future],
         savedSnapshot: state.savedSnapshot,
         selectedBlockId: state.selectedBlockId,
+        previewMode: state.previewMode,
       };
     }
     case 'selectBlock': {
@@ -170,6 +178,15 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
     case 'updateBlockProps': {
       const updatedDocument = updateBlockProps(state.present, action.blockId, action.props);
       return pushToHistory(state, updatedDocument);
+    }
+    case 'setPreviewMode': {
+      if (state.previewMode === action.mode) {
+        return state;
+      }
+      return {
+        ...state,
+        previewMode: action.mode,
+      };
     }
     default:
       return state;
@@ -200,11 +217,12 @@ export function CanvasProvider({
   );
 
   useEffect(() => {
-    const docToSet = initialDocument ?? createEmptyDocument();
-    if (!documentsAreEqual(state.present, docToSet)) {
-      setDocument(docToSet, { replaceHistory: true, markAsSaved: true });
+    // Initialize or replace the document only when the external initialDocument changes.
+    // Do NOT react to internal edits, to avoid resetting user input while typing.
+    if (initialDocument) {
+      setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
     }
-  }, [initialDocument, setDocument, state.present]);
+  }, [initialDocument, setDocument]);
 
   const save = useCallback(() => {
     if (documentsAreEqual(state.present, state.savedSnapshot)) {
@@ -234,6 +252,10 @@ export function CanvasProvider({
     dispatch({ type: 'updateBlockProps', blockId, props });
   }, []);
 
+  const setPreviewMode = useCallback((mode: 'desktop' | 'mobile') => {
+    dispatch({ type: 'setPreviewMode', mode });
+  }, []);
+
   const document = state.present;
   const isDirty = !documentsAreEqual(state.present, state.savedSnapshot);
   const selectedBlock = state.selectedBlockId
@@ -247,12 +269,14 @@ export function CanvasProvider({
       canUndo,
       selectedBlockId: state.selectedBlockId,
       selectedBlock,
+      previewMode: state.previewMode,
       updateTitle,
       setDocument,
       save,
       undo,
       selectBlock,
       updateBlockProps,
+      setPreviewMode,
     }),
     [
       document,
@@ -260,12 +284,14 @@ export function CanvasProvider({
       canUndo,
       state.selectedBlockId,
       selectedBlock,
+      state.previewMode,
       updateTitle,
       setDocument,
       save,
       undo,
       selectBlock,
       updateBlockProps,
+      setPreviewMode,
     ],
   );
 
