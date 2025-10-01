@@ -93,14 +93,11 @@ export function updateBlockProps(
   for (const section of newDocument.sections) {
     for (const row of section.rows) {
       for (const column of row.columns) {
-        for (let i = 0; i < column.blocks.length; i++) {
-          if (column.blocks[i].id === blockId) {
-            column.blocks[i] = {
-              ...column.blocks[i],
-              props: { ...column.blocks[i].props, ...updatedProps },
-            };
-            return newDocument;
-          }
+        const blockIndex = column.blocks.findIndex((b) => b.id === blockId);
+        if (blockIndex !== -1) {
+          const block = column.blocks[blockIndex];
+          block.props = { ...block.props, ...updatedProps };
+          return newDocument;
         }
       }
     }

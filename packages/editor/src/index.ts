@@ -21,3 +21,4 @@ export * from './hooks/useCanvasStore';
 export * from './utils/email-renderer';
 export * from './utils/document';
 export * from './utils/drag-drop';
+export * from './utils/json';

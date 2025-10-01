@@ -7,9 +7,10 @@ export interface SidebarItemProps {
   children: ReactNode;
   className?: string;
   data?: Record<string, unknown>;
+  daisyui?: boolean;
 }
 
-export function SidebarItem({ id, children, className, data }: SidebarItemProps) {
+export function SidebarItem({ id, children, className, data, daisyui = false }: SidebarItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id,
     data: {
@@ -30,8 +31,10 @@ export function SidebarItem({ id, children, className, data }: SidebarItemProps)
     <div
       ref={setNodeRef}
       style={style}
-      className={clsx('email-dnd-sidebar-item', className, {
-        'email-dnd-sidebar-item-dragging': isDragging,
+      className={clsx(className, {
+        'cursor-grab select-none outline-none': !daisyui,
+        'opacity-60': isDragging,
+        'btn btn-primary btn-soft gap-2 rounded-lg': daisyui,
       })}
       {...listeners}
       {...attributes}

@@ -7,7 +7,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { Main } from './Main';
 import { Header } from './Header';
@@ -15,7 +15,6 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import {
   handleSidebarDrop,
-  type SidebarDropId,
   type ActiveDragData,
   type OverDragData,
   findBlockPosition,
@@ -26,17 +25,29 @@ import {
   moveRowToSection,
   moveColumnToRow,
   moveSectionToPosition,
-  replaceColumnStructure,
 } from '../utils/drag-drop';
 import { createEmptySection } from '../utils/document';
-import type { CanvasSection } from '../types/schema';
-
+import type { CanvasSection, CanvasDocument } from '../types/schema';
+import clsx from 'clsx';
 export interface EmailEditorProps {
   showHeader?: boolean;
   className?: string;
+  daisyui?: boolean;
+  /** Initial JSON document to load into the editor */
+  initialDocument?: CanvasDocument;
+  /** Callback fired whenever the document changes (for real-time updates) */
+  onDocumentChange?: (document: CanvasDocument) => void;
+  /** Callback fired when the user clicks the save button */
+  onSave?: (document: CanvasDocument) => void;
 }
 
-export function EmailEditor({ showHeader = true, className = '' }: EmailEditorProps) {
+export function EmailEditor({
+  showHeader = true,
+  className = '',
+  daisyui = false,
+  initialDocument,
+  onDocumentChange,
+}: EmailEditorProps) {
   const { document, setDocument } = useCanvasStore();
   const sections = document.sections;
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -49,6 +60,13 @@ export function EmailEditor({ showHeader = true, className = '' }: EmailEditorPr
     }),
   );
 
+  // Handle initial document
+  useEffect(() => {
+    if (initialDocument) {
+      setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
+    }
+  }, [initialDocument, setDocument]);
+
   const commitSections = (updater: (sections: CanvasSection[]) => CanvasSection[]) => {
     const nextSections = updater(sections);
 
@@ -56,10 +74,15 @@ export function EmailEditor({ showHeader = true, className = '' }: EmailEditorPr
       return;
     }
 
-    setDocument({
+    const nextDocument = {
       ...document,
       sections: nextSections,
-    });
+    };
+
+    setDocument(nextDocument);
+
+    // Notify parent component of document changes
+    onDocumentChange?.(nextDocument);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -314,16 +337,20 @@ export function EmailEditor({ showHeader = true, className = '' }: EmailEditorPr
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className={`email-dnd-editor ${className}`}>
-        {showHeader && <Header />}
-        <div className="flex h-screen">
-          <Sidebar />
-          <Main sections={sections} />
+      <div className={clsx('w-full h-screen flex flex-col', className)}>
+        {showHeader && <Header daisyui={daisyui} />}
+        <div className="flex h-full">
+          <Sidebar daisyui={daisyui} />
+          <Main sections={sections} daisyui={daisyui} />
         </div>
         <PropertiesPanel />
       </div>
       <DragOverlay>
-        {activeId ? <div className="email-dnd-drag-overlay">Dragging...</div> : null}
+        {activeId ? (
+          <div className="px-3 py-1.5 rounded-md bg-slate-800 text-white text-sm shadow">
+            Dragging...
+          </div>
+        ) : null}
       </DragOverlay>
     </DndContext>
   );

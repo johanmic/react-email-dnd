@@ -4,7 +4,6 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import {
   SortableContext,
   horizontalListSortingStrategy,
-  useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -22,23 +21,78 @@ import { useCanvasStore } from '../hooks/useCanvasStore';
 
 export interface CanvasProps {
   sections: CanvasSection[];
+  daisyui?: boolean;
 }
 
-function renderBlock(block: CanvasContentBlock) {
+// Helper component for element type tabs
+function ElementTab({ type, daisyui }: { type: 'Section' | 'Row' | 'Column'; daisyui?: boolean }) {
+  const getTabColors = () => {
+    switch (type) {
+      case 'Section':
+        return {
+          bg: daisyui ? 'bg-primary/20' : 'bg-blue-500/20',
+          text: daisyui ? 'text-primary' : 'text-blue-600',
+          border: daisyui ? 'border-primary/10' : 'border-blue-500/30',
+        };
+      case 'Row':
+        return {
+          bg: daisyui ? 'bg-secondary/20' : 'bg-green-500/20',
+          text: daisyui ? 'text-secondary' : 'text-green-600',
+          border: daisyui ? 'border-secondary/10' : 'border-green-500/30',
+        };
+      case 'Column':
+        return {
+          bg: daisyui ? 'bg-accent/20' : 'bg-purple-500/20',
+          text: daisyui ? 'text-accent' : 'text-purple-600',
+          border: daisyui ? 'border-accent/10' : 'border-purple-500/30',
+        };
+      default:
+        return {
+          bg: daisyui ? 'bg-orange-500' : 'bg-gray-500/20',
+          text: daisyui ? 'text-base-content' : 'text-gray-600',
+          border: daisyui ? 'border-base-content/10' : 'border-gray-500/30',
+        };
+    }
+  };
+
+  const colors = getTabColors();
+
+  return (
+    <div
+      className={clsx(
+        'absolute -top-2 left-3 px-2 py-1 text-xs font-medium rounded-md border backdrop-blur-sm',
+        colors.bg,
+        colors.text,
+        colors.border,
+        'z-10',
+      )}
+    >
+      {type}
+    </div>
+  );
+}
+
+function renderBlock(block: CanvasContentBlock, daisyui?: boolean) {
   switch (block.type) {
     case 'button':
-      return <Button {...block.props} />;
+      return <Button {...block.props} daisyui={daisyui} />;
     case 'text':
-      return <Text {...block.props} />;
+      return <Text {...block.props} daisyui={daisyui} />;
     case 'heading':
-      return <Heading {...block.props} />;
+      return <Heading {...block.props} daisyui={daisyui} />;
     case 'divider':
-      return <Divider {...block.props} />;
+      return <Divider {...block.props} daisyui={daisyui} />;
     case 'image':
-      return <Image {...block.props} />;
+      return <Image {...block.props} daisyui={daisyui} />;
     case 'custom':
       return (
-        <div className="email-dnd-custom-block" data-component={block.props.componentName}>
+        <div
+          className={clsx('text-sm capitalize', {
+            'text-slate-900': !daisyui,
+            'bg-primary/50 text-base-content': daisyui,
+          })}
+          data-component={block.props.componentName}
+        >
           {block.props.componentName}
         </div>
       );
@@ -47,7 +101,15 @@ function renderBlock(block: CanvasContentBlock) {
   }
 }
 
-function CanvasBlockView({ block, columnId }: { block: CanvasContentBlock; columnId: string }) {
+function CanvasBlockView({
+  block,
+  columnId,
+  daisyui,
+}: {
+  block: CanvasContentBlock;
+  columnId: string;
+  daisyui?: boolean;
+}) {
   const { selectBlock, selectedBlockId } = useCanvasStore();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-block-${block.id}`,
@@ -75,15 +137,29 @@ function CanvasBlockView({ block, columnId }: { block: CanvasContentBlock; colum
       ref={setNodeRef}
       style={style}
       className={clsx(
-        'email-dnd-canvas-block',
-        isDragging && 'email-dnd-canvas-block-dragging',
-        isSelected && 'email-dnd-canvas-block-selected',
+        'relative flex items-start gap-3 border rounded-lg p-3 mb-3 shadow-sm transition',
+        {
+          'border-slate-300/20 bg-white/80': !daisyui,
+          'border-base-300/20 bg-base-200/50': daisyui,
+          'shadow-xl border-base-200/30': isDragging && !daisyui,
+          'shadow-xl border-primary/30': isDragging && daisyui,
+          'outline outline-base-200/60 outline-offset-2': isSelected && !daisyui,
+          'outline outline-primary/60 outline-offset-2': isSelected && daisyui,
+        },
       )}
       onClick={handleBlockClick}
     >
       <button
         type="button"
-        className="email-dnd-block-handle"
+        className={clsx(
+          'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+          {
+            'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+              !daisyui,
+            'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+              daisyui,
+          },
+        )}
         aria-label="Drag to reorder"
         {...listeners}
         {...attributes}
@@ -91,7 +167,7 @@ function CanvasBlockView({ block, columnId }: { block: CanvasContentBlock; colum
       >
         <DotsSixVerticalIcon size={16} weight="bold" />
       </button>
-      <div className="email-dnd-block-content">{renderBlock(block)}</div>
+      <div className="flex-1">{renderBlock(block, daisyui)}</div>
     </div>
   );
 }
@@ -100,10 +176,12 @@ function CanvasColumnView({
   column,
   rowId,
   sectionId,
+  daisyui,
 }: {
   column: CanvasColumn;
   rowId: string;
   sectionId: string;
+  daisyui?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-column-${column.id}`,
@@ -138,14 +216,28 @@ function CanvasColumnView({
       ref={setNodeRef}
       style={sortableStyle}
       className={clsx(
-        'email-dnd-column-wrapper',
-        isDragging && 'email-dnd-column-wrapper-dragging',
+        'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition',
+        {
+          'border-purple-300/30 bg-purple-50/40': !daisyui,
+          'border-accent/30 border-secondary/50': daisyui,
+          'bg-purple-100/60 shadow-lg': isDragging && !daisyui,
+          'bg-base-300/60 shadow-lg': isDragging && daisyui,
+        },
       )}
     >
-      <div className="email-dnd-column-toolbar" {...attributes} {...listeners}>
+      <ElementTab type="Column" daisyui={daisyui} />
+      <div className="flex justify-end" {...attributes} {...listeners}>
         <button
           type="button"
-          className="email-dnd-block-handle"
+          className={clsx(
+            'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+            {
+              'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                !daisyui,
+              'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                daisyui,
+            },
+          )}
           aria-label="Drag column"
           onMouseDown={() => console.log('🟪 Column drag handle clicked:', column.id)}
         >
@@ -159,13 +251,29 @@ function CanvasColumnView({
       >
         <div
           ref={setDroppableNodeRef}
-          className={clsx('email-dnd-column', isOver && 'email-dnd-drop-target')}
+          className={clsx('min-h-[140px] p-4 rounded-lg border border-dashed transition', {
+            'border-slate-300/20 bg-white/70': !daisyui,
+            'border-base-300/20 bg-base-100/70': daisyui,
+            'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver,
+          })}
         >
           {column.blocks.length === 0 ? (
-            <div className="email-dnd-column-empty">Drop content blocks here</div>
+            <div
+              className={clsx('flex items-center justify-center min-h-[88px] text-sm', {
+                'text-slate-400': !daisyui,
+                'text-base-content/60': daisyui,
+              })}
+            >
+              Drop content blocks here
+            </div>
           ) : (
             column.blocks.map((block) => (
-              <CanvasBlockView key={block.id} block={block} columnId={column.id} />
+              <CanvasBlockView
+                key={block.id}
+                block={block}
+                columnId={column.id}
+                daisyui={daisyui}
+              />
             ))
           )}
         </div>
@@ -174,7 +282,15 @@ function CanvasColumnView({
   );
 }
 
-function CanvasRowView({ row, sectionId }: { row: CanvasRow; sectionId: string }) {
+function CanvasRowView({
+  row,
+  sectionId,
+  daisyui,
+}: {
+  row: CanvasRow;
+  sectionId: string;
+  daisyui?: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-row-${row.id}`,
     data: {
@@ -211,15 +327,29 @@ function CanvasRowView({ row, sectionId }: { row: CanvasRow; sectionId: string }
       ref={setNodeRef}
       style={style}
       className={clsx(
-        'email-dnd-row-wrapper',
-        isDragging && 'email-dnd-row-wrapper-dragging',
-        isOver && 'email-dnd-drop-target',
+        'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition',
+        {
+          'border-green-300/30 bg-green-50/40': !daisyui,
+          'border-secondary/30 bg-base-100/40': daisyui,
+          'bg-green-100/60 shadow-lg': isDragging && !daisyui,
+          'bg-base-200/60 shadow-lg': isDragging && daisyui,
+          'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver,
+        },
       )}
     >
-      <div className="email-dnd-row-toolbar" {...attributes} {...listeners}>
+      <ElementTab type="Row" daisyui={daisyui} />
+      <div className="flex justify-end" {...attributes} {...listeners}>
         <button
           type="button"
-          className="email-dnd-block-handle"
+          className={clsx(
+            'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+            {
+              'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                !daisyui,
+              'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                daisyui,
+            },
+          )}
           aria-label="Drag row"
           onMouseDown={() => console.log('🟫 Row drag handle clicked:', row.id)}
         >
@@ -231,9 +361,19 @@ function CanvasRowView({ row, sectionId }: { row: CanvasRow; sectionId: string }
         items={sortableColumnItems}
         strategy={horizontalListSortingStrategy}
       >
-        <div ref={setRowDroppableRef} className={clsx('email-dnd-row')} style={gridStyle}>
+        <div ref={setRowDroppableRef} className={clsx('grid w-full')} style={gridStyle}>
           {row.columns.length === 0 ? (
-            <div className="email-dnd-row-empty">Drop columns here</div>
+            <div
+              className={clsx(
+                'flex items-center justify-center min-h-[88px] rounded-lg border border-dashed text-sm',
+                {
+                  'border-slate-300/30 text-slate-400 bg-slate-50/50': !daisyui,
+                  'border-base-300/30 text-base-content/60 bg-base-200/50': daisyui,
+                },
+              )}
+            >
+              Drop columns here
+            </div>
           ) : (
             row.columns.map((column) => (
               <CanvasColumnView
@@ -241,6 +381,7 @@ function CanvasRowView({ row, sectionId }: { row: CanvasRow; sectionId: string }
                 column={column}
                 rowId={row.id}
                 sectionId={sectionId}
+                daisyui={daisyui}
               />
             ))
           )}
@@ -250,7 +391,7 @@ function CanvasRowView({ row, sectionId }: { row: CanvasRow; sectionId: string }
   );
 }
 
-function CanvasSectionView({ section }: { section: CanvasSection }) {
+function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisyui?: boolean }) {
   const {
     attributes,
     listeners,
@@ -285,22 +426,42 @@ function CanvasSectionView({ section }: { section: CanvasSection }) {
     <div
       ref={setDraggableNodeRef}
       style={style}
-      className={clsx(
-        'email-dnd-section-wrapper',
-        isDragging && 'email-dnd-section-wrapper-dragging',
-      )}
+      className={clsx('relative flex flex-col gap-3 mb-4 w-full max-w-full', {
+        'opacity-70 shadow-2xl': isDragging,
+        'bg-base-200 bg-opacity-50': daisyui,
+      })}
       {...attributes}
       {...listeners}
       onMouseDown={() => console.log('🟦 Section drag handle clicked:', section.id)}
     >
-      <div className="email-dnd-section-toolbar">
-        <button type="button" className="email-dnd-block-handle" aria-label="Drag section">
+      <ElementTab type="Section" daisyui={daisyui} />
+      <div className="flex justify-end">
+        <button
+          type="button"
+          className={clsx(
+            'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+            {
+              'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                !daisyui,
+              'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                daisyui,
+            },
+          )}
+          aria-label="Drag section"
+        >
           <DotsSixVerticalIcon size={16} weight="bold" />
         </button>
       </div>
       <section
         ref={setDroppableNodeRef}
-        className={clsx('email-dnd-section', isOver && 'email-dnd-drop-target')}
+        className={clsx(
+          'flex flex-col gap-4 p-5 rounded-[0.9rem] border transition w-full max-w-full box-border',
+          {
+            'border-blue-300/30 bg-gradient-to-b from-blue-50/60 to-blue-100/40': !daisyui,
+            'border-primary/30 bg-gradient-to-b from-base-100/60 to-base-200/40': daisyui,
+            'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver,
+          },
+        )}
       >
         <SortableContext
           id={`section-${section.id}`}
@@ -308,10 +469,20 @@ function CanvasSectionView({ section }: { section: CanvasSection }) {
           strategy={verticalListSortingStrategy}
         >
           {section.rows.length === 0 ? (
-            <div className="email-dnd-section-empty">Drop rows or column layouts here</div>
+            <div
+              className={clsx(
+                'flex items-center justify-center min-h-40 rounded-lg border border-dashed text-[0.85rem]',
+                {
+                  'border-slate-300/40 bg-slate-100/40 text-slate-500': !daisyui,
+                  'border-base-300/40 bg-base-200/40 text-base-content/70': daisyui,
+                },
+              )}
+            >
+              Drop rows or column layouts here
+            </div>
           ) : (
             section.rows.map((row) => (
-              <CanvasRowView key={row.id} row={row} sectionId={section.id} />
+              <CanvasRowView key={row.id} row={row} sectionId={section.id} daisyui={daisyui} />
             ))
           )}
         </SortableContext>
@@ -320,7 +491,7 @@ function CanvasSectionView({ section }: { section: CanvasSection }) {
   );
 }
 
-export function Canvas({ sections }: CanvasProps) {
+export function Canvas({ sections, daisyui = false }: CanvasProps) {
   const { selectBlock } = useCanvasStore();
   const { isOver, setNodeRef } = useDroppable({
     id: 'canvas',
@@ -347,16 +518,31 @@ export function Canvas({ sections }: CanvasProps) {
     <div
       ref={setNodeRef}
       style={canvasStyles}
-      className={clsx(
-        'w-full border email-dnd-canvas',
-        isOver ? 'border-dashed border-2 border-green-500' : 'border-solid border-black',
-      )}
+      className={clsx('w-full transition flex flex-col gap-5 rounded-xl', {
+        // 'bg-slate-50': !daisyui,
+        // 'bg-base-200': daisyui,
+        'border-dashed border-2': isOver,
+        // '': !isOver && !daisyui,
+        'bg-base-200 bg-opacity-50': !isOver && daisyui,
+      })}
       onClick={handleCanvasClick}
     >
       {sections.length === 0 ? (
-        <div className="email-dnd-canvas-empty">Drag a section to get started</div>
+        <div
+          className={clsx(
+            'flex items-center justify-center min-h-[220px] rounded-lg border-2 border-dashed text-sm',
+            {
+              'border-slate-300/40 text-slate-500 bg-slate-100/60': !daisyui,
+              'border-base-300/40 text-base-content/70 bg-base-100/60': daisyui,
+            },
+          )}
+        >
+          Drag a section to get started
+        </div>
       ) : (
-        sections.map((section) => <CanvasSectionView key={section.id} section={section} />)
+        sections.map((section) => (
+          <CanvasSectionView key={section.id} section={section} daisyui={daisyui} />
+        ))
       )}
     </div>
   );

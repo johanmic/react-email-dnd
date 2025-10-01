@@ -1,8 +1,13 @@
 import * as ReactEmailComponents from '@react-email/components';
+import type { RowProps, ColumnProps, SectionProps } from '@react-email/components';
 
-const Row = (ReactEmailComponents as any).Row;
-const Column = (ReactEmailComponents as any).Column;
-const Section = (ReactEmailComponents as any).Section;
+const ReactEmailModule = ReactEmailComponents as {
+  Row: React.ComponentType<RowProps>;
+  Column: React.ComponentType<ColumnProps>;
+  Section: React.ComponentType<SectionProps>;
+};
+
+const { Row, Column, Section } = ReactEmailModule;
 import type {
   CanvasDocument,
   CanvasSection,

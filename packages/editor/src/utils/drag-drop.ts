@@ -1,5 +1,4 @@
 import type {
-  CanvasDocument,
   CanvasSection,
   CanvasRow,
   CanvasColumn,
@@ -9,7 +8,6 @@ import type {
 import {
   createEmptySection,
   createEmptyRow,
-  createEmptyColumn,
   createContentBlock,
 } from './document';
 import { buttonDefinition } from '../components/button';

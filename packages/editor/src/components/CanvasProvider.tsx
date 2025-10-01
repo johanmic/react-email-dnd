@@ -1,4 +1,5 @@
-import { createContext, useCallback, useMemo, useReducer, type ReactNode } from 'react';
+import { createContext, useCallback, useMemo, useReducer, type ReactNode, useEffect } from 'react';
+import '../styles.css';
 import type { CanvasDocument, CanvasContentBlock } from '../types/schema';
 import {
   cloneCanvasDocument,
@@ -36,6 +37,7 @@ interface CanvasProviderProps {
   children: ReactNode;
   initialDocument?: CanvasDocument;
   onSave?: (document: CanvasDocument) => void;
+  onDocumentChange?: (document: CanvasDocument) => void;
 }
 
 export interface CanvasStoreValue {
@@ -174,7 +176,12 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
   }
 }
 
-export function CanvasProvider({ children, initialDocument, onSave }: CanvasProviderProps) {
+export function CanvasProvider({
+  children,
+  initialDocument,
+  onSave,
+  onDocumentChange,
+}: CanvasProviderProps) {
   const [state, dispatch] = useReducer(canvasReducer, initialDocument, createInitialState);
 
   const updateTitle = useCallback((title: string) => {
@@ -187,9 +194,17 @@ export function CanvasProvider({ children, initialDocument, onSave }: CanvasProv
       options?: { commit?: boolean; replaceHistory?: boolean; markAsSaved?: boolean },
     ) => {
       dispatch({ type: 'setDocument', document, options });
+      onDocumentChange?.(document);
     },
-    [],
+    [onDocumentChange],
   );
+
+  useEffect(() => {
+    const docToSet = initialDocument ?? createEmptyDocument();
+    if (!documentsAreEqual(state.present, docToSet)) {
+      setDocument(docToSet, { replaceHistory: true, markAsSaved: true });
+    }
+  }, [initialDocument, setDocument, state.present]);
 
   const save = useCallback(() => {
     if (documentsAreEqual(state.present, state.savedSnapshot)) {

@@ -8,9 +8,10 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
 
 export interface MainProps {
   sections: CanvasSection[];
+  daisyui?: boolean;
 }
 
-export function Main({ sections }: MainProps) {
+export function Main({ sections, daisyui = false }: MainProps) {
   const canvasStore = useContext(CanvasStoreContext);
   const placeholderSectionRef = useRef<CanvasSection | null>(null);
 
@@ -46,7 +47,7 @@ export function Main({ sections }: MainProps) {
 
   return (
     <div className="flex-1 p-2.5">
-      <Canvas sections={normalizedSections} />
+      <Canvas sections={normalizedSections} daisyui={daisyui} />
     </div>
   );
 }
