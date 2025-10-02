@@ -182,6 +182,35 @@ export function addBlockToColumn(
   return updated ? nextSections : sections;
 }
 
+export function addBlockToColumnAtIndex(
+  sections: CanvasSection[],
+  columnId: string,
+  block: CanvasContentBlock,
+  index: number,
+): CanvasSection[] {
+  let updated = false;
+
+  const nextSections = sections.map((section) => {
+    const nextRows = section.rows.map((row) => {
+      const nextColumns = row.columns.map((column) => {
+        if (column.id !== columnId) {
+          return column;
+        }
+
+        const nextBlocks = [...column.blocks];
+        const insertionIndex = Math.max(0, Math.min(index, nextBlocks.length));
+        nextBlocks.splice(insertionIndex, 0, block);
+        updated = true;
+        return { ...column, blocks: nextBlocks };
+      });
+      return { ...row, columns: nextColumns };
+    });
+    return { ...section, rows: nextRows };
+  });
+
+  return updated ? nextSections : sections;
+}
+
 export function replaceColumnStructure(
   sections: CanvasSection[],
   targetColumnId: string,
@@ -285,6 +314,34 @@ export function replaceRowStructure(
   });
 
   return updated ? nextSections : sections;
+}
+
+export function insertRowToSectionAt(
+  sections: CanvasSection[],
+  sectionId: string,
+  afterRowIndex: number,
+  columnCount: number,
+): CanvasSection[] {
+  return sections.map((section) => {
+    if (section.id !== sectionId) return section;
+    const nextRows = [...section.rows];
+    const insertionIndex = Math.max(0, Math.min(afterRowIndex + 1, nextRows.length));
+    nextRows.splice(insertionIndex, 0, createEmptyRow(columnCount));
+    return { ...section, rows: nextRows };
+  });
+}
+
+export function insertEmptySectionAfter(
+  sections: CanvasSection[],
+  afterSectionId: string,
+): CanvasSection[] {
+  const index = sections.findIndex((s) => s.id === afterSectionId);
+  if (index === -1) {
+    return [...sections, createEmptySection()];
+  }
+  const next = [...sections];
+  next.splice(index + 1, 0, createEmptySection());
+  return next;
 }
 
 // Canvas item position finding functions
@@ -658,6 +715,36 @@ export function moveSectionToPosition(
   return result;
 }
 
+// Helper functions to check if containers are locked
+function isColumnLocked(sections: CanvasSection[], columnId: string): boolean {
+  for (const section of sections) {
+    for (const row of section.rows) {
+      const column = row.columns.find((col) => col.id === columnId);
+      if (column) {
+        // Check if column OR any parent container is locked
+        return !!(column.locked || row.locked || section.locked);
+      }
+    }
+  }
+  return false;
+}
+
+function isRowLocked(sections: CanvasSection[], rowId: string): boolean {
+  for (const section of sections) {
+    const row = section.rows.find((r) => r.id === rowId);
+    if (row) {
+      // Check if row OR parent section is locked
+      return !!(row.locked || section.locked);
+    }
+  }
+  return false;
+}
+
+function isSectionLocked(sections: CanvasSection[], sectionId: string): boolean {
+  const section = sections.find((s) => s.id === sectionId);
+  return !!section?.locked;
+}
+
 // Helper function to enforce Row -> Column -> Content structure
 export function handleSidebarDrop(
   activeId: string,
@@ -669,7 +756,33 @@ export function handleSidebarDrop(
     if (overId === 'canvas') {
       return [...sections, createEmptySection()];
     }
-    return null;
+    if (overId.startsWith('section-')) {
+      const sectionId = overId.replace('section-', '');
+      return insertEmptySectionAfter(sections, sectionId);
+    }
+    if (overId.startsWith('row-')) {
+      const rowId = overId.replace('row-', '');
+      const pos = findRowPosition(sections as unknown as CanvasSection[], rowId);
+      if (pos) {
+        return insertEmptySectionAfter(sections, pos.sectionId);
+      }
+    }
+    if (overId.startsWith('column-')) {
+      const columnId = overId.replace('column-', '');
+      const pos = findColumnPosition(sections, columnId);
+      if (pos) {
+        return insertEmptySectionAfter(sections, pos.sectionId);
+      }
+    }
+    if (overId.startsWith('canvas-block-')) {
+      const blockId = overId.replace('canvas-block-', '');
+      const pos = findBlockPosition(sections, blockId);
+      if (pos) {
+        return insertEmptySectionAfter(sections, pos.sectionId);
+      }
+    }
+    // Fallback: add to end
+    return [...sections, createEmptySection()];
   }
 
   if (activeId === 'structure-row' || activeId.startsWith('structure-columns-')) {
@@ -681,28 +794,69 @@ export function handleSidebarDrop(
 
     if (overId.startsWith('section-')) {
       const sectionId = overId.replace('section-', '');
+      // Check if section is locked
+      if (isSectionLocked(sections, sectionId)) {
+        return null;
+      }
       return addRowToSection(sections, sectionId, columnCount);
     }
 
-    // Dropping a column layout on a specific row: change that row's layout
-    if (overId.startsWith('row-')) {
+    // For a plain 'row' structure, inserting under the target row is preferred
+    if (activeId === 'structure-row' && overId.startsWith('row-')) {
       const rowId = overId.replace('row-', '');
-      return replaceRowStructure(sections, rowId, columnCount);
+      const pos = findRowPosition(sections, rowId);
+      if (pos) {
+        return insertRowToSectionAt(sections, pos.sectionId, pos.rowIndex, columnCount);
+      }
     }
 
-    // Handle dropping column structure on existing columns - replace the column layout
-    if (overId.startsWith('column-')) {
+    if (activeId === 'structure-row' && overId.startsWith('column-')) {
       const columnId = overId.replace('column-', '');
-      return replaceColumnStructure(sections, columnId, columnCount);
+      const pos = findColumnPosition(sections, columnId);
+      if (pos) {
+        return insertRowToSectionAt(sections, pos.sectionId, pos.rowIndex, columnCount);
+      }
     }
 
-    // If dropped on a block, resolve the owning column and replace that row's structure
-    if (overId.startsWith('canvas-block-')) {
+    if (activeId === 'structure-row' && overId.startsWith('canvas-block-')) {
       const blockId = overId.replace('canvas-block-', '');
       const pos = findBlockPosition(sections, blockId);
       if (pos) {
-        // Change the row layout that contains this block
-        return replaceRowStructure(sections, pos.rowId, columnCount);
+        const rowPos = findRowPosition(sections, pos.rowId);
+        if (rowPos) {
+          return insertRowToSectionAt(sections, rowPos.sectionId, rowPos.rowIndex, columnCount);
+        }
+      }
+    }
+
+    // Column layout changes (columns-*) keep existing replacement behavior
+    if (activeId.startsWith('structure-columns-')) {
+      if (overId.startsWith('row-')) {
+        const rowId = overId.replace('row-', '');
+        // Check if row is locked
+        if (isRowLocked(sections, rowId)) {
+          return null;
+        }
+        return replaceRowStructure(sections, rowId, columnCount);
+      }
+      if (overId.startsWith('column-')) {
+        const columnId = overId.replace('column-', '');
+        // Check if column is locked
+        if (isColumnLocked(sections, columnId)) {
+          return null;
+        }
+        return replaceColumnStructure(sections, columnId, columnCount);
+      }
+      if (overId.startsWith('canvas-block-')) {
+        const blockId = overId.replace('canvas-block-', '');
+        const pos = findBlockPosition(sections, blockId);
+        if (pos) {
+          // Check if row is locked
+          if (isRowLocked(sections, pos.rowId)) {
+            return null;
+          }
+          return replaceRowStructure(sections, pos.rowId, columnCount);
+        }
       }
     }
 
@@ -712,6 +866,10 @@ export function handleSidebarDrop(
   // Handle content block drops - enforce they can only go in columns
   if (activeId.startsWith('block-') && overId.startsWith('column-')) {
     const columnId = overId.replace('column-', '');
+    // Check if column is locked
+    if (isColumnLocked(sections, columnId)) {
+      return null;
+    }
     const block = createBlockFromSidebar(activeId as BlockDropId);
     return addBlockToColumn(sections, columnId, block);
   }

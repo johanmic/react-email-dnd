@@ -19,6 +19,13 @@ function App() {
     setDocument(data);
   }, []);
 
+  const uploadFile = useCallback(async (file: File) => {
+    // Demo uploader: simulate latency and return a blob URL.
+    // In real usage, call your backend or a storage SDK and return the final URL.
+    await new Promise((r) => setTimeout(r, 800));
+    return URL.createObjectURL(file);
+  }, []);
+
   const loadSampleDocument = () => {
     setDocument(createSampleCanvasDocument());
   };
@@ -57,8 +64,9 @@ function App() {
           initialDocument={document}
           onSave={handleSave}
           onDocumentChange={handleDocumentChange}
+          uploadFile={uploadFile}
         >
-          <EmailEditor daisyui={true} />
+          <EmailEditor daisyui={true} unlockable={false} />
         </CanvasProvider>
       </main>
     </div>

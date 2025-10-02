@@ -22,7 +22,7 @@ export const buttonDefinition: BlockDefinition<ButtonBlock> = {
 
 export const ButtonIcon = HandPointingIcon;
 
-export function Button(props: ButtonBlockProps & { daisyui?: boolean }) {
+export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode?: boolean }) {
   const {
     label,
     href,
@@ -31,11 +31,19 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean }) {
     color = '#ffffff',
     borderRadius = 6,
     daisyui = false,
+    editorMode = false,
   } = props;
 
   const wrapperStyle: CSSProperties = {
     textAlign: align,
     margin: '12px 0',
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (editorMode) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   return (
@@ -53,7 +61,9 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean }) {
           padding: '12px 24px',
           textDecoration: 'none',
           fontWeight: 600,
+          cursor: editorMode ? 'pointer' : undefined,
         }}
+        onClick={handleClick}
       >
         {label}
       </EmailButton>

@@ -9,9 +9,10 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
 export interface MainProps {
   sections: CanvasSection[];
   daisyui?: boolean;
+  unlockable?: boolean;
 }
 
-export function Main({ sections, daisyui = false }: MainProps) {
+export function Main({ sections, daisyui = false, unlockable = true }: MainProps) {
   const canvasStore = useContext(CanvasStoreContext);
   const placeholderSectionRef = useRef<CanvasSection | null>(null);
 
@@ -54,7 +55,7 @@ export function Main({ sections, daisyui = false }: MainProps) {
   return (
     <div className="flex-1 p-2.5">
       <div className={wrapperClasses} aria-label={`Preview area (${previewMode})`}>
-        <Canvas sections={normalizedSections} daisyui={daisyui} />
+        <Canvas sections={normalizedSections} daisyui={daisyui} unlockable={unlockable} />
       </div>
     </div>
   );

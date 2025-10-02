@@ -20,6 +20,7 @@ export function createEmptyDocument(title: string = DEFAULT_TITLE): CanvasDocume
   return {
     version: 1,
     meta: { title },
+    variables: {},
     sections: [],
   };
 }

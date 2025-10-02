@@ -1,7 +1,7 @@
 // packages/editor/src/components/PropertiesPanel.tsx
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { X, Trash } from '@phosphor-icons/react';
+import { X, Trash, Lock, LockOpen } from '@phosphor-icons/react';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import { ConfirmModal } from './ConfirmModal';
 import { removeBlock } from '../utils/drag-drop';
@@ -16,11 +16,18 @@ import type {
 interface PropertiesPanelProps {
   className?: string;
   daisyui?: boolean;
+  unlockable?: boolean;
 }
 
 interface TextPropsFormProps {
   block: CanvasContentBlock & { type: 'text' };
   onUpdate: (props: Partial<TextBlockProps>) => void;
+  daisyui?: boolean;
+}
+
+interface LockedToggleProps {
+  locked: boolean;
+  onToggle: () => void;
   daisyui?: boolean;
 }
 
@@ -42,8 +49,104 @@ interface ImagePropsFormProps {
   daisyui?: boolean;
 }
 
-function HeadingPropsForm({ block, onUpdate, daisyui }: HeadingPropsFormProps) {
+function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
+  return (
+    <div
+      className={clsx('flex items-center justify-between p-4 rounded-lg border mb-6', {
+        'bg-amber-50/50 border-amber-200': !daisyui && locked,
+        'bg-gray-50 border-gray-200': !daisyui && !locked,
+        'bg-warning/10 border-warning/20': daisyui && locked,
+        'bg-base-200 border-base-300': daisyui && !locked,
+      })}
+    >
+      <div className="flex items-center gap-3">
+        {locked ? (
+          <Lock
+            size={20}
+            weight="bold"
+            className={clsx({
+              'text-amber-600': !daisyui,
+              'text-warning': daisyui,
+            })}
+          />
+        ) : (
+          <LockOpen
+            size={20}
+            weight="bold"
+            className={clsx({
+              'text-gray-500': !daisyui,
+              'text-base-content/60': daisyui,
+            })}
+          />
+        )}
+        <div>
+          <div
+            className={clsx('text-sm font-medium', {
+              'text-gray-900': !daisyui,
+              'text-base-content': daisyui,
+            })}
+          >
+            {locked ? 'Locked' : 'Unlocked'}
+          </div>
+          <div
+            className={clsx('text-xs', {
+              'text-gray-600': !daisyui,
+              'text-base-content/70': daisyui,
+            })}
+          >
+            {locked ? 'Cannot be edited or moved' : 'Can be edited and moved'}
+          </div>
+        </div>
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          checked={locked}
+          onChange={onToggle}
+          className="sr-only peer"
+          aria-label={locked ? 'Unlock block' : 'Lock block'}
+        />
+        <div
+          className={clsx(
+            "w-11 h-6 rounded-full peer transition-colors peer-focus:ring-2 peer-focus:ring-offset-1 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full",
+            {
+              'bg-gray-300 peer-checked:bg-amber-500 peer-focus:ring-amber-500/20': !daisyui,
+              'bg-base-300 peer-checked:bg-warning peer-focus:ring-warning/20': daisyui,
+            },
+          )}
+        />
+      </label>
+    </div>
+  );
+}
+
+function HeadingPropsForm({
+  block,
+  onUpdate,
+  daisyui,
+  disabled = false,
+}: HeadingPropsFormProps & { disabled?: boolean }) {
   const props = block.props as HeadingBlockProps;
+  const { variables } = useCanvasStore();
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const variableKeys = useMemo(() => Object.keys(variables), [variables]);
+
+  const insertVariable = (key: string) => {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const before = el.value.slice(0, start);
+    const after = el.value.slice(end);
+    const next = `${before}{{${key}}}${after}`;
+    onUpdate({ content: next });
+    setTimeout(() => {
+      el.focus();
+      const caret = start + key.length + 4;
+      el.setSelectionRange(caret, caret);
+    }, 0);
+  };
 
   const labelCls = clsx('block text-sm font-medium mb-2 leading-snug', {
     'text-gray-700': !daisyui,
@@ -76,7 +179,7 @@ function HeadingPropsForm({ block, onUpdate, daisyui }: HeadingPropsFormProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <fieldset disabled={disabled || block.locked} className="space-y-6">
       <div>
         <label className={labelCls}>Heading Level</label>
         <select
@@ -96,14 +199,67 @@ function HeadingPropsForm({ block, onUpdate, daisyui }: HeadingPropsFormProps) {
       </div>
 
       <div>
-        <label className={labelCls}>Text Content</label>
+        <div className="flex items-center justify-between">
+          <label className={labelCls}>Text Content</label>
+          {variableKeys.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span
+                className={clsx('text-xs', {
+                  'text-gray-500': !daisyui,
+                  'text-base-content/60': daisyui,
+                })}
+              >
+                variables:
+              </span>
+              <select
+                className={clsx('text-xs px-2 py-1 rounded', {
+                  'border border-gray-300 bg-white': !daisyui,
+                  'select select-bordered select-xs rounded': daisyui,
+                })}
+                onChange={(e) => {
+                  if (e.target.value) insertVariable(e.target.value);
+                  e.currentTarget.selectedIndex = 0;
+                }}
+              >
+                <option value="">Choose</option>
+                {variableKeys.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
         <textarea
+          ref={contentRef}
           value={props.content || ''}
           onChange={(e) => onUpdate({ content: e.target.value })}
           className={clsx(fieldCls, 'resize-y min-h-16')}
           rows={3}
           placeholder="Enter your text content..."
         />
+        {variableKeys.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {variableKeys.map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => insertVariable(k)}
+                className={clsx('text-[11px] px-2 py-0.5 rounded', {
+                  'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300':
+                    !daisyui,
+                  'btn btn-xs': daisyui,
+                })}
+                title={`Insert {{${k}}}`}
+              >
+                {'{{'}
+                {k}
+                {'}}'}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div>
@@ -175,12 +331,37 @@ function HeadingPropsForm({ block, onUpdate, daisyui }: HeadingPropsFormProps) {
         />
         <span className={helpCls}>Number or percentage (e.g., 1.6 or 150%)</span>
       </div>
-    </div>
+    </fieldset>
   );
 }
 
-function TextPropsForm({ block, onUpdate, daisyui }: TextPropsFormProps) {
+function TextPropsForm({
+  block,
+  onUpdate,
+  daisyui,
+  disabled = false,
+}: TextPropsFormProps & { disabled?: boolean }) {
   const props = block.props as TextBlockProps;
+  const { variables } = useCanvasStore();
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const variableKeys = useMemo(() => Object.keys(variables), [variables]);
+
+  const insertVariable = (key: string) => {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const before = el.value.slice(0, start);
+    const after = el.value.slice(end);
+    const next = `${before}{{${key}}}${after}`;
+    onUpdate({ content: next });
+    setTimeout(() => {
+      el.focus();
+      const caret = start + key.length + 4;
+      el.setSelectionRange(caret, caret);
+    }, 0);
+  };
 
   const labelCls = clsx('block text-sm font-medium mb-2 leading-snug', {
     'text-gray-700': !daisyui,
@@ -213,16 +394,69 @@ function TextPropsForm({ block, onUpdate, daisyui }: TextPropsFormProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <fieldset disabled={disabled || block.locked} className="space-y-6">
       <div>
-        <label className={labelCls}>Text Content</label>
+        <div className="flex items-center justify-between">
+          <label className={labelCls}>Text Content</label>
+          {variableKeys.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span
+                className={clsx('text-xs', {
+                  'text-gray-500': !daisyui,
+                  'text-base-content/60': daisyui,
+                })}
+              >
+                variables:
+              </span>
+              <select
+                className={clsx('text-xs px-2 py-1 rounded', {
+                  'border border-gray-300 bg-white': !daisyui,
+                  'select select-bordered select-xs rounded': daisyui,
+                })}
+                onChange={(e) => {
+                  if (e.target.value) insertVariable(e.target.value);
+                  e.currentTarget.selectedIndex = 0;
+                }}
+              >
+                <option value="">Choose</option>
+                {variableKeys.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
         <textarea
+          ref={contentRef}
           value={props.content || ''}
           onChange={(e) => onUpdate({ content: e.target.value })}
           className={clsx(fieldCls, 'resize-y min-h-16')}
           rows={3}
           placeholder="Enter your text content..."
         />
+        {variableKeys.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {variableKeys.map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => insertVariable(k)}
+                className={clsx('text-[11px] px-2 py-0.5 rounded', {
+                  'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300':
+                    !daisyui,
+                  'btn btn-xs': daisyui,
+                })}
+                title={`Insert {{${k}}}`}
+              >
+                {'{{'}
+                {k}
+                {'}}'}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div>
@@ -294,12 +528,42 @@ function TextPropsForm({ block, onUpdate, daisyui }: TextPropsFormProps) {
         />
         <span className={helpCls}>Number or percentage (e.g., 1.6 or 150%)</span>
       </div>
-    </div>
+    </fieldset>
   );
 }
 
-function ButtonPropsForm({ block, onUpdate, daisyui }: ButtonPropsFormProps) {
+function ButtonPropsForm({
+  block,
+  onUpdate,
+  daisyui,
+  disabled = false,
+}: ButtonPropsFormProps & { disabled?: boolean }) {
   const props = block.props as ButtonBlockProps;
+  const { variables } = useCanvasStore();
+  const labelInputRef = useRef<HTMLInputElement | null>(null);
+  const hrefInputRef = useRef<HTMLInputElement | null>(null);
+  const variableKeys = useMemo(() => Object.keys(variables), [variables]);
+
+  const insertVariableInto = (
+    ref: React.RefObject<HTMLInputElement | null>,
+    current: string,
+    key: string,
+    prop: 'label' | 'href',
+  ) => {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart ?? current.length;
+    const end = el.selectionEnd ?? current.length;
+    const before = current.slice(0, start);
+    const after = current.slice(end);
+    const next = `${before}{{${key}}}${after}`;
+    onUpdate({ [prop]: next } as Partial<ButtonBlockProps>);
+    setTimeout(() => {
+      el.focus();
+      const caret = start + key.length + 4;
+      el.setSelectionRange(caret, caret);
+    }, 0);
+  };
 
   const labelCls = clsx('block text-sm font-medium mb-2 leading-snug', {
     'text-gray-700': !daisyui,
@@ -332,11 +596,34 @@ function ButtonPropsForm({ block, onUpdate, daisyui }: ButtonPropsFormProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <fieldset disabled={disabled || block.locked} className="space-y-6">
       <div>
-        <label className={labelCls}>Button Text</label>
+        <div className="flex items-center justify-between">
+          <label className={labelCls}>Button Text</label>
+          {variableKeys.length > 0 && (
+            <select
+              className={clsx('text-xs px-2 py-1 rounded', {
+                'border border-gray-300 bg-white': !daisyui,
+                'select select-bordered select-xs rounded': daisyui,
+              })}
+              onChange={(e) => {
+                if (e.target.value)
+                  insertVariableInto(labelInputRef, props.label || '', e.target.value, 'label');
+                e.currentTarget.selectedIndex = 0;
+              }}
+            >
+              <option value="">Insert variable</option>
+              {variableKeys.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <input
           type="text"
+          ref={labelInputRef}
           value={props.label || ''}
           onChange={(e) => onUpdate({ label: e.target.value })}
           className={fieldCls}
@@ -345,9 +632,32 @@ function ButtonPropsForm({ block, onUpdate, daisyui }: ButtonPropsFormProps) {
       </div>
 
       <div>
-        <label className={labelCls}>URL</label>
+        <div className="flex items-center justify-between">
+          <label className={labelCls}>URL</label>
+          {variableKeys.length > 0 && (
+            <select
+              className={clsx('text-xs px-2 py-1 rounded', {
+                'border border-gray-300 bg-white': !daisyui,
+                'select select-bordered select-xs rounded': daisyui,
+              })}
+              onChange={(e) => {
+                if (e.target.value)
+                  insertVariableInto(hrefInputRef, props.href || '', e.target.value, 'href');
+                e.currentTarget.selectedIndex = 0;
+              }}
+            >
+              <option value="">Insert variable</option>
+              {variableKeys.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <input
           type="url"
+          ref={hrefInputRef}
           value={props.href || ''}
           onChange={(e) => onUpdate({ href: e.target.value })}
           placeholder="https://example.com"
@@ -419,12 +729,44 @@ function ButtonPropsForm({ block, onUpdate, daisyui }: ButtonPropsFormProps) {
         />
         <span className={helpCls}>Pixels (0-50)</span>
       </div>
-    </div>
+    </fieldset>
   );
 }
 
-function ImagePropsForm({ block, onUpdate, daisyui }: ImagePropsFormProps) {
+function ImagePropsForm({
+  block,
+  onUpdate,
+  daisyui,
+  disabled = false,
+}: ImagePropsFormProps & { disabled?: boolean }) {
   const props = block.props as ImageBlockProps;
+  const { variables, uploadFile } = useCanvasStore();
+  const srcRef = useRef<HTMLInputElement | null>(null);
+  const altRef = useRef<HTMLInputElement | null>(null);
+  const hrefRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const variableKeys = useMemo(() => Object.keys(variables), [variables]);
+
+  const insertInto = (
+    ref: React.RefObject<HTMLInputElement | null>,
+    current: string,
+    key: string,
+    prop: 'src' | 'alt' | 'href',
+  ) => {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart ?? current.length;
+    const end = el.selectionEnd ?? current.length;
+    const before = current.slice(0, start);
+    const after = current.slice(end);
+    const next = `${before}{{${key}}}${after}`;
+    onUpdate({ [prop]: next } as Partial<ImageBlockProps>);
+    setTimeout(() => {
+      el.focus();
+      const caret = start + key.length + 4;
+      el.setSelectionRange(caret, caret);
+    }, 0);
+  };
 
   const labelCls = clsx('block text-sm font-medium mb-2 leading-snug', {
     'text-gray-700': !daisyui,
@@ -443,24 +785,97 @@ function ImagePropsForm({ block, onUpdate, daisyui }: ImagePropsFormProps) {
   });
   const selectCls = clsx(fieldCls, 'cursor-pointer pr-10');
 
+  const handleFilePick: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    if (!uploadFile) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadFile(file);
+      onUpdate({ src: url });
+    } finally {
+      setUploading(false);
+      e.currentTarget.value = '';
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <fieldset disabled={disabled || block.locked} className="space-y-6">
       <div>
-        <label className={labelCls}>Image URL</label>
-        <input
-          type="url"
-          value={props.src || ''}
-          onChange={(e) => onUpdate({ src: e.target.value })}
-          placeholder="https://example.com/image.jpg"
-          className={fieldCls}
-        />
-        <span className={helpCls}>Direct link to your image</span>
+        <div className="flex items-center justify-between">
+          <label className={labelCls}>Image URL</label>
+          {variableKeys.length > 0 && (
+            <select
+              className={clsx('text-xs px-2 py-1 rounded', {
+                'border border-gray-300 bg-white': !daisyui,
+                'select select-bordered select-xs rounded': daisyui,
+              })}
+              onChange={(e) => {
+                if (e.target.value) insertInto(srcRef, props.src || '', e.target.value, 'src');
+                e.currentTarget.selectedIndex = 0;
+              }}
+            >
+              <option value="">Insert variable</option>
+              {variableKeys.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+        <div className="flex gap-2 items-center">
+          <input
+            type="url"
+            ref={srcRef}
+            value={props.src || ''}
+            onChange={(e) => onUpdate({ src: e.target.value })}
+            placeholder="https://example.com/image.jpg"
+            className={clsx(fieldCls, 'flex-1')}
+          />
+          {uploadFile ? (
+            <label
+              className={clsx('text-xs px-2 py-1 rounded cursor-pointer', {
+                'bg-slate-100 hover:bg-slate-200 border border-slate-300': !daisyui,
+                'btn btn-xs': daisyui,
+              })}
+            >
+              {uploading ? 'Uploading…' : 'Upload'}
+              <input type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
+            </label>
+          ) : null}
+        </div>
+        <span className={helpCls}>
+          Direct link to your image{uploadFile ? ' or use the Upload button' : ''}
+        </span>
       </div>
 
       <div>
-        <label className={labelCls}>Alt Text</label>
+        <div className="flex items-center justify-between">
+          <label className={labelCls}>Alt Text</label>
+          {variableKeys.length > 0 && (
+            <select
+              className={clsx('text-xs px-2 py-1 rounded', {
+                'border border-gray-300 bg-white': !daisyui,
+                'select select-bordered select-xs rounded': daisyui,
+              })}
+              onChange={(e) => {
+                if (e.target.value) insertInto(altRef, props.alt || '', e.target.value, 'alt');
+                e.currentTarget.selectedIndex = 0;
+              }}
+            >
+              <option value="">Insert variable</option>
+              {variableKeys.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <input
           type="text"
+          ref={altRef}
           value={props.alt || ''}
           onChange={(e) => onUpdate({ alt: e.target.value })}
           placeholder="Image description"
@@ -470,9 +885,31 @@ function ImagePropsForm({ block, onUpdate, daisyui }: ImagePropsFormProps) {
       </div>
 
       <div>
-        <label className={labelCls}>Link URL (Optional)</label>
+        <div className="flex items-center justify-between">
+          <label className={labelCls}>Link URL (Optional)</label>
+          {variableKeys.length > 0 && (
+            <select
+              className={clsx('text-xs px-2 py-1 rounded', {
+                'border border-gray-300 bg-white': !daisyui,
+                'select select-bordered select-xs rounded': daisyui,
+              })}
+              onChange={(e) => {
+                if (e.target.value) insertInto(hrefRef, props.href || '', e.target.value, 'href');
+                e.currentTarget.selectedIndex = 0;
+              }}
+            >
+              <option value="">Insert variable</option>
+              {variableKeys.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <input
           type="url"
+          ref={hrefRef}
           value={props.href || ''}
           onChange={(e) => onUpdate({ href: e.target.value })}
           placeholder="https://example.com"
@@ -508,6 +945,18 @@ function ImagePropsForm({ block, onUpdate, daisyui }: ImagePropsFormProps) {
       </div>
 
       <div>
+        <label className={labelCls}>Placeholder URL</label>
+        <input
+          type="url"
+          value={props.placeholder || ''}
+          onChange={(e) => onUpdate({ placeholder: e.target.value })}
+          placeholder="Fallback URL used when Image URL is empty"
+          className={fieldCls}
+        />
+        <span className={helpCls}>Optional fallback when no Image URL is set</span>
+      </div>
+
+      <div>
         <label className={labelCls}>Alignment</label>
         <select
           value={props.align || 'center'}
@@ -532,14 +981,64 @@ function ImagePropsForm({ block, onUpdate, daisyui }: ImagePropsFormProps) {
         />
         <span className={helpCls}>Pixels (0 for sharp corners)</span>
       </div>
-    </div>
+    </fieldset>
   );
 }
 
-export function PropertiesPanel({ className = '', daisyui = false }: PropertiesPanelProps) {
+export function PropertiesPanel({
+  className = '',
+  daisyui = false,
+  unlockable = true,
+}: PropertiesPanelProps) {
   const { document, setDocument, selectedBlockId, selectedBlock, selectBlock, updateBlockProps } =
     useCanvasStore();
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Check if block or any parent container is locked
+  const isBlockOrParentLocked = useCallback((): boolean => {
+    if (!selectedBlockId) return false;
+
+    // Check if block itself is locked
+    if (selectedBlock?.locked) return true;
+
+    // Find the block's parent containers and check if any are locked
+    for (const section of document.sections) {
+      if (section.locked) {
+        // Check if block is in this locked section
+        for (const row of section.rows) {
+          for (const column of row.columns) {
+            if (column.blocks.some((b) => b.id === selectedBlockId)) {
+              return true;
+            }
+          }
+        }
+      }
+
+      for (const row of section.rows) {
+        if (row.locked) {
+          // Check if block is in this locked row
+          for (const column of row.columns) {
+            if (column.blocks.some((b) => b.id === selectedBlockId)) {
+              return true;
+            }
+          }
+        }
+
+        for (const column of row.columns) {
+          if (column.locked) {
+            // Check if block is in this locked column
+            if (column.blocks.some((b) => b.id === selectedBlockId)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }, [selectedBlockId, selectedBlock, document.sections]);
+
+  const isLocked = isBlockOrParentLocked();
 
   const handleClose = () => {
     selectBlock(null);
@@ -551,6 +1050,11 @@ export function PropertiesPanel({ className = '', daisyui = false }: PropertiesP
     },
     [updateBlockProps],
   );
+
+  const handleToggleLocked = useCallback(() => {
+    if (!selectedBlockId || !selectedBlock) return;
+    updateBlockProps(selectedBlockId, { locked: !selectedBlock.locked });
+  }, [selectedBlockId, selectedBlock, updateBlockProps]);
 
   const handleDeleteConfirm = useCallback(() => {
     if (!selectedBlockId) return;
@@ -572,6 +1076,7 @@ export function PropertiesPanel({ className = '', daisyui = false }: PropertiesP
             block={selectedBlock as CanvasContentBlock & { type: 'text' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
+            disabled={isLocked}
           />
         );
       case 'button':
@@ -580,6 +1085,7 @@ export function PropertiesPanel({ className = '', daisyui = false }: PropertiesP
             block={selectedBlock as CanvasContentBlock & { type: 'button' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
+            disabled={isLocked}
           />
         );
       case 'image':
@@ -588,6 +1094,7 @@ export function PropertiesPanel({ className = '', daisyui = false }: PropertiesP
             block={selectedBlock as CanvasContentBlock & { type: 'image' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
+            disabled={isLocked}
           />
         );
       case 'heading':
@@ -596,6 +1103,7 @@ export function PropertiesPanel({ className = '', daisyui = false }: PropertiesP
             block={selectedBlock as CanvasContentBlock & { type: 'heading' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
+            disabled={isLocked}
           />
         );
       case 'divider':
@@ -698,8 +1206,41 @@ export function PropertiesPanel({ className = '', daisyui = false }: PropertiesP
             <X size={20} />
           </button>
         </div>
-        <div className="p-6 pb-8 overflow-y-auto flex-1">{renderPropsForm()}</div>
-        {['text', 'button', 'image', 'heading'].includes(selectedBlock.type) ? (
+        <div className="p-6 pb-8 overflow-y-auto flex-1">
+          {unlockable && !isLocked && (
+            <LockedToggle
+              locked={!!selectedBlock.locked}
+              onToggle={handleToggleLocked}
+              daisyui={daisyui}
+            />
+          )}
+          {isLocked && (
+            <div
+              className={clsx('mb-6 p-4 rounded-lg border-l-4 text-sm', {
+                'bg-gray-50 border-gray-400 text-gray-700': !daisyui,
+                'bg-base-200 border-base-content/40 text-base-content/80': daisyui,
+              })}
+            >
+              <div className="font-medium mb-1">
+                {!unlockable ? 'Template-locked content' : 'Read-only mode'}
+              </div>
+              <div
+                className={clsx('text-xs', {
+                  'text-gray-600': !daisyui,
+                  'text-base-content/70': daisyui,
+                })}
+              >
+                {!unlockable
+                  ? 'This element is locked by the template and cannot be unlocked'
+                  : selectedBlock.locked
+                    ? 'Unlock this block to edit its properties'
+                    : 'This block is in a locked container and cannot be edited'}
+              </div>
+            </div>
+          )}
+          <div className={clsx({ 'opacity-60': isLocked })}>{renderPropsForm()}</div>
+        </div>
+        {['text', 'button', 'image', 'heading'].includes(selectedBlock.type) && !isLocked ? (
           <div
             className={clsx('px-6 pb-6 pt-4 border-t', {
               'border-gray-100': !daisyui,

@@ -6,6 +6,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  closestCorners,
 } from '@dnd-kit/core';
 import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
@@ -25,6 +26,9 @@ import {
   moveRowToSection,
   moveColumnToRow,
   moveSectionToPosition,
+  createBlockFromSidebar,
+  addBlockToColumnAtIndex,
+  addRowToSection,
 } from '../utils/drag-drop';
 import { createEmptySection } from '../utils/document';
 import type { CanvasSection, CanvasDocument } from '../types/schema';
@@ -33,6 +37,8 @@ export interface EmailEditorProps {
   showHeader?: boolean;
   className?: string;
   daisyui?: boolean;
+  /** When false, locked items cannot be unlocked and will not accept any drops */
+  unlockable?: boolean;
   /** Initial JSON document to load into the editor */
   initialDocument?: CanvasDocument;
   /** Callback fired whenever the document changes (for real-time updates) */
@@ -45,12 +51,66 @@ export function EmailEditor({
   showHeader = true,
   className = '',
   daisyui = false,
+  unlockable = true,
   initialDocument,
   onDocumentChange,
 }: EmailEditorProps) {
   const { document, setDocument } = useCanvasStore();
   const sections = document.sections;
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  const getPointerCenter = (
+    event: DragEndEvent,
+    fallback?: { top: number; left: number; width: number; height: number },
+  ) => {
+    const current = event.active.rect.current;
+    const rect = current.translated || current.initial;
+    if (
+      rect &&
+      rect.left != null &&
+      rect.top != null &&
+      rect.width != null &&
+      rect.height != null
+    ) {
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      return { x, y };
+    }
+    if (fallback) {
+      return { x: fallback.left + fallback.width / 2, y: fallback.top + fallback.height / 2 };
+    }
+    return { x: 0, y: 0 };
+  };
+
+  // Helper functions to check if containers are locked
+  const isColumnLocked = (columnId: string): boolean => {
+    for (const section of sections) {
+      for (const row of section.rows) {
+        const column = row.columns.find((col) => col.id === columnId);
+        if (column) {
+          // Check if column OR any parent container is locked
+          return !!(column.locked || row.locked || section.locked);
+        }
+      }
+    }
+    return false;
+  };
+
+  const isRowLocked = (rowId: string): boolean => {
+    for (const section of sections) {
+      const row = section.rows.find((r) => r.id === rowId);
+      if (row) {
+        // Check if row OR parent section is locked
+        return !!(row.locked || section.locked);
+      }
+    }
+    return false;
+  };
+
+  const isSectionLocked = (sectionId: string): boolean => {
+    const section = sections.find((s) => s.id === sectionId);
+    return !!section?.locked;
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -115,15 +175,127 @@ export function EmailEditor({
     });
 
     // Handle sidebar item drops (structure and content blocks)
-    if (activeId.startsWith('structure-') || activeId.startsWith('block-')) {
+    if (activeId.startsWith('structure-')) {
       const result = handleSidebarDrop(activeId, overId, sections);
-
       if (result) {
         commitSections(() => result);
       } else {
         console.log('🚫 Drop not allowed:', { activeId, overId });
       }
+      return;
+    }
 
+    if (activeId.startsWith('block-')) {
+      const block = createBlockFromSidebar(activeId as unknown as 'block-heading');
+
+      if (overData?.type === 'canvas-block') {
+        const targetPosition = findBlockPosition(sections, overData.blockId);
+        if (!targetPosition) {
+          return;
+        }
+        // Check if target column is locked
+        if (isColumnLocked(targetPosition.columnId)) {
+          console.log('🚫 Cannot drop into locked column');
+          return;
+        }
+        const overRect = event.over?.rect;
+        const pointer = getPointerCenter(event, overRect);
+        const insertAfter = overRect ? pointer.y > overRect.top + overRect.height / 2 : false;
+        const targetIndex = targetPosition.blockIndex + (insertAfter ? 1 : 0);
+        commitSections((previous) =>
+          addBlockToColumnAtIndex(previous, targetPosition.columnId, block, targetIndex),
+        );
+        return;
+      }
+
+      if (overData?.type === 'canvas-column') {
+        // Check if target column is locked
+        if (isColumnLocked(overData.columnId)) {
+          console.log('🚫 Cannot drop into locked column');
+          return;
+        }
+        const targetPosition = findColumnPosition(sections, overData.columnId);
+        const overRect = event.over?.rect;
+        const pointer = getPointerCenter(event, overRect);
+        let targetIndex = targetPosition
+          ? targetPosition.column.blocks.length
+          : overData.blockCount;
+        if (overRect && targetPosition) {
+          const isTopHalf = pointer.y < overRect.top + overRect.height / 2;
+          targetIndex = isTopHalf ? 0 : targetPosition.column.blocks.length;
+        }
+        commitSections((previous) =>
+          addBlockToColumnAtIndex(previous, overData.columnId, block, targetIndex),
+        );
+        return;
+      }
+
+      if (overData?.type === 'canvas-row-container') {
+        // Check if target row is locked
+        if (isRowLocked(overData.rowId)) {
+          console.log('🚫 Cannot drop into locked row');
+          return;
+        }
+        const targetRow = findRowPosition(sections, overData.rowId);
+        if (!targetRow || targetRow.row.columns.length === 0) {
+          return;
+        }
+        const rowRect = event.over?.rect;
+        const pointer = getPointerCenter(event, rowRect);
+        let targetColumnIndex = 0;
+        if (rowRect) {
+          const relativeX = Math.max(0, Math.min(pointer.x - rowRect.left, rowRect.width));
+          const ratio = rowRect.width > 0 ? relativeX / rowRect.width : 0;
+          targetColumnIndex = Math.min(
+            targetRow.row.columns.length - 1,
+            Math.max(0, Math.floor(ratio * targetRow.row.columns.length)),
+          );
+        }
+        const columnId = targetRow.row.columns[targetColumnIndex].id;
+        const targetIndex = targetRow.row.columns[targetColumnIndex].blocks.length;
+        commitSections((previous) =>
+          addBlockToColumnAtIndex(previous, columnId, block, targetIndex),
+        );
+        return;
+      }
+
+      if (overData?.type === 'canvas-section') {
+        // Check if target section is locked
+        if (isSectionLocked(overData.sectionId)) {
+          console.log('🚫 Cannot drop into locked section');
+          return;
+        }
+        // Bubble into the section: ensure it has a row, then insert at end of first column
+        const sectionId = overData.sectionId;
+        commitSections((previous) => {
+          let next = previous;
+          const sectionIndex = next.findIndex((s) => s.id === sectionId);
+          if (sectionIndex !== -1) {
+            const targetSection = next[sectionIndex];
+            if (targetSection.rows.length === 0) {
+              next = addRowToSection(next, sectionId, 1);
+            }
+            const updatedSection = next.find((s) => s.id === sectionId)!;
+            const firstColumnId = updatedSection.rows[updatedSection.rows.length - 1].columns[0].id;
+            return addBlockToColumnAtIndex(
+              next,
+              firstColumnId,
+              block,
+              Infinity as unknown as number,
+            );
+          }
+          return previous;
+        });
+        return;
+      }
+
+      // Fallback to default handler
+      const result = handleSidebarDrop(activeId, overId, sections);
+      if (result) {
+        commitSections(() => result);
+      } else {
+        console.log('🚫 Drop not allowed (content fallback):', { activeId, overId });
+      }
       return;
     }
 
@@ -174,6 +346,11 @@ export function EmailEditor({
       }
 
       if (overData?.type === 'canvas-section') {
+        // Check if target section is locked
+        if (isSectionLocked(overData.sectionId)) {
+          console.log('🚫 Cannot move row to locked section');
+          return;
+        }
         commitSections((previous) =>
           moveRowToSection(
             previous,
@@ -242,6 +419,11 @@ export function EmailEditor({
 
       // Handle column dropped on row - append to end of row
       if (overData?.type === 'canvas-row-container') {
+        // Check if target row is locked
+        if (isRowLocked(overData.rowId)) {
+          console.log('🚫 Cannot move column to locked row');
+          return;
+        }
         commitSections((previous) =>
           moveColumnToRow(
             previous,
@@ -274,23 +456,47 @@ export function EmailEditor({
           return;
         }
 
+        // Check if target column is locked
+        if (isColumnLocked(targetPosition.columnId)) {
+          console.log('🚫 Cannot move block to locked column');
+          return;
+        }
+
+        // Insert before/after depending on pointer Y relative to target block center
+        const overRect = event.over?.rect;
+        const pointer = getPointerCenter(event, overRect);
+        const insertAfter = overRect ? pointer.y > overRect.top + overRect.height / 2 : false;
+        const targetIndex = targetPosition.blockIndex + (insertAfter ? 1 : 0);
+
         commitSections((previous) =>
           moveBlockToColumn(
             previous,
             sourceColumnId,
             targetPosition.columnId,
             blockIndex,
-            targetPosition.blockIndex,
+            targetIndex,
           ),
         );
         return;
       }
 
       if (overData?.type === 'canvas-column') {
+        // Check if target column is locked
+        if (isColumnLocked(overData.columnId)) {
+          console.log('🚫 Cannot move block to locked column');
+          return;
+        }
         const targetPosition = findColumnPosition(sections, overData.columnId);
-        const targetIndex = targetPosition
+        // If we have the column rect, drop to start or end depending on pointer Y
+        const overRect = event.over?.rect;
+        const pointer = getPointerCenter(event, overRect);
+        let targetIndex = targetPosition
           ? targetPosition.column.blocks.length
           : overData.blockCount;
+        if (overRect && targetPosition) {
+          const isTopHalf = pointer.y < overRect.top + overRect.height / 2;
+          targetIndex = isTopHalf ? 0 : targetPosition.column.blocks.length;
+        }
 
         commitSections((previous) =>
           moveBlockToColumn(previous, sourceColumnId, overData.columnId, blockIndex, targetIndex),
@@ -300,15 +506,32 @@ export function EmailEditor({
 
       // Allow dropping a block on a row: append to the first column of that row
       if (overData?.type === 'canvas-row-container') {
+        // Check if target row is locked
+        if (isRowLocked(overData.rowId)) {
+          console.log('🚫 Cannot move block to locked row');
+          return;
+        }
         const targetRow = findRowPosition(sections, overData.rowId);
         if (!targetRow || targetRow.row.columns.length === 0) {
           return;
         }
-        const firstColumnId = targetRow.row.columns[0].id;
-        const targetIndex = targetRow.row.columns[0].blocks.length;
+        // Choose target column based on pointer X position within the row rect
+        const rowRect = event.over?.rect;
+        const pointer = getPointerCenter(event, rowRect);
+        let targetColumnIndex = 0;
+        if (rowRect) {
+          const relativeX = Math.max(0, Math.min(pointer.x - rowRect.left, rowRect.width));
+          const ratio = rowRect.width > 0 ? relativeX / rowRect.width : 0;
+          targetColumnIndex = Math.min(
+            targetRow.row.columns.length - 1,
+            Math.max(0, Math.floor(ratio * targetRow.row.columns.length)),
+          );
+        }
+        const columnId = targetRow.row.columns[targetColumnIndex].id;
+        const targetIndex = targetRow.row.columns[targetColumnIndex].blocks.length;
 
         commitSections((previous) =>
-          moveBlockToColumn(previous, sourceColumnId, firstColumnId, blockIndex, targetIndex),
+          moveBlockToColumn(previous, sourceColumnId, columnId, blockIndex, targetIndex),
         );
         return;
       }
@@ -367,15 +590,18 @@ export function EmailEditor({
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
       <div className={clsx('w-full h-screen flex flex-col', className)}>
         {showHeader && <Header daisyui={daisyui} />}
-        <div className="flex h-full">
+        <div className="flex h-full overflow-hidden">
           <Sidebar daisyui={daisyui} />
-          <Main sections={sections} daisyui={daisyui} />
+          <div className="flex-1 h-full overflow-auto">
+            <Main sections={sections} daisyui={daisyui} unlockable={unlockable} />
+          </div>
         </div>
         <PropertiesPanel daisyui={daisyui} />
       </div>

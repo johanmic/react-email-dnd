@@ -33,13 +33,17 @@ type CanvasAction =
   | { type: 'undo' }
   | { type: 'selectBlock'; blockId: string | null }
   | { type: 'updateBlockProps'; blockId: string; props: Record<string, unknown> }
-  | { type: 'setPreviewMode'; mode: 'desktop' | 'mobile' };
+  | { type: 'setPreviewMode'; mode: 'desktop' | 'mobile' }
+  | { type: 'upsertVariable'; key: string; value: string }
+  | { type: 'deleteVariable'; key: string };
 
 interface CanvasProviderProps {
   children: ReactNode;
   initialDocument?: CanvasDocument;
   onSave?: (document: CanvasDocument) => void;
   onDocumentChange?: (document: CanvasDocument) => void;
+  /** Optional global upload handler. Should upload a File and resolve to its URL */
+  uploadFile?: (file: File) => Promise<string>;
 }
 
 export interface CanvasStoreValue {
@@ -49,6 +53,9 @@ export interface CanvasStoreValue {
   selectedBlockId: string | null;
   selectedBlock: CanvasContentBlock | null;
   previewMode: 'desktop' | 'mobile';
+  variables: Record<string, string>;
+  /** If provided by provider, components can use this to upload files */
+  uploadFile?: (file: File) => Promise<string>;
   updateTitle: (title: string) => void;
   setDocument: (
     document: CanvasDocument,
@@ -59,6 +66,8 @@ export interface CanvasStoreValue {
   selectBlock: (blockId: string | null) => void;
   updateBlockProps: (blockId: string, props: Record<string, unknown>) => void;
   setPreviewMode: (mode: 'desktop' | 'mobile') => void;
+  upsertVariable: (key: string, value: string) => void;
+  deleteVariable: (key: string) => void;
 }
 
 const CanvasStoreContext = createContext<CanvasStoreValue | null>(null);
@@ -188,6 +197,24 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         previewMode: action.mode,
       };
     }
+    case 'upsertVariable': {
+      const next = cloneCanvasDocument(state.present);
+      next.variables = { ...(next.variables ?? {}) };
+      next.variables[action.key] = action.value;
+      return pushToHistory(state, next);
+    }
+    case 'deleteVariable': {
+      const next = cloneCanvasDocument(state.present);
+      if (!next.variables) {
+        return state;
+      }
+      const { [action.key]: removed, ...rest } = next.variables;
+      if (typeof removed === 'undefined') {
+        return state;
+      }
+      next.variables = rest;
+      return pushToHistory(state, next);
+    }
     default:
       return state;
   }
@@ -198,6 +225,7 @@ export function CanvasProvider({
   initialDocument,
   onSave,
   onDocumentChange,
+  uploadFile,
 }: CanvasProviderProps) {
   const [state, dispatch] = useReducer(canvasReducer, initialDocument, createInitialState);
 
@@ -256,6 +284,14 @@ export function CanvasProvider({
     dispatch({ type: 'setPreviewMode', mode });
   }, []);
 
+  const upsertVariable = useCallback((key: string, value: string) => {
+    dispatch({ type: 'upsertVariable', key, value });
+  }, []);
+
+  const deleteVariable = useCallback((key: string) => {
+    dispatch({ type: 'deleteVariable', key });
+  }, []);
+
   const document = state.present;
   const isDirty = !documentsAreEqual(state.present, state.savedSnapshot);
   const selectedBlock = state.selectedBlockId
@@ -270,6 +306,8 @@ export function CanvasProvider({
       selectedBlockId: state.selectedBlockId,
       selectedBlock,
       previewMode: state.previewMode,
+      variables: document.variables ?? {},
+      uploadFile,
       updateTitle,
       setDocument,
       save,
@@ -277,6 +315,8 @@ export function CanvasProvider({
       selectBlock,
       updateBlockProps,
       setPreviewMode,
+      upsertVariable,
+      deleteVariable,
     }),
     [
       document,
@@ -285,6 +325,7 @@ export function CanvasProvider({
       state.selectedBlockId,
       selectedBlock,
       state.previewMode,
+      uploadFile,
       updateTitle,
       setDocument,
       save,
@@ -292,6 +333,8 @@ export function CanvasProvider({
       selectBlock,
       updateBlockProps,
       setPreviewMode,
+      upsertVariable,
+      deleteVariable,
     ],
   );
 

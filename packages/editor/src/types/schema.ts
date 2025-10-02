@@ -10,6 +10,11 @@ export interface DocumentMeta {
 export interface CanvasDocument {
   version: number;
   meta: DocumentMeta;
+  /**
+   * Key-value variables available for placeholder substitution in content.
+   * Example: { user_name: "Alice", order_id: "123" }
+   */
+  variables?: Record<string, string>;
   sections: CanvasSection[];
 }
 
@@ -22,16 +27,19 @@ export interface CanvasSection extends IdentifiedNode<'section'> {
   rows: CanvasRow[];
   backgroundColor?: string;
   padding?: string;
+  locked?: boolean;
 }
 
 export interface CanvasRow extends IdentifiedNode<'row'> {
   columns: CanvasColumn[];
   gutter?: number;
+  locked?: boolean;
 }
 
 export interface CanvasColumn extends IdentifiedNode<'column'> {
   width?: number;
   blocks: CanvasContentBlock[];
+  locked?: boolean;
 }
 
 export type CanvasContentBlock =
@@ -46,6 +54,7 @@ export type CanvasContentType = CanvasContentBlock['type'];
 
 export type CanvasBlockBase<Type extends CanvasContentType, Props> = IdentifiedNode<Type> & {
   props: Props;
+  locked?: boolean;
 };
 
 export interface ButtonBlockProps {
@@ -91,6 +100,8 @@ export interface ImageBlockProps {
   height?: number;
   align?: 'left' | 'center' | 'right';
   borderRadius?: number;
+  /** Optional URL used when `src` is empty */
+  placeholder?: string;
 }
 
 export type ImageBlock = CanvasBlockBase<'image', ImageBlockProps>;

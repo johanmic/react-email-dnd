@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
-import { DotsSixVerticalIcon, Trash } from '@phosphor-icons/react';
+import { DotsSixVerticalIcon, Trash, Lock, LockOpen } from '@phosphor-icons/react';
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -24,6 +24,7 @@ import { removeColumn, removeRow, removeSection } from '../utils/drag-drop';
 export interface CanvasProps {
   sections: CanvasSection[];
   daisyui?: boolean;
+  unlockable?: boolean;
 }
 
 // Helper component for element type tabs
@@ -103,16 +104,344 @@ function renderBlock(block: CanvasContentBlock, daisyui?: boolean) {
   }
 }
 
+// Lock and Delete button components
+function ColumnLockButton({
+  columnId,
+  locked,
+  daisyui,
+  unlockable,
+}: {
+  columnId: string;
+  locked: boolean;
+  daisyui?: boolean;
+  unlockable?: boolean;
+}) {
+  const { document, setDocument } = useCanvasStore();
+
+  // Don't render if not unlockable
+  if (!unlockable) {
+    return null;
+  }
+
+  const toggleLock = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newLockedState = !locked;
+
+    // Cascading lock: lock/unlock all children (blocks)
+    const nextSections = document.sections.map((section) => ({
+      ...section,
+      rows: section.rows.map((row) => ({
+        ...row,
+        columns: row.columns.map((col) => {
+          if (col.id !== columnId) return col;
+
+          return {
+            ...col,
+            locked: newLockedState,
+            blocks: col.blocks.map((block) => ({
+              ...block,
+              locked: newLockedState,
+            })),
+          };
+        }),
+      })),
+    }));
+    setDocument({ ...document, sections: nextSections });
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={locked ? 'Unlock column' : 'Lock column'}
+      className={clsx(
+        'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+        {
+          'bg-amber-50 text-amber-600 hover:bg-amber-100': !daisyui && locked,
+          'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !locked,
+          'bg-warning/10 text-warning hover:bg-warning/20': daisyui && locked,
+          'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !locked,
+        },
+      )}
+      onClick={toggleLock}
+    >
+      {locked ? <Lock size={16} weight="bold" /> : <LockOpen size={16} weight="bold" />}
+    </button>
+  );
+}
+
+function ColumnDeleteButton({ columnId, daisyui }: { columnId: string; daisyui?: boolean }) {
+  const { document, setDocument } = useCanvasStore();
+  const [open, setOpen] = useState(false);
+
+  const onConfirm = () => {
+    const next = removeColumn(document.sections, columnId);
+    setDocument({ ...document, sections: next });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Delete column"
+        className={clsx(
+          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+          {
+            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
+            'bg-error/10 text-error hover:bg-error/20': daisyui,
+          },
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        <Trash size={16} weight="bold" />
+      </button>
+      <ConfirmModal
+        open={open}
+        daisyui={daisyui}
+        title="Delete column?"
+        description="This will remove the column and all its content blocks."
+        confirmLabel="Delete"
+        onCancel={() => setOpen(false)}
+        onConfirm={onConfirm}
+      />
+    </>
+  );
+}
+
+function RowLockButton({
+  rowId,
+  locked,
+  daisyui,
+  unlockable,
+}: {
+  rowId: string;
+  locked: boolean;
+  daisyui?: boolean;
+  unlockable?: boolean;
+}) {
+  const { document, setDocument } = useCanvasStore();
+
+  // Don't render if not unlockable
+  if (!unlockable) {
+    return null;
+  }
+
+  const toggleLock = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newLockedState = !locked;
+
+    // Cascading lock: lock/unlock all children (columns, blocks)
+    const nextSections = document.sections.map((section) => ({
+      ...section,
+      rows: section.rows.map((row) => {
+        if (row.id !== rowId) return row;
+
+        return {
+          ...row,
+          locked: newLockedState,
+          columns: row.columns.map((col) => ({
+            ...col,
+            locked: newLockedState,
+            blocks: col.blocks.map((block) => ({
+              ...block,
+              locked: newLockedState,
+            })),
+          })),
+        };
+      }),
+    }));
+    setDocument({ ...document, sections: nextSections });
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={locked ? 'Unlock row' : 'Lock row'}
+      className={clsx(
+        'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+        {
+          'bg-amber-50 text-amber-600 hover:bg-amber-100': !daisyui && locked,
+          'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !locked,
+          'bg-warning/10 text-warning hover:bg-warning/20': daisyui && locked,
+          'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !locked,
+        },
+      )}
+      onClick={toggleLock}
+    >
+      {locked ? <Lock size={16} weight="bold" /> : <LockOpen size={16} weight="bold" />}
+    </button>
+  );
+}
+
+function RowDeleteButton({ rowId, daisyui }: { rowId: string; daisyui?: boolean }) {
+  const { document, setDocument } = useCanvasStore();
+  const [open, setOpen] = useState(false);
+
+  const onConfirm = () => {
+    const next = removeRow(document.sections, rowId);
+    setDocument({ ...document, sections: next });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Delete row"
+        className={clsx(
+          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+          {
+            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
+            'bg-error/10 text-error hover:bg-error/20': daisyui,
+          },
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        <Trash size={16} weight="bold" />
+      </button>
+      <ConfirmModal
+        open={open}
+        daisyui={daisyui}
+        title="Delete row?"
+        description="This will remove the row and all its columns and blocks."
+        confirmLabel="Delete"
+        onCancel={() => setOpen(false)}
+        onConfirm={onConfirm}
+      />
+    </>
+  );
+}
+
+function SectionLockButton({
+  sectionId,
+  locked,
+  daisyui,
+  unlockable,
+}: {
+  sectionId: string;
+  locked: boolean;
+  daisyui?: boolean;
+  unlockable?: boolean;
+}) {
+  const { document, setDocument } = useCanvasStore();
+
+  // Don't render if not unlockable
+  if (!unlockable) {
+    return null;
+  }
+
+  const toggleLock = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newLockedState = !locked;
+
+    // Cascading lock: lock/unlock all children (rows, columns, blocks)
+    const nextSections = document.sections.map((section) => {
+      if (section.id !== sectionId) return section;
+
+      return {
+        ...section,
+        locked: newLockedState,
+        rows: section.rows.map((row) => ({
+          ...row,
+          locked: newLockedState,
+          columns: row.columns.map((col) => ({
+            ...col,
+            locked: newLockedState,
+            blocks: col.blocks.map((block) => ({
+              ...block,
+              locked: newLockedState,
+            })),
+          })),
+        })),
+      };
+    });
+    setDocument({ ...document, sections: nextSections });
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={locked ? 'Unlock section' : 'Lock section'}
+      className={clsx(
+        'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+        {
+          'bg-amber-50 text-amber-600 hover:bg-amber-100': !daisyui && locked,
+          'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !locked,
+          'bg-warning/10 text-warning hover:bg-warning/20': daisyui && locked,
+          'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !locked,
+        },
+      )}
+      onClick={toggleLock}
+    >
+      {locked ? <Lock size={16} weight="bold" /> : <LockOpen size={16} weight="bold" />}
+    </button>
+  );
+}
+
+function SectionDeleteButton({ sectionId, daisyui }: { sectionId: string; daisyui?: boolean }) {
+  const { document, setDocument } = useCanvasStore();
+  const [open, setOpen] = useState(false);
+
+  const onConfirm = () => {
+    const next = removeSection(document.sections, sectionId);
+    setDocument({ ...document, sections: next });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Delete section"
+        className={clsx(
+          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+          {
+            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
+            'bg-error/10 text-error hover:bg-error/20': daisyui,
+          },
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        <Trash size={16} weight="bold" />
+      </button>
+      <ConfirmModal
+        open={open}
+        daisyui={daisyui}
+        title="Delete section?"
+        description="This will remove the section and all its rows, columns, and blocks."
+        confirmLabel="Delete"
+        onCancel={() => setOpen(false)}
+        onConfirm={onConfirm}
+      />
+    </>
+  );
+}
+
 function CanvasBlockView({
   block,
   columnId,
   daisyui,
+  isParentLocked = false,
 }: {
   block: CanvasContentBlock;
   columnId: string;
   daisyui?: boolean;
+  isParentLocked?: boolean;
 }) {
   const { selectBlock, selectedBlockId } = useCanvasStore();
+
+  // Block is disabled if it's locked, or if any parent container is locked
+  const isDisabled = !!(block.locked || isParentLocked);
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-block-${block.id}`,
     data: {
@@ -120,6 +449,7 @@ function CanvasBlockView({
       blockId: block.id,
       columnId,
     },
+    disabled: isDisabled,
   });
 
   // Make each block a droppable target to support block-to-block reordering
@@ -130,6 +460,7 @@ function CanvasBlockView({
       blockId: block.id,
       columnId,
     },
+    disabled: isDisabled,
   });
 
   const isSelected = selectedBlockId === block.id;
@@ -160,28 +491,31 @@ function CanvasBlockView({
           'shadow-xl border-primary/30': isDragging && daisyui,
           'outline outline-base-200/60 outline-offset-2': isSelected && !daisyui,
           'outline outline-primary/60 outline-offset-2': isSelected && daisyui,
+          'opacity-70': isDisabled,
         },
       )}
       onClick={handleBlockClick}
     >
-      <button
-        type="button"
-        className={clsx(
-          'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-          {
-            'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-              !daisyui,
-            'bg-base-200 border text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-              daisyui,
-          },
-        )}
-        aria-label="Drag to reorder"
-        {...listeners}
-        {...attributes}
-        onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
-      >
-        <DotsSixVerticalIcon size={16} weight="bold" />
-      </button>
+      {!isDisabled && (
+        <button
+          type="button"
+          className={clsx(
+            'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+            {
+              'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                !daisyui,
+              'bg-base-200 border text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                daisyui,
+            },
+          )}
+          aria-label="Drag to reorder"
+          {...listeners}
+          {...attributes}
+          onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
+        >
+          <DotsSixVerticalIcon size={16} weight="bold" />
+        </button>
+      )}
       <div className="flex-1">{renderBlock(block, daisyui)}</div>
     </div>
   );
@@ -192,12 +526,21 @@ function CanvasColumnView({
   rowId,
   sectionId,
   daisyui,
+  row,
+  section,
+  unlockable = true,
 }: {
   column: CanvasColumn;
   rowId: string;
   sectionId: string;
   daisyui?: boolean;
+  row: CanvasRow;
+  section: CanvasSection;
+  unlockable?: boolean;
 }) {
+  // Column is disabled if it's locked, or if its parent row or section is locked
+  const isDisabled = !!(column.locked || row.locked || section.locked);
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-column-${column.id}`,
     data: {
@@ -206,6 +549,7 @@ function CanvasColumnView({
       rowId,
       sectionId,
     },
+    disabled: isDisabled,
   });
 
   const { isOver, setNodeRef: setDroppableNodeRef } = useDroppable({
@@ -217,6 +561,7 @@ function CanvasColumnView({
       sectionId,
       blockCount: column.blocks.length,
     },
+    disabled: isDisabled,
   });
 
   const sortableStyle: CSSProperties = {
@@ -234,31 +579,46 @@ function CanvasColumnView({
         'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition',
         {
           'border-purple-300/30 bg-purple-50/40': !daisyui,
-          'border-secondary/50': daisyui,
+          'border-accent/50 bg-accent/10': daisyui,
           'bg-purple-100/60 shadow-lg': isDragging && !daisyui,
           'bg-base-300/60 shadow-lg': isDragging && daisyui,
+          'opacity-70': isDisabled,
+          '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
+            isOver && isDisabled,
         },
       )}
     >
       <ElementTab type="Column" daisyui={daisyui} />
-      <div className="flex justify-end gap-2" {...attributes} {...listeners}>
-        <button
-          type="button"
-          className={clsx(
-            'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-            {
-              'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-                !daisyui,
-              'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-                daisyui,
-            },
-          )}
-          aria-label="Drag column"
-          onMouseDown={() => console.log('🟪 Column drag handle clicked:', column.id)}
-        >
-          <DotsSixVerticalIcon size={16} weight="bold" />
-        </button>
-        <ColumnDeleteButton columnId={column.id} daisyui={daisyui} />
+      <div className="flex justify-end gap-2">
+        <ColumnLockButton
+          columnId={column.id}
+          locked={!!column.locked}
+          daisyui={daisyui}
+          unlockable={unlockable}
+        />
+        {!isDisabled && (
+          <>
+            <button
+              type="button"
+              className={clsx(
+                'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+                {
+                  'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                    !daisyui,
+                  'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                    daisyui,
+                },
+              )}
+              aria-label="Drag column"
+              onMouseDown={() => console.log('🟪 Column drag handle clicked:', column.id)}
+              {...attributes}
+              {...listeners}
+            >
+              <DotsSixVerticalIcon size={16} weight="bold" />
+            </button>
+            <ColumnDeleteButton columnId={column.id} daisyui={daisyui} />
+          </>
+        )}
       </div>
       <SortableContext
         id={`column-${column.id}`}
@@ -270,7 +630,9 @@ function CanvasColumnView({
           className={clsx('min-h-[140px] p-4 rounded-lg border border-dashed transition', {
             'border-slate-300/20 bg-white/70': !daisyui,
             'border-base-300/20 bg-base-100/70': daisyui,
-            'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver,
+            'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver && !isDisabled,
+            '!border-red-600/80 !bg-red-100/30 shadow-[0_0_0_3px_rgba(220,38,38,0.15)]':
+              isOver && isDisabled,
           })}
         >
           {column.blocks.length === 0 ? (
@@ -289,6 +651,7 @@ function CanvasColumnView({
                 block={block}
                 columnId={column.id}
                 daisyui={daisyui}
+                isParentLocked={isDisabled}
               />
             ))
           )}
@@ -302,12 +665,20 @@ function CanvasRowView({
   row,
   sectionId,
   daisyui,
+  section,
+  unlockable = true,
 }: {
   row: CanvasRow;
   sectionId: string;
   daisyui?: boolean;
+  section: CanvasSection;
+  unlockable?: boolean;
 }) {
   const { previewMode } = useCanvasStore();
+
+  // Row is disabled if it's locked, or if its parent section is locked
+  const isDisabled = !!(row.locked || section.locked);
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-row-${row.id}`,
     data: {
@@ -315,6 +686,7 @@ function CanvasRowView({
       rowId: row.id,
       sectionId,
     },
+    disabled: isDisabled,
   });
 
   const { isOver, setNodeRef: setRowDroppableRef } = useDroppable({
@@ -325,6 +697,7 @@ function CanvasRowView({
       sectionId,
       columnCount: row.columns.length,
     },
+    disabled: isDisabled,
   });
 
   const style: CSSProperties = {
@@ -350,32 +723,47 @@ function CanvasRowView({
         'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition',
         {
           'border-green-300/30 bg-green-50/40': !daisyui,
-          'border-secondary/30 bg-base-100/40': daisyui,
+          'border-secondary/30 bg-secondary/10': daisyui,
           'bg-green-100/60 shadow-lg': isDragging && !daisyui,
           'bg-base-200/60 shadow-lg': isDragging && daisyui,
-          'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver,
+          'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver && !isDisabled,
+          'opacity-70': isDisabled,
+          '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
+            isOver && isDisabled,
         },
       )}
     >
       <ElementTab type="Row" daisyui={daisyui} />
-      <div className="flex justify-end gap-2" {...attributes} {...listeners}>
-        <button
-          type="button"
-          className={clsx(
-            'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-            {
-              'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-                !daisyui,
-              'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-                daisyui,
-            },
-          )}
-          aria-label="Drag row"
-          onMouseDown={() => console.log('🟫 Row drag handle clicked:', row.id)}
-        >
-          <DotsSixVerticalIcon size={16} weight="bold" />
-        </button>
-        <RowDeleteButton rowId={row.id} daisyui={daisyui} />
+      <div className="flex justify-end gap-2">
+        <RowLockButton
+          rowId={row.id}
+          locked={!!row.locked}
+          daisyui={daisyui}
+          unlockable={unlockable}
+        />
+        {!isDisabled && (
+          <>
+            <button
+              type="button"
+              className={clsx(
+                'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+                {
+                  'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                    !daisyui,
+                  'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                    daisyui,
+                },
+              )}
+              aria-label="Drag row"
+              onMouseDown={() => console.log('🟫 Row drag handle clicked:', row.id)}
+              {...attributes}
+              {...listeners}
+            >
+              <DotsSixVerticalIcon size={16} weight="bold" />
+            </button>
+            <RowDeleteButton rowId={row.id} daisyui={daisyui} />
+          </>
+        )}
       </div>
       <SortableContext
         id={`row-${row.id}`}
@@ -403,6 +791,9 @@ function CanvasRowView({
                 rowId={row.id}
                 sectionId={sectionId}
                 daisyui={daisyui}
+                row={row}
+                section={section}
+                unlockable={unlockable}
               />
             ))
           )}
@@ -412,7 +803,15 @@ function CanvasRowView({
   );
 }
 
-function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisyui?: boolean }) {
+function CanvasSectionView({
+  section,
+  daisyui,
+  unlockable = true,
+}: {
+  section: CanvasSection;
+  daisyui?: boolean;
+  unlockable?: boolean;
+}) {
   const {
     attributes,
     listeners,
@@ -425,6 +824,7 @@ function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisy
       type: 'canvas-section-item',
       sectionId: section.id,
     },
+    disabled: section.locked,
   });
 
   const { isOver, setNodeRef: setDroppableNodeRef } = useDroppable({
@@ -434,6 +834,7 @@ function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisy
       sectionId: section.id,
       rowCount: section.rows.length,
     },
+    disabled: section.locked,
   });
 
   const style: CSSProperties = {
@@ -447,32 +848,45 @@ function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisy
     <div
       ref={setDraggableNodeRef}
       style={style}
-      className={clsx('relative flex flex-col gap-3 mb-4 w-full max-w-full', {
-        'opacity-70 shadow-2xl': isDragging,
+      className={clsx('relative flex flex-col gap-3 mb-4 w-full max-w-full transition', {
+        'shadow-2xl': isDragging,
         'bg-base-200 bg-opacity-50': daisyui,
+        'opacity-70': section.locked || isDragging,
       })}
-      {...attributes}
-      {...listeners}
-      onMouseDown={() => console.log('🟦 Section drag handle clicked:', section.id)}
+      onMouseDown={() =>
+        !section.locked && console.log('🟦 Section drag handle clicked:', section.id)
+      }
     >
       <ElementTab type="Section" daisyui={daisyui} />
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          className={clsx(
-            'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-            {
-              'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-                !daisyui,
-              'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-                daisyui,
-            },
-          )}
-          aria-label="Drag section"
-        >
-          <DotsSixVerticalIcon size={16} weight="bold" />
-        </button>
-        <SectionDeleteButton sectionId={section.id} daisyui={daisyui} />
+        <SectionLockButton
+          sectionId={section.id}
+          locked={!!section.locked}
+          daisyui={daisyui}
+          unlockable={unlockable}
+        />
+        {!section.locked && (
+          <>
+            <button
+              type="button"
+              className={clsx(
+                'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+                {
+                  'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                    !daisyui,
+                  'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                    daisyui,
+                },
+              )}
+              aria-label="Drag section"
+              {...attributes}
+              {...listeners}
+            >
+              <DotsSixVerticalIcon size={16} weight="bold" />
+            </button>
+            <SectionDeleteButton sectionId={section.id} daisyui={daisyui} />
+          </>
+        )}
       </div>
       <section
         ref={setDroppableNodeRef}
@@ -480,8 +894,11 @@ function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisy
           'flex flex-col gap-4 p-5 rounded-[0.9rem] border transition w-full max-w-full box-border',
           {
             'border-blue-300/30 bg-gradient-to-b from-blue-50/60 to-blue-100/40': !daisyui,
-            'border-primary/30 bg-gradient-to-b from-base-100/60 to-base-200/40': daisyui,
-            'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver,
+            'border-primary/30 bg-gradient-to-b from-primary/5 to-primary/10': daisyui,
+            'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]':
+              isOver && !section.locked,
+            '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
+              isOver && section.locked,
           },
         )}
       >
@@ -504,7 +921,14 @@ function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisy
             </div>
           ) : (
             section.rows.map((row) => (
-              <CanvasRowView key={row.id} row={row} sectionId={section.id} daisyui={daisyui} />
+              <CanvasRowView
+                key={row.id}
+                row={row}
+                sectionId={section.id}
+                daisyui={daisyui}
+                section={section}
+                unlockable={unlockable}
+              />
             ))
           )}
         </SortableContext>
@@ -513,7 +937,7 @@ function CanvasSectionView({ section, daisyui }: { section: CanvasSection; daisy
   );
 }
 
-export function Canvas({ sections, daisyui = false }: CanvasProps) {
+export function Canvas({ sections, daisyui = false, unlockable = true }: CanvasProps) {
   const { selectBlock } = useCanvasStore();
   const { isOver, setNodeRef } = useDroppable({
     id: 'canvas',
@@ -563,135 +987,14 @@ export function Canvas({ sections, daisyui = false }: CanvasProps) {
         </div>
       ) : (
         sections.map((section) => (
-          <CanvasSectionView key={section.id} section={section} daisyui={daisyui} />
+          <CanvasSectionView
+            key={section.id}
+            section={section}
+            daisyui={daisyui}
+            unlockable={unlockable}
+          />
         ))
       )}
     </div>
-  );
-}
-
-function ColumnDeleteButton({ columnId, daisyui }: { columnId: string; daisyui?: boolean }) {
-  const { document, setDocument } = useCanvasStore();
-  const [open, setOpen] = useState(false);
-
-  const onConfirm = () => {
-    const next = removeColumn(document.sections, columnId);
-    setDocument({ ...document, sections: next });
-    setOpen(false);
-  };
-
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="Delete column"
-        className={clsx(
-          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
-          {
-            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
-            'bg-error/10 text-error hover:bg-error/20': daisyui,
-          },
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        <Trash size={16} weight="bold" />
-      </button>
-      <ConfirmModal
-        open={open}
-        daisyui={daisyui}
-        title="Delete column?"
-        description="This will remove the column and all its content blocks."
-        confirmLabel="Delete"
-        onCancel={() => setOpen(false)}
-        onConfirm={onConfirm}
-      />
-    </>
-  );
-}
-
-function RowDeleteButton({ rowId, daisyui }: { rowId: string; daisyui?: boolean }) {
-  const { document, setDocument } = useCanvasStore();
-  const [open, setOpen] = useState(false);
-
-  const onConfirm = () => {
-    const next = removeRow(document.sections, rowId);
-    setDocument({ ...document, sections: next });
-    setOpen(false);
-  };
-
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="Delete row"
-        className={clsx(
-          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
-          {
-            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
-            'bg-error/10 text-error hover:bg-error/20': daisyui,
-          },
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        <Trash size={16} weight="bold" />
-      </button>
-      <ConfirmModal
-        open={open}
-        daisyui={daisyui}
-        title="Delete row?"
-        description="This will remove the row and all its columns and blocks."
-        confirmLabel="Delete"
-        onCancel={() => setOpen(false)}
-        onConfirm={onConfirm}
-      />
-    </>
-  );
-}
-
-function SectionDeleteButton({ sectionId, daisyui }: { sectionId: string; daisyui?: boolean }) {
-  const { document, setDocument } = useCanvasStore();
-  const [open, setOpen] = useState(false);
-
-  const onConfirm = () => {
-    const next = removeSection(document.sections, sectionId);
-    setDocument({ ...document, sections: next });
-    setOpen(false);
-  };
-
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="Delete section"
-        className={clsx(
-          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
-          {
-            'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
-            'bg-error/10 text-error hover:bg-error/20': daisyui,
-          },
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        <Trash size={16} weight="bold" />
-      </button>
-      <ConfirmModal
-        open={open}
-        daisyui={daisyui}
-        title="Delete section?"
-        description="This will remove the section and all its rows, columns, and blocks."
-        confirmLabel="Delete"
-        onCancel={() => setOpen(false)}
-        onConfirm={onConfirm}
-      />
-    </>
   );
 }

@@ -32,6 +32,7 @@ export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
     align = 'center',
     borderRadius = 0,
     daisyui = false,
+    placeholder,
   } = props;
 
   const wrapperStyle: CSSProperties = {
@@ -42,7 +43,7 @@ export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
   return (
     <div style={wrapperStyle}>
       <Img
-        src={src}
+        src={src || placeholder || imageDefaults.src}
         alt={alt}
         href={href}
         width={width}
