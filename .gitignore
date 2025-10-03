@@ -9,6 +9,8 @@
 .env.development
 .env.test
 .env.production
-*.md
+AGENTs.md    
+GEMINI.md
+
 node_modules
 dist
