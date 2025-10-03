@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { Img } from '@react-email/components';
 import { ImageSquareIcon } from '@phosphor-icons/react';
+import clsx from 'clsx';
 import type { BlockDefinition, ImageBlock, ImageBlockProps } from '../types/schema';
 
 export const imageDefaults: ImageBlockProps = {
@@ -21,8 +22,18 @@ export const imageDefinition: BlockDefinition<ImageBlock> = {
 
 export const ImageIcon = ImageSquareIcon;
 
-export function Image(props: ImageBlockProps) {
-  const { src, alt, href, width, height, align = 'center', borderRadius = 0 } = props;
+export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
+  const {
+    src,
+    alt,
+    href,
+    width,
+    height,
+    align = 'center',
+    borderRadius = 0,
+    daisyui = false,
+    placeholder,
+  } = props;
 
   const wrapperStyle: CSSProperties = {
     textAlign: align,
@@ -30,15 +41,18 @@ export function Image(props: ImageBlockProps) {
   };
 
   return (
-    <div style={wrapperStyle} className="email-dnd-image">
+    <div style={wrapperStyle}>
       <Img
-        src={src}
+        src={src || placeholder || imageDefaults.src}
         alt={alt}
         href={href}
         width={width}
         height={height}
+        className={clsx({
+          'rounded-lg': daisyui,
+        })}
         style={{
-          borderRadius,
+          borderRadius: daisyui ? undefined : borderRadius,
           display: 'inline-block',
           maxWidth: '100%',
         }}

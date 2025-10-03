@@ -8,9 +8,11 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
 
 export interface MainProps {
   sections: CanvasSection[];
+  daisyui?: boolean;
+  unlockable?: boolean;
 }
 
-export function Main({ sections }: MainProps) {
+export function Main({ sections, daisyui = false, unlockable = true }: MainProps) {
   const canvasStore = useContext(CanvasStoreContext);
   const placeholderSectionRef = useRef<CanvasSection | null>(null);
 
@@ -44,9 +46,17 @@ export function Main({ sections }: MainProps) {
 
   const normalizedSections = sections.length > 0 ? sections : [getPlaceholderSection()];
 
+  const previewMode = canvasStore?.previewMode ?? 'desktop';
+  const wrapperClasses =
+    previewMode === 'mobile'
+      ? 'mx-auto w-[390px] max-w-full border border-primary/50 rounded-xl overflow-hidden'
+      : 'mx-auto w-[720px] max-w-full';
+
   return (
     <div className="flex-1 p-2.5">
-      <Canvas sections={normalizedSections} />
+      <div className={wrapperClasses} aria-label={`Preview area (${previewMode})`}>
+        <Canvas sections={normalizedSections} daisyui={daisyui} unlockable={unlockable} />
+      </div>
     </div>
   );
 }

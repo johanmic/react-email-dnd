@@ -12,6 +12,7 @@
   "license": "ISC",
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.3",
+    "daisyui-theme-extractor": "^1.0.2",
     "vite": "^7.1.7"
   },
   "dependencies": {
@@ -19,10 +20,13 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@react-email/components": "0.5.5",
+    "@tailwindcss/vite": "^4.1.13",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "daisyui": "^5.1.24",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-email-dnd": "link:.."
+    "react-email-dnd": "link:..",
+    "tailwindcss": "^4.1.13"
   }
 }

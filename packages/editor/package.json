@@ -1,5 +1,5 @@
 {
-  "name": "react-email-dnd",
+  "name": "@react-email-dnd/editor",
   "version": "0.1.0",
   "description": "Composable drag-and-drop primitives for email layout canvases in React.",
   "keywords": [
@@ -28,16 +28,16 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup --no-dts",
-    "dev": "tsup --watch",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "vitest"
   },
   "peerDependencies": {
+    "@react-email/components": "0.5.5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@react-email/components": "0.5.5"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
@@ -48,17 +48,22 @@
     "@types/react-dom": "^19.1.9",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.44.1",
+    "@vitejs/plugin-react": "^4.3.0",
     "autoprefixer": "^10.4.21",
+    "daisyui": "^5.1.25",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.4.0",
     "jsdom": "^27.0.0",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.13",
-    "tsup": "^8.5.0",
     "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.1",
+    "vite": "^6.0.0",
+    "vite-plugin-dts": "^4.3.0",
     "vitest": "^3.2.4"
   },
   "dependencies": {

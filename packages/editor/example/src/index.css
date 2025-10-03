@@ -1,13 +1,8 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@import "tailwindcss";
+/* @plugin "daisyui"; */
+@plugin "daisyui" {
+    themes: light --default, dark --prefersdark, forest;
+  }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
+@source "../node_modules/react-email-dnd/**/*.{js,jsx,ts,tsx}";
+@source "../node_modules/react-email-dnd/dist/**/*.{js,jsx,ts,tsx}";
