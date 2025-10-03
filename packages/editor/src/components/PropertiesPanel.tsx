@@ -1240,7 +1240,8 @@ export function PropertiesPanel({
           )}
           <div className={clsx({ 'opacity-60': isLocked })}>{renderPropsForm()}</div>
         </div>
-        {['text', 'button', 'image', 'heading'].includes(selectedBlock.type) && !isLocked ? (
+        {['text', 'button', 'image', 'heading', 'divider'].includes(selectedBlock.type) &&
+        !isLocked ? (
           <div
             className={clsx('px-6 pb-6 pt-4 border-t', {
               'border-gray-100': !daisyui,
