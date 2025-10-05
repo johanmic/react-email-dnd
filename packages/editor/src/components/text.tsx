@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { Text as EmailText } from '@react-email/components';
 import { TextT } from '@phosphor-icons/react';
 import clsx from 'clsx';
-import type { BlockDefinition, TextBlock, TextBlockProps } from '../types/schema';
+import type { BlockDefinition, TextBlock, TextBlockProps } from '@react-email-dnd/shared';
 
 export const textDefaults: TextBlockProps = {
   content: 'Start typing your message here.',

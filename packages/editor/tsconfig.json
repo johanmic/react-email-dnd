@@ -12,7 +12,9 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "./",
     "paths": {
-      "@utils/*": ["src/utils/*"]
+      "@utils/*": ["src/utils/*"],
+      "@react-email-dnd/shared": ["../shared/src/index.ts"],
+      "@react-email-dnd/shared/*": ["../shared/src/*"]
     },
     "types": ["react", "react-dom"]
   },

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useRef } from 'react';
-import type { CanvasSection } from '../types/schema';
+import type { CanvasSection } from '@react-email-dnd/shared';
 import { createEmptySection } from '../utils/document';
 import { Canvas } from './Canvas';
 import { CanvasStoreContext } from './CanvasProvider';

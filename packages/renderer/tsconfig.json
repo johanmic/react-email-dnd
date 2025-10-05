@@ -1,21 +1,19 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2019",
+    "outDir": "dist",
     "module": "ESNext",
-    "lib": ["DOM", "DOM.Iterable", "ES2020"],
-    "moduleResolution": "Node",
-    "strict": true,
-    "jsx": "react-jsx",
+    "moduleResolution": "Bundler",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "types": ["react"],
     "baseUrl": "./",
     "paths": {
-      "@utils/*": ["src/utils/*"]
-    },
-    "types": ["react", "react-dom"]
+      "@react-email-dnd/shared": ["../shared/src/index.ts"],
+      "@react-email-dnd/shared/*": ["../shared/src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", "tsup.config.ts", "vitest.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

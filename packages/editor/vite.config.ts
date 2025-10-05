@@ -18,6 +18,11 @@ export default defineConfig({
       ignored: ['**/example/**'],
     },
   },
+  resolve: {
+    alias: {
+      '@react-email-dnd/shared': resolve(__dirname, '../shared/src'),
+    },
+  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
@@ -25,7 +30,7 @@ export default defineConfig({
       fileName: (format) => (format === 'es' ? 'index.mjs' : 'index.cjs'),
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
+      external: ['react', 'react-dom', '@react-email-dnd/shared'],
       output: {
         globals: {
           react: 'React',

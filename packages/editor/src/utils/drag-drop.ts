@@ -4,7 +4,7 @@ import type {
   CanvasColumn,
   CanvasContentBlock,
   BlockDefinition,
-} from '../types/schema';
+} from '@react-email-dnd/shared';
 import { createEmptySection, createEmptyRow, createContentBlock } from './document';
 import { buttonDefinition } from '../components/button';
 import { dividerDefinition } from '../components/divider';

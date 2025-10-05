@@ -31,7 +31,7 @@ import {
   addRowToSection,
 } from '../utils/drag-drop';
 import { createEmptySection } from '../utils/document';
-import type { CanvasSection, CanvasDocument } from '../types/schema';
+import type { CanvasSection, CanvasDocument } from '@react-email-dnd/shared';
 import clsx from 'clsx';
 export interface EmailEditorProps {
   showHeader?: boolean;
@@ -45,6 +45,8 @@ export interface EmailEditorProps {
   onDocumentChange?: (document: CanvasDocument) => void;
   /** Callback fired when the user clicks the save button */
   onSave?: (document: CanvasDocument) => void;
+  /** Array of predefined colors for color picker */
+  colors?: string[];
 }
 
 export function EmailEditor({
@@ -54,6 +56,7 @@ export function EmailEditor({
   unlockable = true,
   initialDocument,
   onDocumentChange,
+  colors,
 }: EmailEditorProps) {
   const { document, setDocument } = useCanvasStore();
   const sections = document.sections;
@@ -603,7 +606,7 @@ export function EmailEditor({
             <Main sections={sections} daisyui={daisyui} unlockable={unlockable} />
           </div>
         </div>
-        <PropertiesPanel daisyui={daisyui} />
+        <PropertiesPanel daisyui={daisyui} colors={colors} />
       </div>
       <DragOverlay>
         {activeId ? (

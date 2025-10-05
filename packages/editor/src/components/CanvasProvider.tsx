@@ -1,6 +1,6 @@
 import { createContext, useCallback, useMemo, useReducer, type ReactNode, useEffect } from 'react';
 import '../styles.css';
-import type { CanvasDocument, CanvasContentBlock } from '../types/schema';
+import type { CanvasDocument, CanvasContentBlock } from '@react-email-dnd/shared';
 import {
   cloneCanvasDocument,
   createEmptyDocument,

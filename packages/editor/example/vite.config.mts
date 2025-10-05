@@ -15,11 +15,12 @@ export default defineConfig({
       'react-dom': toRoot('node_modules/react-dom'),
       'react-email-dnd/styles.css': toRoot('../dist/styles.css'),
       'react-email-dnd': toRoot('../dist'),
+      '@react-email-dnd/shared': toRoot('../../shared/src'),
       '@react-email/components': toRoot('node_modules/@react-email/components'),
     },
   },
   optimizeDeps: {
-    exclude: ['react-email-dnd'],
+    exclude: ['react-email-dnd', '@react-email-dnd/shared'],
   },
   server: {
     fs: {

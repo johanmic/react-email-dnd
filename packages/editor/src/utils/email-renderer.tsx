@@ -18,7 +18,7 @@ import type {
   TextBlockProps,
   HeadingBlockProps,
   ImageBlockProps,
-} from '../types/schema';
+} from '@react-email-dnd/shared';
 import { Button } from '../components/button';
 import { Divider } from '../components/divider';
 import { Heading } from '../components/heading';

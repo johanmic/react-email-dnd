@@ -8,7 +8,7 @@ import type {
   StructurePaletteItem,
   TextBlock,
   HeadingBlock,
-} from '../types/schema';
+} from '@react-email-dnd/shared';
 import { buttonDefinition } from './button';
 import { dividerDefinition } from './divider';
 import { headingDefinition } from './heading';

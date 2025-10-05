@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { Button as EmailButton } from '@react-email/components';
 import { HandPointingIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
-import type { BlockDefinition, ButtonBlock, ButtonBlockProps } from '../types/schema';
+import type { BlockDefinition, ButtonBlock, ButtonBlockProps } from '@react-email-dnd/shared';
 
 export const buttonDefaults: ButtonBlockProps = {
   label: 'Call to action',

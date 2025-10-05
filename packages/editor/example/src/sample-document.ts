@@ -1,4 +1,4 @@
-import type { CanvasDocument } from 'react-email-dnd';
+import type { CanvasDocument } from '@react-email-dnd/shared';
 
 /**
  * Creates a sample CanvasDocument for testing

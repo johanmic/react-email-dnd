@@ -1,6 +1,59 @@
 import './styles.css';
 
-export * from './types/schema';
+export {
+  buttonBlockPropsSchema,
+  buttonBlockSchema,
+  canvasColumnSchema,
+  canvasContentBlockSchema,
+  canvasDocumentSchema,
+  canvasRowSchema,
+  canvasSectionSchema,
+  customBlockPropsSchema,
+  customBlockSchema,
+  dividerBlockPropsSchema,
+  dividerBlockSchema,
+  documentMetaSchema,
+  headingBlockPropsSchema,
+  headingBlockSchema,
+  imageBlockPropsSchema,
+  imageBlockSchema,
+  isCanvasDocument,
+  parseCanvasDocument,
+  safeParseCanvasDocument,
+  textBlockPropsSchema,
+  textBlockSchema,
+  validateCanvasDocument,
+} from '@react-email-dnd/shared';
+
+export type {
+  BlockDefinition,
+  ButtonBlock,
+  ButtonBlockProps,
+  CanvasBlockBase,
+  CanvasColumn,
+  CanvasContentBlock,
+  CanvasContentType,
+  CanvasDocument,
+  CanvasDocumentValidationResult,
+  CanvasRow,
+  CanvasSection,
+  ComponentLibrary,
+  CustomBlock,
+  CustomBlockProps,
+  DividerBlock,
+  DividerBlockProps,
+  DocumentMeta,
+  HeadingBlock,
+  HeadingBlockProps,
+  IdentifiedNode,
+  ImageBlock,
+  ImageBlockProps,
+  ReactEmailDnd,
+  ReactEmailDndDocument,
+  StructurePaletteItem,
+  TextBlock,
+  TextBlockProps,
+} from '@react-email-dnd/shared';
 
 export * from './components/button';
 export * from './components/divider';

@@ -1,4 +1,4 @@
-import type { CanvasDocument } from '../types/schema';
+import type { CanvasDocument } from '@react-email-dnd/shared';
 
 /**
  * Validates if a JSON object is a valid CanvasDocument

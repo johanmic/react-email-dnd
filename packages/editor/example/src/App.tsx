@@ -1,4 +1,5 @@
-import { EmailEditor, CanvasProvider, type CanvasDocument } from 'react-email-dnd';
+import { EmailEditor, CanvasProvider } from 'react-email-dnd';
+import type { CanvasDocument } from '@react-email-dnd/shared';
 import 'react-email-dnd/styles.css';
 import { useState, useCallback } from 'react';
 import { createSampleCanvasDocument } from './sample-document';

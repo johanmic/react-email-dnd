@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { Heading as EmailHeading } from '@react-email/components';
 import { TextHIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
-import type { BlockDefinition, HeadingBlock, HeadingBlockProps } from '../types/schema';
+import type { BlockDefinition, HeadingBlock, HeadingBlockProps } from '@react-email-dnd/shared';
 
 export const headingDefaults: HeadingBlockProps = {
   content: 'Add a clear headline',

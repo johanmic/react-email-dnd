@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { Img } from '@react-email/components';
 import { ImageSquareIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
-import type { BlockDefinition, ImageBlock, ImageBlockProps } from '../types/schema';
+import type { BlockDefinition, ImageBlock, ImageBlockProps } from '@react-email-dnd/shared';
 
 export const imageDefaults: ImageBlockProps = {
   src: 'https://placehold.co/600x200',

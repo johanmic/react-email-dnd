@@ -3,13 +3,9 @@ import { resolve } from 'path';
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
-    setupFiles: './tests/setup.ts',
-    globals: true,
+    environment: 'node',
     coverage: {
-      reporter: ['text', 'lcov', 'html'],
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/index.ts'],
+      reporter: ['text', 'lcov'],
     },
   },
   resolve: {

@@ -11,7 +11,7 @@ import clsx from 'clsx';
 // Note: React Email components are used for final email rendering,
 // but we use HTML elements for the drag-and-drop interface
 // import * as ReactEmailComponents from '@react-email/components';
-import type { CanvasColumn, CanvasContentBlock, CanvasRow, CanvasSection } from '../types/schema';
+import type { CanvasColumn, CanvasContentBlock, CanvasRow, CanvasSection } from '@react-email-dnd/shared';
 import { Button } from './button';
 import { Divider } from './divider';
 import { Heading } from './heading';

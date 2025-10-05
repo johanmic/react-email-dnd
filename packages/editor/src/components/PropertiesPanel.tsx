@@ -1,7 +1,7 @@
 // packages/editor/src/components/PropertiesPanel.tsx
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { X, Trash, Lock, LockOpen } from '@phosphor-icons/react';
+import { X, TrashIcon, LockIcon, LockOpenIcon, CaretDownIcon } from '@phosphor-icons/react';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import { ConfirmModal } from './ConfirmModal';
 import { removeBlock } from '../utils/drag-drop';
@@ -11,18 +11,21 @@ import type {
   ImageBlockProps,
   HeadingBlockProps,
   CanvasContentBlock,
-} from '../types/schema';
+} from '@react-email-dnd/shared';
 
 interface PropertiesPanelProps {
   className?: string;
   daisyui?: boolean;
+
   unlockable?: boolean;
+  colors?: string[];
 }
 
 interface TextPropsFormProps {
   block: CanvasContentBlock & { type: 'text' };
   onUpdate: (props: Partial<TextBlockProps>) => void;
   daisyui?: boolean;
+  colors?: string[];
 }
 
 interface LockedToggleProps {
@@ -35,18 +38,116 @@ interface HeadingPropsFormProps {
   block: CanvasContentBlock & { type: 'heading' };
   onUpdate: (props: Partial<HeadingBlockProps>) => void;
   daisyui?: boolean;
+  colors?: string[];
 }
 
 interface ButtonPropsFormProps {
   block: CanvasContentBlock & { type: 'button' };
   onUpdate: (props: Partial<ButtonBlockProps>) => void;
   daisyui?: boolean;
+  colors?: string[];
 }
 
 interface ImagePropsFormProps {
   block: CanvasContentBlock & { type: 'image' };
   onUpdate: (props: Partial<ImageBlockProps>) => void;
   daisyui?: boolean;
+  colors?: string[];
+}
+
+interface ColorPickerProps {
+  value: string;
+  onChange: (color: string) => void;
+  colors?: string[];
+  daisyui?: boolean;
+  disabled?: boolean;
+}
+
+function ColorPicker({ value, onChange, colors, daisyui, disabled }: ColorPickerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleColorSelect = (color: string) => {
+    onChange(color);
+    setIsOpen(false);
+  };
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+      setIsOpen(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  if (!colors || colors.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className={clsx(
+          'w-12 h-10 rounded-md border-2 transition-all duration-200 flex items-center justify-center',
+          {
+            'border-gray-300 hover:border-gray-400': !daisyui && !disabled,
+            'border-base-300 hover:border-primary/50': daisyui && !disabled,
+            'border-gray-200 opacity-50 cursor-not-allowed': disabled,
+            'border-blue-500 ring-2 ring-blue-500/20': isOpen && !disabled,
+          },
+        )}
+        style={{ backgroundColor: value }}
+        aria-label="Open color picker"
+      >
+        <CaretDownIcon
+          size={12}
+          className={clsx('transition-transform duration-200', {
+            'text-white': !daisyui,
+            'text-base-content': daisyui,
+            'rotate-180': isOpen,
+          })}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className={clsx('absolute top-full left-0 mt-2 p-3 rounded-lg border shadow-lg z-50', {
+            'bg-white border-gray-200': !daisyui,
+            'bg-base-100 border-base-300': daisyui,
+          })}
+        >
+          <div className="grid grid-cols-6 gap-2">
+            {colors.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => handleColorSelect(color)}
+                className={clsx(
+                  'w-8 h-8 rounded-full border-2 transition-all duration-200 hover:scale-110',
+                  {
+                    'border-gray-300 hover:border-gray-400': !daisyui,
+                    'border-base-300 hover:border-primary/50': daisyui,
+                    'ring-2 ring-blue-500 ring-offset-2': value === color,
+                  },
+                )}
+                style={{ backgroundColor: color }}
+                aria-label={`Select color ${color}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
@@ -61,7 +162,7 @@ function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
     >
       <div className="flex items-center gap-3">
         {locked ? (
-          <Lock
+          <LockIcon
             size={20}
             weight="bold"
             className={clsx({
@@ -70,7 +171,7 @@ function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
             })}
           />
         ) : (
-          <LockOpen
+          <LockOpenIcon
             size={20}
             weight="bold"
             className={clsx({
@@ -124,6 +225,7 @@ function HeadingPropsForm({
   block,
   onUpdate,
   daisyui,
+  colors,
   disabled = false,
 }: HeadingPropsFormProps & { disabled?: boolean }) {
   const props = block.props as HeadingBlockProps;
@@ -291,11 +393,12 @@ function HeadingPropsForm({
       <div>
         <label className={labelCls}>Color</label>
         <div className="flex items-center gap-3">
-          <input
-            type="color"
+          <ColorPicker
             value={props.color || '#1f2937'}
-            onChange={(e) => onUpdate({ color: e.target.value })}
-            className={colorBoxCls}
+            onChange={(color) => onUpdate({ color })}
+            colors={colors}
+            daisyui={daisyui}
+            disabled={disabled || block.locked}
           />
           <input
             type="text"
@@ -303,6 +406,7 @@ function HeadingPropsForm({
             onChange={(e) => onUpdate({ color: e.target.value })}
             className={inlineTextInputCls}
             placeholder="#1f2937"
+            disabled={disabled || block.locked}
           />
         </div>
       </div>
@@ -339,6 +443,7 @@ function TextPropsForm({
   block,
   onUpdate,
   daisyui,
+  colors,
   disabled = false,
 }: TextPropsFormProps & { disabled?: boolean }) {
   const props = block.props as TextBlockProps;
@@ -488,11 +593,12 @@ function TextPropsForm({
       <div>
         <label className={labelCls}>Color</label>
         <div className="flex items-center gap-3">
-          <input
-            type="color"
+          <ColorPicker
             value={props.color || '#1f2937'}
-            onChange={(e) => onUpdate({ color: e.target.value })}
-            className={colorBoxCls}
+            onChange={(color) => onUpdate({ color })}
+            colors={colors}
+            daisyui={daisyui}
+            disabled={disabled || block.locked}
           />
           <input
             type="text"
@@ -500,6 +606,7 @@ function TextPropsForm({
             onChange={(e) => onUpdate({ color: e.target.value })}
             className={inlineTextInputCls}
             placeholder="#1f2937"
+            disabled={disabled || block.locked}
           />
         </div>
       </div>
@@ -536,6 +643,7 @@ function ButtonPropsForm({
   block,
   onUpdate,
   daisyui,
+  colors,
   disabled = false,
 }: ButtonPropsFormProps & { disabled?: boolean }) {
   const props = block.props as ButtonBlockProps;
@@ -682,11 +790,12 @@ function ButtonPropsForm({
       <div>
         <label className={labelCls}>Background Color</label>
         <div className="flex items-center gap-3">
-          <input
-            type="color"
+          <ColorPicker
             value={props.backgroundColor || '#2563eb'}
-            onChange={(e) => onUpdate({ backgroundColor: e.target.value })}
-            className={colorBoxCls}
+            onChange={(color) => onUpdate({ backgroundColor: color })}
+            colors={colors}
+            daisyui={daisyui}
+            disabled={disabled || block.locked}
           />
           <input
             type="text"
@@ -694,6 +803,7 @@ function ButtonPropsForm({
             onChange={(e) => onUpdate({ backgroundColor: e.target.value })}
             className={inlineTextInputCls}
             placeholder="#2563eb"
+            disabled={disabled || block.locked}
           />
         </div>
       </div>
@@ -701,11 +811,12 @@ function ButtonPropsForm({
       <div>
         <label className={labelCls}>Text Color</label>
         <div className="flex items-center gap-3">
-          <input
-            type="color"
+          <ColorPicker
             value={props.color || '#ffffff'}
-            onChange={(e) => onUpdate({ color: e.target.value })}
-            className={colorBoxCls}
+            onChange={(color) => onUpdate({ color })}
+            colors={colors}
+            daisyui={daisyui}
+            disabled={disabled || block.locked}
           />
           <input
             type="text"
@@ -713,6 +824,7 @@ function ButtonPropsForm({
             onChange={(e) => onUpdate({ color: e.target.value })}
             className={inlineTextInputCls}
             placeholder="#ffffff"
+            disabled={disabled || block.locked}
           />
         </div>
       </div>
@@ -737,6 +849,7 @@ function ImagePropsForm({
   block,
   onUpdate,
   daisyui,
+  colors,
   disabled = false,
 }: ImagePropsFormProps & { disabled?: boolean }) {
   const props = block.props as ImageBlockProps;
@@ -989,6 +1102,7 @@ export function PropertiesPanel({
   className = '',
   daisyui = false,
   unlockable = true,
+  colors,
 }: PropertiesPanelProps) {
   const { document, setDocument, selectedBlockId, selectedBlock, selectBlock, updateBlockProps } =
     useCanvasStore();
@@ -1076,6 +1190,7 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'text' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
+            colors={colors}
             disabled={isLocked}
           />
         );
@@ -1085,6 +1200,7 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'button' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
+            colors={colors}
             disabled={isLocked}
           />
         );
@@ -1094,6 +1210,7 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'image' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
+            colors={colors}
             disabled={isLocked}
           />
         );
@@ -1103,6 +1220,7 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'heading' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
+            colors={colors}
             disabled={isLocked}
           />
         );
@@ -1259,7 +1377,7 @@ export function PropertiesPanel({
                 },
               )}
             >
-              <Trash size={18} />
+              <TrashIcon size={18} />
               Delete this block
             </button>
           </div>

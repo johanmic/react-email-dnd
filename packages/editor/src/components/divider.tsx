@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { Hr } from '@react-email/components';
 import { Minus } from '@phosphor-icons/react';
 import clsx from 'clsx';
-import type { BlockDefinition, DividerBlock, DividerBlockProps } from '../types/schema';
+import type { BlockDefinition, DividerBlock, DividerBlockProps } from '@react-email-dnd/shared';
 
 export const dividerDefaults: DividerBlockProps = {
   color: '#e5e7eb',

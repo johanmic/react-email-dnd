@@ -1,4 +1,4 @@
-import type { CanvasDocument, CanvasSection, CanvasContentBlock } from '../types/schema';
+import type { CanvasDocument, CanvasSection, CanvasContentBlock } from '@react-email-dnd/shared';
 
 const DEFAULT_TITLE = 'Untitled email';
 

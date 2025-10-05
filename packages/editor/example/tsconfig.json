@@ -5,7 +5,9 @@
     "paths": {
       "@utils/*": ["../src/utils/*"],
       "react-email-dnd": ["../src/index.ts"],
-      "react-email-dnd/*": ["../src/*"]
+      "react-email-dnd/*": ["../src/*"],
+      "@react-email-dnd/shared": ["../../shared/src/index.ts"],
+      "@react-email-dnd/shared/*": ["../../shared/src/*"]
     }
   },
   "include": ["src"]
