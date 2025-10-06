@@ -1,4 +1,10 @@
-import type { CanvasDocument, CanvasSection, CanvasContentBlock } from '@react-email-dnd/shared';
+import type {
+  CanvasColumn,
+  CanvasDocument,
+  CanvasRow,
+  CanvasSection,
+  CanvasContentBlock,
+} from '@react-email-dnd/shared';
 
 const DEFAULT_TITLE = 'Untitled email';
 
@@ -105,4 +111,53 @@ export function updateBlockProps(
   }
 
   return newDocument;
+}
+
+export function updateSectionProps(
+  document: CanvasDocument,
+  sectionId: string,
+  updatedProps: Partial<
+    Pick<CanvasSection, 'backgroundColor' | 'padding' | 'className' | 'locked'>
+  >,
+): CanvasDocument {
+  const next = cloneCanvasDocument(document);
+  next.sections = next.sections.map((section) =>
+    section.id === sectionId ? { ...section, ...updatedProps } : section,
+  );
+  return next;
+}
+
+export function updateRowProps(
+  document: CanvasDocument,
+  rowId: string,
+  updatedProps: Partial<
+    Pick<CanvasRow, 'backgroundColor' | 'padding' | 'className' | 'gutter' | 'locked'>
+  >,
+): CanvasDocument {
+  const next = cloneCanvasDocument(document);
+  next.sections = next.sections.map((section) => ({
+    ...section,
+    rows: section.rows.map((row) => (row.id === rowId ? { ...row, ...updatedProps } : row)),
+  }));
+  return next;
+}
+
+export function updateColumnProps(
+  document: CanvasDocument,
+  columnId: string,
+  updatedProps: Partial<
+    Pick<CanvasColumn, 'backgroundColor' | 'padding' | 'className' | 'width' | 'locked'>
+  >,
+): CanvasDocument {
+  const next = cloneCanvasDocument(document);
+  next.sections = next.sections.map((section) => ({
+    ...section,
+    rows: section.rows.map((row) => ({
+      ...row,
+      columns: row.columns.map((column) =>
+        column.id === columnId ? { ...column, ...updatedProps } : column,
+      ),
+    })),
+  }));
+  return next;
 }

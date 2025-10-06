@@ -1,6 +1,6 @@
 {
   "author": "Johan Mickelin",
-  "name": "react-email-dnd",
+  "name": "@react-email-dnd",
   "packageManager": "pnpm@9",
   "workspaces": [
     "packages/*"

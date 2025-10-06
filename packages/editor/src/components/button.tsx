@@ -51,13 +51,13 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
       <EmailButton
         href={href}
         className={clsx({
-          'btn btn-primary': daisyui,
+          'btn': daisyui,
         })}
         style={{
           display: 'inline-block',
-          backgroundColor: daisyui ? undefined : backgroundColor,
-          color: daisyui ? undefined : color,
-          borderRadius: daisyui ? undefined : borderRadius,
+          backgroundColor,
+          color,
+          borderRadius,
           padding: '12px 24px',
           textDecoration: 'none',
           fontWeight: 600,

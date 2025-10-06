@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useRef } from 'react';
-import type { CanvasSection } from '@react-email-dnd/shared';
+import type { CanvasSection, CustomBlockDefinition } from '@react-email-dnd/shared';
 import { createEmptySection } from '../utils/document';
 import { Canvas } from './Canvas';
 import { CanvasStoreContext } from './CanvasProvider';
@@ -10,9 +10,15 @@ export interface MainProps {
   sections: CanvasSection[];
   daisyui?: boolean;
   unlockable?: boolean;
+  customBlockRegistry?: Record<string, CustomBlockDefinition<any>>;
 }
 
-export function Main({ sections, daisyui = false, unlockable = true }: MainProps) {
+export function Main({
+  sections,
+  daisyui = false,
+  unlockable = true,
+  customBlockRegistry = {},
+}: MainProps) {
   const canvasStore = useContext(CanvasStoreContext);
   const placeholderSectionRef = useRef<CanvasSection | null>(null);
 
@@ -55,7 +61,12 @@ export function Main({ sections, daisyui = false, unlockable = true }: MainProps
   return (
     <div className="flex-1 p-2.5">
       <div className={wrapperClasses} aria-label={`Preview area (${previewMode})`}>
-        <Canvas sections={normalizedSections} daisyui={daisyui} unlockable={unlockable} />
+        <Canvas
+          sections={normalizedSections}
+          daisyui={daisyui}
+          unlockable={unlockable}
+          customBlockRegistry={customBlockRegistry}
+        />
       </div>
     </div>
   );

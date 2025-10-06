@@ -8,11 +8,15 @@ import {
   useSensors,
   closestCorners,
 } from '@dnd-kit/core';
-import { useState, useEffect } from 'react';
-import { Sidebar } from './Sidebar';
+import { useState, useEffect, useMemo } from 'react';
+import { Sidebar, DEFAULT_CONTENT_ITEMS } from './Sidebar';
 import { Main } from './Main';
 import { Header } from './Header';
-import { PropertiesPanel } from './PropertiesPanel';
+import {
+  PropertiesPanel,
+  type ColorOption,
+  type CustomBlockPropEditors,
+} from './PropertiesPanel';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import {
   handleSidebarDrop,
@@ -30,9 +34,16 @@ import {
   addBlockToColumnAtIndex,
   addRowToSection,
 } from '../utils/drag-drop';
-import { createEmptySection } from '../utils/document';
-import type { CanvasSection, CanvasDocument } from '@react-email-dnd/shared';
+import { createEmptySection, documentsAreEqual } from '../utils/document';
+import type {
+  CanvasSection,
+  CanvasDocument,
+  CanvasContentBlock,
+  BlockDefinition,
+  CustomBlockDefinition,
+} from '@react-email-dnd/shared';
 import clsx from 'clsx';
+import { buildBlockDefinitionMap, buildCustomBlockRegistry } from '../utils/block-library';
 export interface EmailEditorProps {
   showHeader?: boolean;
   className?: string;
@@ -46,7 +57,13 @@ export interface EmailEditorProps {
   /** Callback fired when the user clicks the save button */
   onSave?: (document: CanvasDocument) => void;
   /** Array of predefined colors for color picker */
-  colors?: string[];
+  colors?: ColorOption[];
+  /** Optional palette specifically for text colors; falls back to `colors` when omitted */
+  textColors?: ColorOption[];
+  /** Custom content blocks that should be available from the sidebar */
+  customBlocks?: CustomBlockDefinition<any>[];
+  /** Custom properties forms for custom content blocks, keyed by component name */
+  customBlockPropEditors?: CustomBlockPropEditors;
 }
 
 export function EmailEditor({
@@ -57,10 +74,30 @@ export function EmailEditor({
   initialDocument,
   onDocumentChange,
   colors,
+  textColors,
+  customBlocks = [],
+  customBlockPropEditors,
 }: EmailEditorProps) {
   const { document, setDocument } = useCanvasStore();
   const sections = document.sections;
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  const contentBlocks = useMemo(() => {
+    return [
+      ...DEFAULT_CONTENT_ITEMS,
+      ...customBlocks,
+    ] as BlockDefinition<CanvasContentBlock>[];
+  }, [customBlocks]);
+
+  const blockDefinitionMap = useMemo(
+    () => buildBlockDefinitionMap(contentBlocks),
+    [contentBlocks],
+  );
+
+  const customBlockRegistry = useMemo(
+    () => buildCustomBlockRegistry(contentBlocks),
+    [contentBlocks],
+  );
 
   const getPointerCenter = (
     event: DragEndEvent,
@@ -125,10 +162,16 @@ export function EmailEditor({
 
   // Handle initial document
   useEffect(() => {
-    if (initialDocument) {
-      setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
+    if (!initialDocument) {
+      return;
     }
-  }, [initialDocument, setDocument]);
+
+    if (documentsAreEqual(document, initialDocument)) {
+      return;
+    }
+
+    setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
+  }, [initialDocument, setDocument, document]);
 
   const commitSections = (updater: (sections: CanvasSection[]) => CanvasSection[]) => {
     const nextSections = updater(sections);
@@ -179,7 +222,7 @@ export function EmailEditor({
 
     // Handle sidebar item drops (structure and content blocks)
     if (activeId.startsWith('structure-')) {
-      const result = handleSidebarDrop(activeId, overId, sections);
+      const result = handleSidebarDrop(activeId, overId, sections, blockDefinitionMap);
       if (result) {
         commitSections(() => result);
       } else {
@@ -189,7 +232,11 @@ export function EmailEditor({
     }
 
     if (activeId.startsWith('block-')) {
-      const block = createBlockFromSidebar(activeId as unknown as 'block-heading');
+      const block = createBlockFromSidebar(activeId, blockDefinitionMap);
+      if (!block) {
+        console.warn('Unsupported block dragged from sidebar:', activeId);
+        return;
+      }
 
       if (overData?.type === 'canvas-block') {
         const targetPosition = findBlockPosition(sections, overData.blockId);
@@ -293,7 +340,7 @@ export function EmailEditor({
       }
 
       // Fallback to default handler
-      const result = handleSidebarDrop(activeId, overId, sections);
+      const result = handleSidebarDrop(activeId, overId, sections, blockDefinitionMap);
       if (result) {
         commitSections(() => result);
       } else {
@@ -601,12 +648,22 @@ export function EmailEditor({
       <div className={clsx('w-full h-screen flex flex-col', className)}>
         {showHeader && <Header daisyui={daisyui} />}
         <div className="flex h-full overflow-hidden">
-          <Sidebar daisyui={daisyui} />
+          <Sidebar daisyui={daisyui} blocks={contentBlocks} />
           <div className="flex-1 h-full overflow-auto">
-            <Main sections={sections} daisyui={daisyui} unlockable={unlockable} />
+            <Main
+              sections={sections}
+              daisyui={daisyui}
+              unlockable={unlockable}
+              customBlockRegistry={customBlockRegistry}
+            />
           </div>
         </div>
-        <PropertiesPanel daisyui={daisyui} colors={colors} />
+        <PropertiesPanel
+          daisyui={daisyui}
+          colors={colors}
+          textColors={textColors}
+          customBlockPropEditors={customBlockPropEditors}
+        />
       </div>
       <DragOverlay>
         {activeId ? (

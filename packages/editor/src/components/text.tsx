@@ -33,12 +33,14 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
     daisyui = false,
   } = props;
 
+  const resolvedFontWeight = fontWeight === 'medium' ? 500 : fontWeight;
+
   const style: CSSProperties = {
     textAlign: align,
-    fontSize: daisyui ? undefined : fontSize,
-    color: daisyui ? undefined : color,
-    lineHeight: daisyui ? undefined : lineHeight,
-    fontWeight: daisyui ? undefined : fontWeight,
+    fontSize,
+    color,
+    lineHeight,
+    fontWeight: resolvedFontWeight,
     margin: '0 0 16px',
   };
 

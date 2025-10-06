@@ -1,6 +1,20 @@
-import { createContext, useCallback, useMemo, useReducer, type ReactNode, useEffect } from 'react';
+import {
+  createContext,
+  useCallback,
+  useMemo,
+  useReducer,
+  type ReactNode,
+  useEffect,
+  useRef,
+} from 'react';
 import '../styles.css';
-import type { CanvasDocument, CanvasContentBlock } from '@react-email-dnd/shared';
+import type {
+  CanvasDocument,
+  CanvasContentBlock,
+  CanvasSection,
+  CanvasRow,
+  CanvasColumn,
+} from '@react-email-dnd/shared';
 import {
   cloneCanvasDocument,
   createEmptyDocument,
@@ -15,6 +29,11 @@ interface CanvasState {
   future: CanvasDocument[];
   savedSnapshot: CanvasDocument;
   selectedBlockId: string | null;
+  selectedContainer:
+    | { kind: 'section'; id: string }
+    | { kind: 'row'; id: string }
+    | { kind: 'column'; id: string }
+    | null;
   previewMode: 'desktop' | 'mobile';
 }
 
@@ -32,7 +51,23 @@ type CanvasAction =
   | { type: 'save'; snapshot: CanvasDocument }
   | { type: 'undo' }
   | { type: 'selectBlock'; blockId: string | null }
+  |
+    | {
+        type: 'selectContainer';
+        container:
+          | { kind: 'section'; id: string }
+          | { kind: 'row'; id: string }
+          | { kind: 'column'; id: string }
+          | null;
+      }
   | { type: 'updateBlockProps'; blockId: string; props: Record<string, unknown> }
+  | {
+      type: 'updateContainerProps';
+      target:
+        | { kind: 'section'; id: string; props: Partial<CanvasSection> }
+        | { kind: 'row'; id: string; props: Partial<CanvasRow> }
+        | { kind: 'column'; id: string; props: Partial<CanvasColumn> };
+    }
   | { type: 'setPreviewMode'; mode: 'desktop' | 'mobile' }
   | { type: 'upsertVariable'; key: string; value: string }
   | { type: 'deleteVariable'; key: string };
@@ -52,6 +87,11 @@ export interface CanvasStoreValue {
   canUndo: boolean;
   selectedBlockId: string | null;
   selectedBlock: CanvasContentBlock | null;
+  selectedContainer:
+    | { kind: 'section'; id: string }
+    | { kind: 'row'; id: string }
+    | { kind: 'column'; id: string }
+    | null;
   previewMode: 'desktop' | 'mobile';
   variables: Record<string, string>;
   /** If provided by provider, components can use this to upload files */
@@ -64,7 +104,20 @@ export interface CanvasStoreValue {
   save: () => void;
   undo: () => void;
   selectBlock: (blockId: string | null) => void;
+  selectContainer: (
+    container:
+      | { kind: 'section'; id: string }
+      | { kind: 'row'; id: string }
+      | { kind: 'column'; id: string }
+      | null,
+  ) => void;
   updateBlockProps: (blockId: string, props: Record<string, unknown>) => void;
+  updateContainerProps: (
+    target:
+      | { kind: 'section'; id: string; props: Partial<CanvasSection> }
+      | { kind: 'row'; id: string; props: Partial<CanvasRow> }
+      | { kind: 'column'; id: string; props: Partial<CanvasColumn> },
+  ) => void;
   setPreviewMode: (mode: 'desktop' | 'mobile') => void;
   upsertVariable: (key: string, value: string) => void;
   deleteVariable: (key: string) => void;
@@ -81,6 +134,7 @@ function createInitialState(initialDocument?: CanvasDocument): CanvasState {
     future: [],
     savedSnapshot: cloneCanvasDocument(base),
     selectedBlockId: null,
+    selectedContainer: null,
     previewMode: 'desktop',
   };
 }
@@ -98,6 +152,7 @@ function pushToHistory(state: CanvasState, nextDocument: CanvasDocument): Canvas
     future: [],
     savedSnapshot: state.savedSnapshot,
     selectedBlockId: state.selectedBlockId,
+    selectedContainer: state.selectedContainer,
     previewMode: state.previewMode,
   };
 }
@@ -115,6 +170,7 @@ function replaceHistory(
     future: [],
     savedSnapshot: markAsSaved ? cloneCanvasDocument(present) : state.savedSnapshot,
     selectedBlockId: state.selectedBlockId,
+    selectedContainer: state.selectedContainer,
     previewMode: state.previewMode,
   };
 }
@@ -175,6 +231,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         future: [cloneCanvasDocument(state.present), ...state.future],
         savedSnapshot: state.savedSnapshot,
         selectedBlockId: state.selectedBlockId,
+        selectedContainer: state.selectedContainer,
         previewMode: state.previewMode,
       };
     }
@@ -182,11 +239,49 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
       return {
         ...state,
         selectedBlockId: action.blockId,
+        selectedContainer: null,
+      };
+    }
+    case 'selectContainer': {
+      return {
+        ...state,
+        selectedContainer: action.container,
+        selectedBlockId: null,
       };
     }
     case 'updateBlockProps': {
       const updatedDocument = updateBlockProps(state.present, action.blockId, action.props);
       return pushToHistory(state, updatedDocument);
+    }
+    case 'updateContainerProps': {
+      const { target } = action;
+      let next = state.present;
+      if (target.kind === 'section') {
+        next = {
+          ...next,
+          sections: next.sections.map((s) => (s.id === target.id ? { ...s, ...target.props } : s)),
+        };
+      } else if (target.kind === 'row') {
+        next = {
+          ...next,
+          sections: next.sections.map((s) => ({
+            ...s,
+            rows: s.rows.map((r) => (r.id === target.id ? { ...r, ...target.props } : r)),
+          })),
+        };
+      } else if (target.kind === 'column') {
+        next = {
+          ...next,
+          sections: next.sections.map((s) => ({
+            ...s,
+            rows: s.rows.map((r) => ({
+              ...r,
+              columns: r.columns.map((c) => (c.id === target.id ? { ...c, ...target.props } : c)),
+            })),
+          })),
+        };
+      }
+      return pushToHistory(state, next);
     }
     case 'setPreviewMode': {
       if (state.previewMode === action.mode) {
@@ -228,6 +323,7 @@ export function CanvasProvider({
   uploadFile,
 }: CanvasProviderProps) {
   const [state, dispatch] = useReducer(canvasReducer, initialDocument, createInitialState);
+  const lastInitialDocumentRef = useRef<CanvasDocument | null>(null);
 
   const updateTitle = useCallback((title: string) => {
     dispatch({ type: 'updateTitle', title });
@@ -245,11 +341,21 @@ export function CanvasProvider({
   );
 
   useEffect(() => {
-    // Initialize or replace the document only when the external initialDocument changes.
-    // Do NOT react to internal edits, to avoid resetting user input while typing.
-    if (initialDocument) {
-      setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
+    // Only replace the current document when the upstream initialDocument actually changes.
+    if (!initialDocument) {
+      lastInitialDocumentRef.current = null;
+      return;
     }
+
+    if (
+      lastInitialDocumentRef.current &&
+      documentsAreEqual(lastInitialDocumentRef.current, initialDocument)
+    ) {
+      return;
+    }
+
+    lastInitialDocumentRef.current = cloneCanvasDocument(initialDocument);
+    setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
   }, [initialDocument, setDocument]);
 
   const save = useCallback(() => {
@@ -276,9 +382,34 @@ export function CanvasProvider({
     dispatch({ type: 'selectBlock', blockId });
   }, []);
 
+  const selectContainer = useCallback(
+    (
+      container:
+        | { kind: 'section'; id: string }
+        | { kind: 'row'; id: string }
+        | { kind: 'column'; id: string }
+        | null,
+    ) => {
+      dispatch({ type: 'selectContainer', container });
+    },
+    [],
+  );
+
   const updateBlockProps = useCallback((blockId: string, props: Record<string, unknown>) => {
     dispatch({ type: 'updateBlockProps', blockId, props });
   }, []);
+
+  const updateContainerProps = useCallback(
+    (
+      target:
+        | { kind: 'section'; id: string; props: Partial<CanvasSection> }
+        | { kind: 'row'; id: string; props: Partial<CanvasRow> }
+        | { kind: 'column'; id: string; props: Partial<CanvasColumn> },
+    ) => {
+      dispatch({ type: 'updateContainerProps', target });
+    },
+    [],
+  );
 
   const setPreviewMode = useCallback((mode: 'desktop' | 'mobile') => {
     dispatch({ type: 'setPreviewMode', mode });
@@ -305,6 +436,7 @@ export function CanvasProvider({
       canUndo,
       selectedBlockId: state.selectedBlockId,
       selectedBlock,
+      selectedContainer: state.selectedContainer,
       previewMode: state.previewMode,
       variables: document.variables ?? {},
       uploadFile,
@@ -313,7 +445,9 @@ export function CanvasProvider({
       save,
       undo,
       selectBlock,
+      selectContainer,
       updateBlockProps,
+      updateContainerProps,
       setPreviewMode,
       upsertVariable,
       deleteVariable,
@@ -325,13 +459,16 @@ export function CanvasProvider({
       state.selectedBlockId,
       selectedBlock,
       state.previewMode,
+      state.selectedContainer,
       uploadFile,
       updateTitle,
       setDocument,
       save,
       undo,
       selectBlock,
+      selectContainer,
       updateBlockProps,
+      updateContainerProps,
       setPreviewMode,
       upsertVariable,
       deleteVariable,

@@ -3,22 +3,9 @@ import type {
   CanvasRow,
   CanvasColumn,
   CanvasContentBlock,
-  BlockDefinition,
 } from '@react-email-dnd/shared';
 import { createEmptySection, createEmptyRow, createContentBlock } from './document';
-import { buttonDefinition } from '../components/button';
-import { dividerDefinition } from '../components/divider';
-import { headingDefinition } from '../components/heading';
-import { imageDefinition } from '../components/image';
-import { textDefinition } from '../components/text';
-
-// Types for drag and drop data
-export type BlockDropId =
-  | 'block-heading'
-  | 'block-text'
-  | 'block-divider'
-  | 'block-image'
-  | 'block-button';
+import type { BlockDefinitionMap } from './block-library';
 
 export type StructureDropId =
   | 'structure-section'
@@ -27,7 +14,7 @@ export type StructureDropId =
   | 'structure-columns-2'
   | 'structure-columns-3';
 
-export type SidebarDropId = BlockDropId | StructureDropId;
+export type SidebarDropId = string | StructureDropId;
 
 export interface CanvasBlockDragData {
   type: 'canvas-block';
@@ -89,20 +76,14 @@ export type OverDragData =
   | CanvasSectionDropData
   | CanvasSectionDragData;
 
-// Block definitions mapping
-const BLOCK_DEFINITIONS: Record<BlockDropId, BlockDefinition<CanvasContentBlock>> = {
-  'block-heading': headingDefinition as BlockDefinition<CanvasContentBlock>,
-  'block-text': textDefinition as BlockDefinition<CanvasContentBlock>,
-  'block-divider': dividerDefinition as BlockDefinition<CanvasContentBlock>,
-  'block-image': imageDefinition as BlockDefinition<CanvasContentBlock>,
-  'block-button': buttonDefinition as BlockDefinition<CanvasContentBlock>,
-};
-
 // Helper functions
-export function createBlockFromSidebar(id: BlockDropId): CanvasContentBlock {
-  const definition = BLOCK_DEFINITIONS[id];
+export function createBlockFromSidebar(
+  id: string,
+  definitions: BlockDefinitionMap,
+): CanvasContentBlock | null {
+  const definition = definitions[id];
   if (!definition) {
-    throw new Error(`Unsupported block: ${id}`);
+    return null;
   }
 
   return createContentBlock(
@@ -750,6 +731,7 @@ export function handleSidebarDrop(
   activeId: string,
   overId: string,
   sections: CanvasSection[],
+  blockDefinitions: BlockDefinitionMap,
 ): CanvasSection[] | null {
   // Handle structure drops
   if (activeId === 'structure-section') {
@@ -870,7 +852,10 @@ export function handleSidebarDrop(
     if (isColumnLocked(sections, columnId)) {
       return null;
     }
-    const block = createBlockFromSidebar(activeId as BlockDropId);
+    const block = createBlockFromSidebar(activeId, blockDefinitions);
+    if (!block) {
+      return null;
+    }
     return addBlockToColumn(sections, columnId, block);
   }
 

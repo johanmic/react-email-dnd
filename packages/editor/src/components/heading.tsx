@@ -41,10 +41,10 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
 
   const style: CSSProperties = {
     textAlign: align,
-    fontSize: daisyui ? undefined : fontSize,
-    color: daisyui ? undefined : color,
-    lineHeight: daisyui ? undefined : lineHeight,
-    fontWeight: daisyui ? undefined : resolvedFontWeight,
+    fontSize,
+    color,
+    lineHeight,
+    fontWeight: resolvedFontWeight,
     margin,
   };
 

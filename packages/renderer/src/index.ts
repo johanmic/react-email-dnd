@@ -43,3 +43,4 @@ export function renderDocument({ document, options }: RenderRequest): RenderResu
 }
 
 export * from './types';
+export { renderReactText } from './renderers/react-text';

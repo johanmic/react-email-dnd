@@ -40,6 +40,8 @@ export type {
   ComponentLibrary,
   CustomBlock,
   CustomBlockProps,
+  CustomBlockDefinition,
+  CustomBlockRegistry,
   DividerBlock,
   DividerBlockProps,
   DocumentMeta,
@@ -69,9 +71,17 @@ export * from './components/Header';
 export * from './components/EmailEditor';
 export * from './components/PropertiesPanel';
 
+export type {
+  CustomBlockPropEditorProps,
+  CustomBlockPropEditor,
+  CustomBlockPropEditors,
+  ColorOption,
+} from './components/PropertiesPanel';
+
 export * from './hooks/useCanvasStore';
 
 export * from './utils/email-renderer';
 export * from './utils/document';
 export * from './utils/drag-drop';
 export * from './utils/json';
+export * from './utils/block-library';

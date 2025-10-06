@@ -18,6 +18,8 @@ import type {
   TextBlockProps,
   HeadingBlockProps,
   ImageBlockProps,
+  CustomBlockDefinition,
+  CustomBlockProps,
 } from '@react-email-dnd/shared';
 import { Button } from '../components/button';
 import { Divider } from '../components/divider';
@@ -75,7 +77,11 @@ function withSubstitutions(
   }
 }
 
-function renderEmailBlock(block: CanvasContentBlock, variables?: Record<string, string>) {
+function renderEmailBlock(
+  block: CanvasContentBlock,
+  variables: Record<string, string> | undefined,
+  customRegistry: Record<string, CustomBlockDefinition<any>>,
+) {
   const b = withSubstitutions(block, variables);
   switch (block.type) {
     case 'button':
@@ -89,7 +95,13 @@ function renderEmailBlock(block: CanvasContentBlock, variables?: Record<string, 
     case 'image':
       return <Image {...(b.props as ImageBlockProps)} />;
     case 'custom':
-      return <div data-component={block.props.componentName}>{block.props.componentName}</div>;
+      const customProps = block.props as CustomBlockProps;
+      const definition = customRegistry[customProps.componentName];
+      if (definition) {
+        const Component = definition.component;
+        return <Component {...(customProps.props as Record<string, unknown>)} />;
+      }
+      return <div data-component={customProps.componentName}>{customProps.componentName}</div>;
     default:
       return null;
   }
@@ -98,11 +110,15 @@ function renderEmailBlock(block: CanvasContentBlock, variables?: Record<string, 
 /**
  * Renders a canvas column using React Email Column component
  */
-function renderEmailColumn(column: CanvasColumn, variables?: Record<string, string>) {
+function renderEmailColumn(
+  column: CanvasColumn,
+  variables: Record<string, string> | undefined,
+  customRegistry: Record<string, CustomBlockDefinition<any>>,
+) {
   return (
     <Column key={column.id}>
       {column.blocks.map((block) => (
-        <div key={block.id}>{renderEmailBlock(block, variables)}</div>
+        <div key={block.id}>{renderEmailBlock(block, variables, customRegistry)}</div>
       ))}
     </Column>
   );
@@ -111,19 +127,36 @@ function renderEmailColumn(column: CanvasColumn, variables?: Record<string, stri
 /**
  * Renders a canvas row using React Email Row component
  */
-function renderEmailRow(row: CanvasRow, variables?: Record<string, string>) {
+function renderEmailRow(
+  row: CanvasRow,
+  variables: Record<string, string> | undefined,
+  customRegistry: Record<string, CustomBlockDefinition<any>>,
+) {
   return (
-    <Row key={row.id}>{row.columns.map((column) => renderEmailColumn(column, variables))}</Row>
+    <Row key={row.id}>
+      {row.columns.map((column) => renderEmailColumn(column, variables, customRegistry))}
+    </Row>
   );
 }
 
 /**
  * Renders a canvas section using React Email Section component
  */
-function renderEmailSection(section: CanvasSection, variables?: Record<string, string>) {
+function renderEmailSection(
+  section: CanvasSection,
+  variables: Record<string, string> | undefined,
+  customRegistry: Record<string, CustomBlockDefinition<any>>,
+) {
   return (
-    <Section key={section.id}>{section.rows.map((row) => renderEmailRow(row, variables))}</Section>
+    <Section key={section.id}>
+      {section.rows.map((row) => renderEmailRow(row, variables, customRegistry))}
+    </Section>
   );
+}
+
+export interface RenderEmailDocumentOptions {
+  customBlocks?: CustomBlockDefinition<any>[];
+  customBlockRegistry?: Record<string, CustomBlockDefinition<any>>;
 }
 
 /**
@@ -137,9 +170,23 @@ function renderEmailSection(section: CanvasSection, variables?: Record<string, s
 export function renderEmailDocument(
   document: CanvasDocument,
   runtimeVariables?: Record<string, string>,
+  options: RenderEmailDocumentOptions = {},
 ) {
   const merged = { ...(document.variables ?? {}), ...(runtimeVariables ?? {}) };
-  return <>{document.sections.map((section) => renderEmailSection(section, merged))}</>;
+  const registry: Record<string, CustomBlockDefinition<any>> =
+    options.customBlockRegistry ??
+    (options.customBlocks
+      ? options.customBlocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
+          acc[block.defaults.componentName] = block;
+          return acc;
+        }, {})
+      : {});
+
+  return (
+    <>
+      {document.sections.map((section) => renderEmailSection(section, merged, registry))}
+    </>
+  );
 }
 
 /**

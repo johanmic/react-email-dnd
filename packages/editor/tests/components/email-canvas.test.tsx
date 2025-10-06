@@ -12,6 +12,7 @@ import {
   type BlockDefinition,
   type CanvasContentBlock,
   type CanvasSection,
+  type CustomBlockDefinition,
   type TextBlock,
 } from '../../src';
 
@@ -81,6 +82,61 @@ describe('Canvas', () => {
     expect(screen.getByText('Hello world')).toBeInTheDocument();
     expect(screen.getByRole('separator')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Click me' })).toBeInTheDocument();
+  });
+
+  it('renders custom blocks when registry provided', () => {
+    const customDefinition: CustomBlockDefinition<{ message: string }> = {
+      id: 'custom-hero',
+      type: 'custom',
+      label: 'Hero',
+      icon: headingDefinition.icon,
+      defaults: {
+        componentName: 'HeroBlock',
+        props: { message: 'Default text' },
+      },
+      component: ({ message }: { message: string }) => (
+        <div data-testid="custom-block">{message}</div>
+      ),
+    };
+
+    const blocks: CanvasContentBlock[] = [
+      {
+        id: 'custom-1',
+        type: 'custom',
+        props: {
+          componentName: 'HeroBlock',
+          props: { message: 'Rendered from custom block' },
+        },
+      },
+    ];
+
+    const sections: CanvasSection[] = [
+      {
+        id: 'section-custom',
+        type: 'section',
+        rows: [
+          {
+            id: 'row-custom',
+            type: 'row',
+            columns: [
+              {
+                id: 'column-custom',
+                type: 'column',
+                blocks,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    render(
+      <CanvasProvider>
+        <Canvas sections={sections} customBlockRegistry={{ HeroBlock: customDefinition }} />
+      </CanvasProvider>,
+    );
+
+    expect(screen.getByTestId('custom-block')).toHaveTextContent('Rendered from custom block');
   });
 });
 

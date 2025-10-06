@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -133,5 +134,60 @@ describe('Header', () => {
     await user.click(undoButton);
 
     expect(undoButton).toBeDisabled();
+  });
+
+  it('keeps the header dirty state when document changes are echoed back as initialDocument', async () => {
+    const initialDoc: CanvasDocument = {
+      version: 1,
+      meta: { title: 'Welcome email' },
+      sections: [],
+    };
+
+    const MutateDocumentButton = () => {
+      const { document, setDocument } = useCanvasStore();
+
+      const handleClick = () => {
+        const nextSection: CanvasSection = {
+          id: `section-${document.sections.length + 1}`,
+          type: 'section',
+          rows: [],
+        };
+
+        setDocument({
+          ...document,
+          sections: [...document.sections, nextSection],
+        });
+      };
+
+      return (
+        <button type="button" onClick={handleClick}>
+          Mutate document
+        </button>
+      );
+    };
+
+    const Harness = () => {
+      const [doc, setDoc] = useState<CanvasDocument>(initialDoc);
+
+      return (
+        <CanvasProvider initialDocument={doc} onDocumentChange={setDoc}>
+          <Header />
+          <MutateDocumentButton />
+        </CanvasProvider>
+      );
+    };
+
+    const user = userEvent.setup();
+
+    render(<Harness />);
+
+    const saveButton = screen.getByRole('button', { name: /save/i });
+    const mutateButton = screen.getByRole('button', { name: /mutate document/i });
+
+    expect(saveButton).toBeDisabled();
+
+    await user.click(mutateButton);
+
+    expect(saveButton).toBeEnabled();
   });
 });

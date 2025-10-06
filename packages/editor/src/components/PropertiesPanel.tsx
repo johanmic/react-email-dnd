@@ -11,21 +11,46 @@ import type {
   ImageBlockProps,
   HeadingBlockProps,
   CanvasContentBlock,
+  CustomBlockProps,
 } from '@react-email-dnd/shared';
+// Container types are inferred at usage; no direct type imports needed here
+
+export type ColorOption = string | { value: string; label?: string };
+
+export interface CustomBlockPropEditorProps<
+  Props extends Record<string, unknown> = Record<string, unknown>,
+> {
+  value: Props;
+  block: CanvasContentBlock & { type: 'custom' };
+  onChange: (patch: Partial<Props>) => void;
+  onReplace: (value: Props) => void;
+  daisyui?: boolean;
+  colors?: ColorOption[];
+  textColors?: ColorOption[];
+  disabled?: boolean;
+}
+
+export type CustomBlockPropEditor<Props extends Record<string, unknown> = Record<string, unknown>> =
+  React.ComponentType<CustomBlockPropEditorProps<Props>>;
+
+export type CustomBlockPropEditors = Record<string, CustomBlockPropEditor<Record<string, unknown>>>;
 
 interface PropertiesPanelProps {
   className?: string;
   daisyui?: boolean;
 
   unlockable?: boolean;
-  colors?: string[];
+  colors?: ColorOption[];
+  textColors?: ColorOption[];
+  customBlockPropEditors?: CustomBlockPropEditors;
 }
 
 interface TextPropsFormProps {
   block: CanvasContentBlock & { type: 'text' };
   onUpdate: (props: Partial<TextBlockProps>) => void;
   daisyui?: boolean;
-  colors?: string[];
+  colors?: ColorOption[];
+  textColors?: ColorOption[];
 }
 
 interface LockedToggleProps {
@@ -38,54 +63,86 @@ interface HeadingPropsFormProps {
   block: CanvasContentBlock & { type: 'heading' };
   onUpdate: (props: Partial<HeadingBlockProps>) => void;
   daisyui?: boolean;
-  colors?: string[];
+  colors?: ColorOption[];
+  textColors?: ColorOption[];
 }
 
 interface ButtonPropsFormProps {
   block: CanvasContentBlock & { type: 'button' };
   onUpdate: (props: Partial<ButtonBlockProps>) => void;
   daisyui?: boolean;
-  colors?: string[];
+  colors?: ColorOption[];
+  textColors?: ColorOption[];
 }
 
 interface ImagePropsFormProps {
   block: CanvasContentBlock & { type: 'image' };
   onUpdate: (props: Partial<ImageBlockProps>) => void;
   daisyui?: boolean;
-  colors?: string[];
+  colors?: ColorOption[];
 }
 
 interface ColorPickerProps {
   value: string;
   onChange: (color: string) => void;
-  colors?: string[];
+  colors?: ColorOption[];
   daisyui?: boolean;
   disabled?: boolean;
 }
 
 function ColorPicker({ value, onChange, colors, daisyui, disabled }: ColorPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [previewColor, setPreviewColor] = useState(value);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const swatches = useMemo(() => {
+    if (!colors) return [];
+
+    return colors
+      .map((color) => {
+        if (typeof color === 'string') {
+          return { value: color, label: color };
+        }
+
+        if (!color?.value) {
+          return null;
+        }
+
+        return { value: color.value, label: color.label ?? color.value };
+      })
+      .filter((entry): entry is { value: string; label: string } => Boolean(entry?.value));
+  }, [colors]);
 
   const handleColorSelect = (color: string) => {
+    setPreviewColor(color);
     onChange(color);
     setIsOpen(false);
   };
 
-  const handleClickOutside = (event: MouseEvent) => {
-    if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
-      setIsOpen(false);
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    const target = event.target as Node;
+    if (buttonRef.current?.contains(target)) {
+      return;
     }
-  };
+    if (dropdownRef.current?.contains(target)) {
+      return;
+    }
+    setIsOpen(false);
+  }, []);
 
   React.useEffect(() => {
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isOpen]);
+  }, [handleClickOutside, isOpen]);
 
-  if (!colors || colors.length === 0) {
+  React.useEffect(() => {
+    setPreviewColor(value);
+  }, [value]);
+
+  if (swatches.length === 0) {
     return null;
   }
 
@@ -97,7 +154,7 @@ function ColorPicker({ value, onChange, colors, daisyui, disabled }: ColorPicker
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          'w-12 h-10 rounded-md border-2 transition-all duration-200 flex items-center justify-center',
+          'w-16 h-14 rounded-xl border-2 transition-all duration-200 flex items-center justify-center',
           {
             'border-gray-300 hover:border-gray-400': !daisyui && !disabled,
             'border-base-300 hover:border-primary/50': daisyui && !disabled,
@@ -120,27 +177,28 @@ function ColorPicker({ value, onChange, colors, daisyui, disabled }: ColorPicker
 
       {isOpen && (
         <div
+          ref={dropdownRef}
           className={clsx('absolute top-full left-0 mt-2 p-3 rounded-lg border shadow-lg z-50', {
             'bg-white border-gray-200': !daisyui,
             'bg-base-100 border-base-300': daisyui,
           })}
         >
-          <div className="grid grid-cols-6 gap-2">
-            {colors.map((color) => (
+          <div className="flex flex-wrap gap-3 w-60">
+            {swatches.map((color) => (
               <button
-                key={color}
+                key={color.value}
                 type="button"
-                onClick={() => handleColorSelect(color)}
+                onClick={() => handleColorSelect(color.value)}
                 className={clsx(
-                  'w-8 h-8 rounded-full border-2 transition-all duration-200 hover:scale-110',
+                  'w-10 h-10 rounded-full border-2 transition-all duration-200 hover:scale-105',
                   {
                     'border-gray-300 hover:border-gray-400': !daisyui,
                     'border-base-300 hover:border-primary/50': daisyui,
-                    'ring-2 ring-blue-500 ring-offset-2': value === color,
+                    'ring-2 ring-blue-500 ring-offset-2': previewColor === color.value,
                   },
                 )}
-                style={{ backgroundColor: color }}
-                aria-label={`Select color ${color}`}
+                style={{ backgroundColor: color.value }}
+                aria-label={`Select color ${color.label}`}
               />
             ))}
           </div>
@@ -226,6 +284,7 @@ function HeadingPropsForm({
   onUpdate,
   daisyui,
   colors,
+  textColors,
   disabled = false,
 }: HeadingPropsFormProps & { disabled?: boolean }) {
   const props = block.props as HeadingBlockProps;
@@ -266,10 +325,6 @@ function HeadingPropsForm({
       daisyui,
   });
   const selectCls = clsx(fieldCls, 'cursor-pointer pr-10');
-  const colorBoxCls = clsx('w-12 h-10 p-1 rounded-md cursor-pointer', {
-    'border border-gray-300 bg-white': !daisyui,
-    'border border-base-300 bg-base-100': daisyui,
-  });
   const inlineTextInputCls = clsx(
     'flex-1 ml-3 px-3 py-2 rounded-md text-sm transition focus:outline-none',
     {
@@ -394,15 +449,15 @@ function HeadingPropsForm({
         <label className={labelCls}>Color</label>
         <div className="flex items-center gap-3">
           <ColorPicker
-            value={props.color || '#1f2937'}
+            value={props.color ?? '#1f2937'}
             onChange={(color) => onUpdate({ color })}
-            colors={colors}
+            colors={textColors ?? colors}
             daisyui={daisyui}
             disabled={disabled || block.locked}
           />
           <input
             type="text"
-            value={props.color || '#1f2937'}
+            value={props.color ?? '#1f2937'}
             onChange={(e) => onUpdate({ color: e.target.value })}
             className={inlineTextInputCls}
             placeholder="#1f2937"
@@ -444,6 +499,7 @@ function TextPropsForm({
   onUpdate,
   daisyui,
   colors,
+  textColors,
   disabled = false,
 }: TextPropsFormProps & { disabled?: boolean }) {
   const props = block.props as TextBlockProps;
@@ -484,10 +540,7 @@ function TextPropsForm({
       daisyui,
   });
   const selectCls = clsx(fieldCls, 'cursor-pointer pr-10');
-  const colorBoxCls = clsx('w-12 h-10 p-1 rounded-md cursor-pointer', {
-    'border border-gray-300 bg-white': !daisyui,
-    'border border-base-300 bg-base-100': daisyui,
-  });
+
   const inlineTextInputCls = clsx(
     'flex-1 ml-3 px-3 py-2 rounded-md text-sm transition focus:outline-none',
     {
@@ -594,15 +647,15 @@ function TextPropsForm({
         <label className={labelCls}>Color</label>
         <div className="flex items-center gap-3">
           <ColorPicker
-            value={props.color || '#1f2937'}
+            value={props.color ?? '#1f2937'}
             onChange={(color) => onUpdate({ color })}
-            colors={colors}
+            colors={textColors ?? colors}
             daisyui={daisyui}
             disabled={disabled || block.locked}
           />
           <input
             type="text"
-            value={props.color || '#1f2937'}
+            value={props.color ?? '#1f2937'}
             onChange={(e) => onUpdate({ color: e.target.value })}
             className={inlineTextInputCls}
             placeholder="#1f2937"
@@ -644,6 +697,7 @@ function ButtonPropsForm({
   onUpdate,
   daisyui,
   colors,
+  textColors,
   disabled = false,
 }: ButtonPropsFormProps & { disabled?: boolean }) {
   const props = block.props as ButtonBlockProps;
@@ -689,10 +743,7 @@ function ButtonPropsForm({
       daisyui,
   });
   const selectCls = clsx(fieldCls, 'cursor-pointer pr-10');
-  const colorBoxCls = clsx('w-12 h-10 p-1 rounded-md cursor-pointer', {
-    'border border-gray-300 bg-white': !daisyui,
-    'border border-base-300 bg-base-100': daisyui,
-  });
+
   const inlineTextInputCls = clsx(
     'flex-1 ml-3 px-3 py-2 rounded-md text-sm transition focus:outline-none',
     {
@@ -791,7 +842,7 @@ function ButtonPropsForm({
         <label className={labelCls}>Background Color</label>
         <div className="flex items-center gap-3">
           <ColorPicker
-            value={props.backgroundColor || '#2563eb'}
+            value={props.backgroundColor ?? '#2563eb'}
             onChange={(color) => onUpdate({ backgroundColor: color })}
             colors={colors}
             daisyui={daisyui}
@@ -799,7 +850,7 @@ function ButtonPropsForm({
           />
           <input
             type="text"
-            value={props.backgroundColor || '#2563eb'}
+            value={props.backgroundColor ?? '#2563eb'}
             onChange={(e) => onUpdate({ backgroundColor: e.target.value })}
             className={inlineTextInputCls}
             placeholder="#2563eb"
@@ -812,15 +863,15 @@ function ButtonPropsForm({
         <label className={labelCls}>Text Color</label>
         <div className="flex items-center gap-3">
           <ColorPicker
-            value={props.color || '#ffffff'}
+            value={props.color ?? '#ffffff'}
             onChange={(color) => onUpdate({ color })}
-            colors={colors}
+            colors={textColors ?? colors}
             daisyui={daisyui}
             disabled={disabled || block.locked}
           />
           <input
             type="text"
-            value={props.color || '#ffffff'}
+            value={props.color ?? '#ffffff'}
             onChange={(e) => onUpdate({ color: e.target.value })}
             className={inlineTextInputCls}
             placeholder="#ffffff"
@@ -849,7 +900,6 @@ function ImagePropsForm({
   block,
   onUpdate,
   daisyui,
-  colors,
   disabled = false,
 }: ImagePropsFormProps & { disabled?: boolean }) {
   const props = block.props as ImageBlockProps;
@@ -1103,9 +1153,20 @@ export function PropertiesPanel({
   daisyui = false,
   unlockable = true,
   colors,
+  textColors,
+  customBlockPropEditors,
 }: PropertiesPanelProps) {
-  const { document, setDocument, selectedBlockId, selectedBlock, selectBlock, updateBlockProps } =
-    useCanvasStore();
+  const {
+    document,
+    setDocument,
+    selectedBlockId,
+    selectedBlock,
+    selectedContainer,
+    selectBlock,
+    selectContainer,
+    updateBlockProps,
+    updateContainerProps,
+  } = useCanvasStore();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Check if block or any parent container is locked
@@ -1156,6 +1217,7 @@ export function PropertiesPanel({
 
   const handleClose = () => {
     selectBlock(null);
+    selectContainer(null);
   };
 
   const handleUpdate = useCallback(
@@ -1178,11 +1240,12 @@ export function PropertiesPanel({
     selectBlock(null);
   }, [document, selectedBlockId, selectBlock, setDocument]);
 
-  if (!selectedBlock) {
+  if (!selectedBlock && !selectedContainer) {
     return null;
   }
 
   const renderPropsForm = () => {
+    if (!selectedBlock) return null;
     switch (selectedBlock.type) {
       case 'text':
         return (
@@ -1191,6 +1254,7 @@ export function PropertiesPanel({
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
             colors={colors}
+            textColors={textColors}
             disabled={isLocked}
           />
         );
@@ -1201,6 +1265,7 @@ export function PropertiesPanel({
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
             colors={colors}
+            textColors={textColors}
             disabled={isLocked}
           />
         );
@@ -1221,9 +1286,60 @@ export function PropertiesPanel({
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
             colors={colors}
+            textColors={textColors}
             disabled={isLocked}
           />
         );
+      case 'custom': {
+        const customBlock = selectedBlock as CanvasContentBlock & { type: 'custom' };
+        const customProps = customBlock.props as CustomBlockProps;
+        const componentName = customProps.componentName;
+        const Editor = customBlockPropEditors?.[componentName];
+
+        if (!Editor) {
+          return (
+            <div
+              className={clsx('text-sm text-center p-8 italic', {
+                'text-gray-500': !daisyui,
+                'text-base-content/60': daisyui,
+              })}
+            >
+              Add a custom properties form for <code>{componentName}</code> to edit its props.
+            </div>
+          );
+        }
+
+        const value = (customProps.props ?? {}) as Record<string, unknown>;
+
+        const handlePartialUpdate = (patch: Partial<Record<string, unknown>>) => {
+          if (isLocked) return;
+          updateBlockProps(customBlock.id, {
+            componentName,
+            props: { ...value, ...patch },
+          });
+        };
+
+        const handleReplace = (nextValue: Record<string, unknown>) => {
+          if (isLocked) return;
+          updateBlockProps(customBlock.id, {
+            componentName,
+            props: nextValue,
+          });
+        };
+
+        return (
+          <Editor
+            block={customBlock}
+            value={value}
+            onChange={handlePartialUpdate}
+            onReplace={handleReplace}
+            daisyui={daisyui}
+            colors={colors}
+            textColors={textColors}
+            disabled={isLocked}
+          />
+        );
+      }
       case 'divider':
         return (
           <div
@@ -1266,6 +1382,296 @@ export function PropertiesPanel({
     }
   };
 
+  const getContainerTypeName = (kind: 'section' | 'row' | 'column') => {
+    switch (kind) {
+      case 'section':
+        return 'Section';
+      case 'row':
+        return 'Row';
+      case 'column':
+        return 'Column';
+      default:
+        return 'Container';
+    }
+  };
+
+  const renderContainerForm = () => {
+    if (!selectedContainer) return null;
+    const findRow = (id: string) => {
+      for (const section of document.sections) {
+        const row = section.rows.find((r) => r.id === id);
+        if (row) return { row, section };
+      }
+      return null;
+    };
+    const findColumn = (id: string) => {
+      for (const section of document.sections) {
+        for (const row of section.rows) {
+          const column = row.columns.find((c) => c.id === id);
+          if (column) return { column, row, section };
+        }
+      }
+      return null;
+    };
+
+    const labelCls = clsx('block text-sm font-medium mb-2 leading-snug', {
+      'text-gray-700': !daisyui,
+      'text-base-content/80': daisyui,
+    });
+    const fieldBase = 'w-full px-3 py-2 rounded-md text-sm transition focus:outline-none';
+    const fieldCls = clsx(fieldBase, {
+      'border border-gray-300 bg-white hover:border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10':
+        !daisyui,
+      'border border-base-300 bg-base-100 text-base-content hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/10':
+        daisyui,
+    });
+
+    if (selectedContainer.kind === 'section') {
+      const section = document.sections.find((s) => s.id === selectedContainer.id);
+      if (!section) return null;
+      const locked = !!section.locked;
+      return (
+        <fieldset className="space-y-6" disabled={locked}>
+          {unlockable && (
+            <LockedToggle
+              locked={locked}
+              daisyui={daisyui}
+              onToggle={() =>
+                updateContainerProps({
+                  kind: 'section',
+                  id: section.id,
+                  props: { locked: !locked },
+                })
+              }
+            />
+          )}
+          <div>
+            <label className={labelCls}>Background</label>
+            <input
+              type="text"
+              value={section.backgroundColor ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'section',
+                  id: section.id,
+                  props: { backgroundColor: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="#ffffff or transparent"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Padding</label>
+            <input
+              type="text"
+              value={section.padding ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'section',
+                  id: section.id,
+                  props: { padding: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="e.g. 20px 16px"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Class Name</label>
+            <input
+              type="text"
+              value={section.className ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'section',
+                  id: section.id,
+                  props: { className: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="Tailwind classes"
+            />
+          </div>
+        </fieldset>
+      );
+    }
+
+    if (selectedContainer.kind === 'row') {
+      const match = findRow(selectedContainer.id);
+      if (!match) return null;
+      const { row, section } = match;
+      const locked = !!(row.locked || section.locked);
+      return (
+        <fieldset className="space-y-6" disabled={locked}>
+          {unlockable && (
+            <LockedToggle
+              locked={!!row.locked}
+              daisyui={daisyui}
+              onToggle={() =>
+                updateContainerProps({ kind: 'row', id: row.id, props: { locked: !row.locked } })
+              }
+            />
+          )}
+          <div>
+            <label className={labelCls}>Background</label>
+            <input
+              type="text"
+              value={row.backgroundColor ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'row',
+                  id: row.id,
+                  props: { backgroundColor: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="#f8fafc"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Padding</label>
+            <input
+              type="text"
+              value={row.padding ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'row',
+                  id: row.id,
+                  props: { padding: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="e.g. 12px"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Gutter (px)</label>
+            <input
+              type="number"
+              value={row.gutter ?? 0}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'row',
+                  id: row.id,
+                  props: { gutter: Number(e.target.value) },
+                })
+              }
+              className={fieldCls}
+              min="0"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Class Name</label>
+            <input
+              type="text"
+              value={row.className ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'row',
+                  id: row.id,
+                  props: { className: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="Tailwind classes"
+            />
+          </div>
+        </fieldset>
+      );
+    }
+
+    if (selectedContainer.kind === 'column') {
+      const match = findColumn(selectedContainer.id);
+      if (!match) return null;
+      const { column, row, section } = match;
+      const locked = !!(column.locked || row.locked || section.locked);
+      return (
+        <fieldset className="space-y-6" disabled={locked}>
+          {unlockable && (
+            <LockedToggle
+              locked={!!column.locked}
+              daisyui={daisyui}
+              onToggle={() =>
+                updateContainerProps({
+                  kind: 'column',
+                  id: column.id,
+                  props: { locked: !column.locked },
+                })
+              }
+            />
+          )}
+          <div>
+            <label className={labelCls}>Background</label>
+            <input
+              type="text"
+              value={column.backgroundColor ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'column',
+                  id: column.id,
+                  props: { backgroundColor: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="#ffffff"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Padding</label>
+            <input
+              type="text"
+              value={column.padding ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'column',
+                  id: column.id,
+                  props: { padding: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="e.g. 16px"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Width (flex basis)</label>
+            <input
+              type="number"
+              value={column.width ?? 1}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'column',
+                  id: column.id,
+                  props: { width: Number(e.target.value) },
+                })
+              }
+              className={fieldCls}
+              min="0"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Class Name</label>
+            <input
+              type="text"
+              value={column.className ?? ''}
+              onChange={(e) =>
+                updateContainerProps({
+                  kind: 'column',
+                  id: column.id,
+                  props: { className: e.target.value },
+                })
+              }
+              className={fieldCls}
+              placeholder="Tailwind classes"
+            />
+          </div>
+        </fieldset>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className={clsx('fixed inset-0 z-50 flex items-end justify-end', className)}>
       <div
@@ -1297,7 +1703,11 @@ export function PropertiesPanel({
                 'text-base-content': daisyui,
               })}
             >
-              {getBlockTypeName(selectedBlock.type)} Properties
+              {selectedBlock
+                ? `${getBlockTypeName(selectedBlock.type)} Properties`
+                : selectedContainer
+                  ? `${getContainerTypeName(selectedContainer.kind)} Settings`
+                  : 'Properties'}
             </h3>
             <p
               className={clsx('text-sm mt-1', {
@@ -1305,7 +1715,11 @@ export function PropertiesPanel({
                 'text-base-content/60': daisyui,
               })}
             >
-              Customize your {selectedBlock.type} block
+              {selectedBlock
+                ? `Customize your ${selectedBlock.type} block`
+                : selectedContainer
+                  ? `Customize this ${getContainerTypeName(selectedContainer.kind).toLowerCase()}`
+                  : ''}
             </p>
           </div>
           <button
@@ -1325,40 +1739,49 @@ export function PropertiesPanel({
           </button>
         </div>
         <div className="p-6 pb-8 overflow-y-auto flex-1">
-          {unlockable && !isLocked && (
-            <LockedToggle
-              locked={!!selectedBlock.locked}
-              onToggle={handleToggleLocked}
-              daisyui={daisyui}
-            />
+          {selectedBlock ? (
+            <>
+              {unlockable && !isLocked && (
+                <LockedToggle
+                  locked={!!selectedBlock.locked}
+                  onToggle={handleToggleLocked}
+                  daisyui={daisyui}
+                />
+              )}
+              {isLocked && (
+                <div
+                  className={clsx('mb-6 p-4 rounded-lg border-l-4 text-sm', {
+                    'bg-gray-50 border-gray-400 text-gray-700': !daisyui,
+                    'bg-base-200 border-base-content/40 text-base-content/80': daisyui,
+                  })}
+                >
+                  <div className="font-medium mb-1">
+                    {!unlockable ? 'Template-locked content' : 'Read-only mode'}
+                  </div>
+                  <div
+                    className={clsx('text-xs', {
+                      'text-gray-600': !daisyui,
+                      'text-base-content/70': daisyui,
+                    })}
+                  >
+                    {!unlockable
+                      ? 'This element is locked by the template and cannot be unlocked'
+                      : selectedBlock.locked
+                        ? 'Unlock this block to edit its properties'
+                        : 'This block is in a locked container and cannot be edited'}
+                  </div>
+                </div>
+              )}
+              <div className={clsx({ 'opacity-60': isLocked })}>{renderPropsForm()}</div>
+            </>
+          ) : (
+            renderContainerForm()
           )}
-          {isLocked && (
-            <div
-              className={clsx('mb-6 p-4 rounded-lg border-l-4 text-sm', {
-                'bg-gray-50 border-gray-400 text-gray-700': !daisyui,
-                'bg-base-200 border-base-content/40 text-base-content/80': daisyui,
-              })}
-            >
-              <div className="font-medium mb-1">
-                {!unlockable ? 'Template-locked content' : 'Read-only mode'}
-              </div>
-              <div
-                className={clsx('text-xs', {
-                  'text-gray-600': !daisyui,
-                  'text-base-content/70': daisyui,
-                })}
-              >
-                {!unlockable
-                  ? 'This element is locked by the template and cannot be unlocked'
-                  : selectedBlock.locked
-                    ? 'Unlock this block to edit its properties'
-                    : 'This block is in a locked container and cannot be edited'}
-              </div>
-            </div>
-          )}
-          <div className={clsx({ 'opacity-60': isLocked })}>{renderPropsForm()}</div>
         </div>
-        {['text', 'button', 'image', 'heading', 'divider'].includes(selectedBlock.type) &&
+        {selectedBlock &&
+        ['text', 'button', 'image', 'heading', 'divider'].includes(
+          (selectedBlock as CanvasContentBlock).type,
+        ) &&
         !isLocked ? (
           <div
             className={clsx('px-6 pb-6 pt-4 border-t', {
@@ -1387,7 +1810,11 @@ export function PropertiesPanel({
           open={deleteOpen}
           daisyui={daisyui}
           title="Delete block?"
-          description={`This will remove the ${getBlockTypeName(selectedBlock.type)} block.`}
+          description={
+            selectedBlock
+              ? `This will remove the ${getBlockTypeName((selectedBlock as CanvasContentBlock).type)} block.`
+              : 'This will remove the selected element.'
+          }
           confirmLabel="Delete"
           onCancel={() => setDeleteOpen(false)}
           onConfirm={handleDeleteConfirm}

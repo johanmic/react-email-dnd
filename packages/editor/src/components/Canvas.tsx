@@ -11,7 +11,14 @@ import clsx from 'clsx';
 // Note: React Email components are used for final email rendering,
 // but we use HTML elements for the drag-and-drop interface
 // import * as ReactEmailComponents from '@react-email/components';
-import type { CanvasColumn, CanvasContentBlock, CanvasRow, CanvasSection } from '@react-email-dnd/shared';
+import type {
+  CanvasColumn,
+  CanvasContentBlock,
+  CanvasRow,
+  CanvasSection,
+  CustomBlockDefinition,
+  CustomBlockProps,
+} from '@react-email-dnd/shared';
 import { Button } from './button';
 import { Divider } from './divider';
 import { Heading } from './heading';
@@ -25,6 +32,7 @@ export interface CanvasProps {
   sections: CanvasSection[];
   daisyui?: boolean;
   unlockable?: boolean;
+  customBlockRegistry?: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }
 
 // Helper component for element type tabs
@@ -75,10 +83,17 @@ function ElementTab({ type, daisyui }: { type: 'Section' | 'Row' | 'Column'; dai
   );
 }
 
-function renderBlock(block: CanvasContentBlock, daisyui?: boolean) {
+function renderBlock(
+  block: CanvasContentBlock,
+  options: {
+    daisyui?: boolean;
+    customBlocks: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  },
+) {
+  const { daisyui, customBlocks } = options;
   switch (block.type) {
     case 'button':
-      return <Button {...block.props} daisyui={daisyui} />;
+      return <Button {...block.props} daisyui={daisyui} editorMode />;
     case 'text':
       return <Text {...block.props} daisyui={daisyui} />;
     case 'heading':
@@ -88,15 +103,21 @@ function renderBlock(block: CanvasContentBlock, daisyui?: boolean) {
     case 'image':
       return <Image {...block.props} daisyui={daisyui} />;
     case 'custom':
+      const customProps = block.props as CustomBlockProps;
+      const definition = customBlocks[customProps.componentName];
+      if (definition) {
+        const Component = definition.component;
+        return <Component {...(customProps.props as Record<string, unknown>)} />;
+      }
       return (
         <div
           className={clsx('text-sm capitalize', {
             'text-slate-900': !daisyui,
             'bg-primary/50 text-base-content': daisyui,
           })}
-          data-component={block.props.componentName}
+          data-component={customProps.componentName}
         >
-          {block.props.componentName}
+          {customProps.componentName}
         </div>
       );
     default:
@@ -431,11 +452,13 @@ function CanvasBlockView({
   columnId,
   daisyui,
   isParentLocked = false,
+  customBlockRegistry,
 }: {
   block: CanvasContentBlock;
   columnId: string;
   daisyui?: boolean;
   isParentLocked?: boolean;
+  customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
   const { selectBlock, selectedBlockId } = useCanvasStore();
 
@@ -516,7 +539,9 @@ function CanvasBlockView({
           <DotsSixVerticalIcon size={16} weight="bold" />
         </button>
       )}
-      <div className="flex-1">{renderBlock(block, daisyui)}</div>
+      <div className="flex-1">
+        {renderBlock(block, { daisyui, customBlocks: customBlockRegistry })}
+      </div>
     </div>
   );
 }
@@ -529,6 +554,7 @@ function CanvasColumnView({
   row,
   section,
   unlockable = true,
+  customBlockRegistry,
 }: {
   column: CanvasColumn;
   rowId: string;
@@ -537,6 +563,7 @@ function CanvasColumnView({
   row: CanvasRow;
   section: CanvasSection;
   unlockable?: boolean;
+  customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
   // Column is disabled if it's locked, or if its parent row or section is locked
   const isDisabled = !!(column.locked || row.locked || section.locked);
@@ -570,6 +597,19 @@ function CanvasColumnView({
   };
 
   const sortableItems = column.blocks.map((block) => `canvas-block-${block.id}`);
+
+  // Inline styles from the JSON input should take precedence
+  const columnInlineStyle: CSSProperties = {
+    ...(column.backgroundColor ? { background: column.backgroundColor } : {}),
+    ...(column.padding ? { padding: column.padding } : {}),
+  };
+
+  const { selectContainer } = useCanvasStore();
+
+  const onContainerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    selectContainer({ kind: 'column', id: column.id });
+  };
 
   return (
     <div
@@ -627,13 +667,20 @@ function CanvasColumnView({
       >
         <div
           ref={setDroppableNodeRef}
-          className={clsx('min-h-[140px] p-4 rounded-lg border border-dashed transition', {
-            'border-slate-300/20 bg-white/70': !daisyui,
-            'border-base-300/20 bg-base-100/70': daisyui,
-            'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver && !isDisabled,
-            '!border-red-600/80 !bg-red-100/30 shadow-[0_0_0_3px_rgba(220,38,38,0.15)]':
-              isOver && isDisabled,
-          })}
+          className={clsx(
+            'min-h-[140px] rounded-lg border border-dashed transition',
+            { 'p-4': !column.padding },
+            {
+              'border-slate-300/20 bg-white/70': !daisyui,
+              'border-base-300/20 bg-base-100/70': daisyui,
+              'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver && !isDisabled,
+              '!border-red-600/80 !bg-red-100/30 shadow-[0_0_0_3px_rgba(220,38,38,0.15)]':
+                isOver && isDisabled,
+            },
+            column.className,
+          )}
+          style={columnInlineStyle}
+          onClick={onContainerClick}
         >
           {column.blocks.length === 0 ? (
             <div
@@ -652,6 +699,7 @@ function CanvasColumnView({
                 columnId={column.id}
                 daisyui={daisyui}
                 isParentLocked={isDisabled}
+                customBlockRegistry={customBlockRegistry}
               />
             ))
           )}
@@ -667,14 +715,16 @@ function CanvasRowView({
   daisyui,
   section,
   unlockable = true,
+  customBlockRegistry,
 }: {
   row: CanvasRow;
   sectionId: string;
   daisyui?: boolean;
   section: CanvasSection;
   unlockable?: boolean;
+  customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
-  const { previewMode } = useCanvasStore();
+  const { previewMode, selectContainer } = useCanvasStore();
 
   // Row is disabled if it's locked, or if its parent section is locked
   const isDisabled = !!(row.locked || section.locked);
@@ -711,9 +761,16 @@ function CanvasRowView({
     gridTemplateColumns: isMobile
       ? 'repeat(1, minmax(0, 1fr))'
       : `repeat(${Math.max(row.columns.length, 1)}, minmax(0, 1fr))`,
+    ...(row.backgroundColor ? { background: row.backgroundColor } : {}),
+    ...(row.padding ? { padding: row.padding } : {}),
   };
 
   const sortableColumnItems = row.columns.map((column) => `canvas-column-${column.id}`);
+
+  const onContainerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    selectContainer({ kind: 'row', id: row.id });
+  };
 
   return (
     <div
@@ -770,7 +827,12 @@ function CanvasRowView({
         items={sortableColumnItems}
         strategy={horizontalListSortingStrategy}
       >
-        <div ref={setRowDroppableRef} className={clsx('grid w-full')} style={gridStyle}>
+        <div
+          ref={setRowDroppableRef}
+          className={clsx('grid w-full', row.className)}
+          style={gridStyle}
+          onClick={onContainerClick}
+        >
           {row.columns.length === 0 ? (
             <div
               className={clsx(
@@ -794,6 +856,7 @@ function CanvasRowView({
                 row={row}
                 section={section}
                 unlockable={unlockable}
+                customBlockRegistry={customBlockRegistry}
               />
             ))
           )}
@@ -807,11 +870,14 @@ function CanvasSectionView({
   section,
   daisyui,
   unlockable = true,
+  customBlockRegistry,
 }: {
   section: CanvasSection;
   daisyui?: boolean;
   unlockable?: boolean;
+  customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
+  const { selectContainer } = useCanvasStore();
   const {
     attributes,
     listeners,
@@ -843,6 +909,13 @@ function CanvasSectionView({
   };
 
   const sortableRowItems = section.rows.map((row) => `canvas-row-${row.id}`);
+
+  // Inline styles from the JSON input should always take precedence over theme classes
+  const sectionInlineStyle: CSSProperties = {
+    // Using background instead of backgroundColor to reset any background-image from theme gradients
+    ...(section.backgroundColor ? { background: section.backgroundColor } : {}),
+    ...(section.padding ? { padding: section.padding } : {}),
+  };
 
   return (
     <div
@@ -891,16 +964,28 @@ function CanvasSectionView({
       <section
         ref={setDroppableNodeRef}
         className={clsx(
-          'flex flex-col gap-4 p-5 rounded-[0.9rem] border transition w-full max-w-full box-border',
+          'flex flex-col gap-4 rounded-[0.9rem] border transition w-full max-w-full box-border',
+          // Only apply default padding class when no explicit padding is provided
+          { 'p-5': !section.padding },
+          // Border is always themed, but background classes should not conflict with JSON background
           {
-            'border-blue-300/30 bg-gradient-to-b from-blue-50/60 to-blue-100/40': !daisyui,
-            'border-primary/30 bg-gradient-to-b from-primary/5 to-primary/10': daisyui,
+            'border-blue-300/30': !daisyui,
+            'border-primary/30': daisyui,
+            // Apply gradient backgrounds only when no explicit backgroundColor is provided
+            'bg-gradient-to-b from-blue-50/60 to-blue-100/40': !daisyui && !section.backgroundColor,
+            'bg-gradient-to-b from-primary/5 to-primary/10': daisyui && !section.backgroundColor,
             'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]':
               isOver && !section.locked,
             '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
               isOver && section.locked,
           },
+          section.className,
         )}
+        style={sectionInlineStyle}
+        onClick={(e) => {
+          e.stopPropagation();
+          selectContainer({ kind: 'section', id: section.id });
+        }}
       >
         <SortableContext
           id={`section-${section.id}`}
@@ -928,6 +1013,7 @@ function CanvasSectionView({
                 daisyui={daisyui}
                 section={section}
                 unlockable={unlockable}
+                customBlockRegistry={customBlockRegistry}
               />
             ))
           )}
@@ -937,8 +1023,13 @@ function CanvasSectionView({
   );
 }
 
-export function Canvas({ sections, daisyui = false, unlockable = true }: CanvasProps) {
-  const { selectBlock } = useCanvasStore();
+export function Canvas({
+  sections,
+  daisyui = false,
+  unlockable = true,
+  customBlockRegistry = {},
+}: CanvasProps) {
+  const { selectBlock, selectContainer } = useCanvasStore();
   const { isOver, setNodeRef } = useDroppable({
     id: 'canvas',
   });
@@ -952,6 +1043,7 @@ export function Canvas({ sections, daisyui = false, unlockable = true }: CanvasP
     // Only deselect if clicking on the canvas itself, not on child elements
     if (e.target === e.currentTarget) {
       selectBlock(null);
+      selectContainer(null);
     }
   };
 
@@ -992,6 +1084,7 @@ export function Canvas({ sections, daisyui = false, unlockable = true }: CanvasP
             section={section}
             daisyui={daisyui}
             unlockable={unlockable}
+            customBlockRegistry={customBlockRegistry}
           />
         ))
       )}

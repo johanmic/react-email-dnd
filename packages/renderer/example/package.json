@@ -1,0 +1,23 @@
+{
+  "name": "react-email-starter",
+  "version": "1.1.0",
+  "private": true,
+  "scripts": {
+    "build": "email build",
+    "dev": "email dev",
+    "export": "email export"
+  },
+  "dependencies": {
+    "@react-email-dnd/renderer": "link:..",
+    "@react-email-dnd/shared": "link:../../shared",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@react-email/components": "0.5.6",
+    "@react-email/preview-server": "4.2.12",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.1",
+    "react-email": "4.2.12"
+  }
+}

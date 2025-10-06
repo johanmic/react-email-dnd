@@ -3,7 +3,31 @@ import type { CanvasDocument } from '@react-email-dnd/shared';
 import 'react-email-dnd/styles.css';
 import { useState, useCallback } from 'react';
 import { createSampleCanvasDocument } from './sample-document';
-
+import { customBlocks, customBlockPropEditors } from './custom-blocks';
+import themes from '../themes.json';
+const forest = themes.forest;
+const colors = [
+  forest.primary,
+  forest.secondary,
+  forest.accent,
+  forest.neutral,
+  forest.info,
+  forest.success,
+  forest.warning,
+  forest.error,
+];
+const textColors = [
+  ...new Set([
+    forest['primary-content'],
+    forest['secondary-content'],
+    forest['accent-content'],
+    forest['neutral-content'],
+    forest['info-content'],
+    forest['success-content'],
+    forest['warning-content'],
+    forest['error-content'],
+  ]),
+];
 function App() {
   const [document, setDocument] = useState<CanvasDocument | undefined>(
     createSampleCanvasDocument(),
@@ -67,7 +91,14 @@ function App() {
           onDocumentChange={handleDocumentChange}
           uploadFile={uploadFile}
         >
-          <EmailEditor daisyui={true} unlockable={false} />
+          <EmailEditor
+            colors={colors}
+            textColors={textColors}
+            daisyui={true}
+            unlockable={false}
+            customBlocks={customBlocks}
+            customBlockPropEditors={customBlockPropEditors}
+          />
         </CanvasProvider>
       </main>
     </div>

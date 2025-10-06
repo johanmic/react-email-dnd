@@ -16,15 +16,16 @@ export default defineConfig({
       'react-email-dnd/styles.css': toRoot('../dist/styles.css'),
       'react-email-dnd': toRoot('../dist'),
       '@react-email-dnd/shared': toRoot('../../shared/src'),
+      '@react-email-dnd/renderer': toRoot('../../renderer/src'),
       '@react-email/components': toRoot('node_modules/@react-email/components'),
     },
   },
   optimizeDeps: {
-    exclude: ['react-email-dnd', '@react-email-dnd/shared'],
+    exclude: ['react-email-dnd', '@react-email-dnd/shared', '@react-email-dnd/renderer'],
   },
   server: {
     fs: {
-      allow: [toRoot('..')],
+      allow: [toRoot('..'), toRoot('../../renderer/src')],
     },
   },
 });

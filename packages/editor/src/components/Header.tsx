@@ -1,15 +1,51 @@
-import type { ChangeEvent } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { useCanvasStore } from '../hooks/useCanvasStore';
-import { ArrowCounterClockwiseIcon, DeviceMobile, Desktop } from '@phosphor-icons/react';
+import {
+  ArrowCounterClockwiseIcon,
+  CodeIcon,
+  DeviceMobileIcon,
+  DesktopIcon,
+} from '@phosphor-icons/react';
+import { renderDocument } from '@react-email-dnd/renderer';
 import clsx from 'clsx';
+import { ReactTextPreviewModal } from './ReactTextPreviewModal';
 const TITLE_INPUT_ID = 'email-dnd-title-input';
 
 export function Header({ daisyui = false }: { daisyui?: boolean }) {
   const { document, updateTitle, save, undo, isDirty, canUndo, previewMode, setPreviewMode } =
     useCanvasStore();
+  const [reactTextOpen, setReactTextOpen] = useState(false);
+  const [reactTextOutput, setReactTextOutput] = useState('');
+
+  const closeReactText = () => {
+    setReactTextOpen(false);
+    setReactTextOutput('');
+  };
 
   const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
     updateTitle(event.target.value);
+  };
+
+  const handleShowReactText = () => {
+    try {
+      const result = renderDocument({
+        document,
+        options: {
+          format: 'react-text',
+          variables: document.variables,
+        },
+      });
+
+      if (result.format !== 'react-text') {
+        return;
+      }
+
+      setReactTextOutput(result.code);
+      setReactTextOpen(true);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to render react-text output', error);
+    }
   };
 
   return (
@@ -68,7 +104,7 @@ export function Header({ daisyui = false }: { daisyui?: boolean }) {
               daisyui && (previewMode === 'desktop' ? 'btn-active' : ''),
             )}
           >
-            <Desktop size={18} />
+            <DesktopIcon size={18} />
           </button>
           <button
             type="button"
@@ -86,9 +122,21 @@ export function Header({ daisyui = false }: { daisyui?: boolean }) {
               daisyui && (previewMode === 'mobile' ? 'btn-active' : ''),
             )}
           >
-            <DeviceMobile size={18} />
+            <DeviceMobileIcon size={18} />
           </button>
         </div>
+        <button
+          type="button"
+          onClick={handleShowReactText}
+          title="Open React Email JSX output"
+          className={clsx(
+            !daisyui &&
+              'gap-2 flex items-center py-2 px-3.5 rounded-lg border border-slate-300/60 bg-white text-slate-900 text-sm font-medium transition hover:border-green-500/60 hover:bg-green-500/10 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/20',
+            daisyui && 'btn btn-ghost btn-sm',
+          )}
+        >
+          <CodeIcon size={18} />
+        </button>
         <button
           type="button"
           onClick={undo}
@@ -115,6 +163,12 @@ export function Header({ daisyui = false }: { daisyui?: boolean }) {
           Save
         </button>
       </div>
+      <ReactTextPreviewModal
+        open={reactTextOpen}
+        code={reactTextOutput}
+        onClose={closeReactText}
+        daisyui={daisyui}
+      />
     </header>
   );
 }
