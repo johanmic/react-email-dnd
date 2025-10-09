@@ -27,7 +27,9 @@
     "daisyui": "^5.1.24",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-email-dnd": "link:..",
+    "@react-email-dnd/editor": "link:..",
+    "@react-email-dnd/shared": "link:../../shared",
+    "@react-email-dnd/renderer": "link:../../renderer",
     "tailwindcss": "^4.1.13"
   }
 }

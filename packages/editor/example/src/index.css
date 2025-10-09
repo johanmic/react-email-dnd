@@ -4,5 +4,5 @@
     themes: light --default, dark --prefersdark, forest;
   }
 
-@source "../node_modules/react-email-dnd/**/*.{js,jsx,ts,tsx}";
-@source "../node_modules/react-email-dnd/dist/**/*.{js,jsx,ts,tsx}";
+@source "../src/**/*.{ts,tsx}";
+@source "../dist/**/*.{js,jsx,ts,tsx}";

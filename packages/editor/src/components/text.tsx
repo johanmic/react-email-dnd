@@ -11,6 +11,8 @@ export const textDefaults: TextBlockProps = {
   color: '#1f2937',
   lineHeight: '1.6',
   fontWeight: 'normal',
+  margin: '0 0 16px',
+  padding: '0',
 };
 
 export const textDefinition: BlockDefinition<TextBlock> = {
@@ -30,6 +32,8 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
     color = '#1f2937',
     lineHeight = '1.6',
     fontWeight = 'normal',
+    margin = '0 0 16px',
+    padding = '0',
     daisyui = false,
   } = props;
 
@@ -37,18 +41,73 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
 
   const style: CSSProperties = {
     textAlign: align,
-    fontSize,
+    fontSize: `${fontSize}px`,
     color,
     lineHeight,
     fontWeight: resolvedFontWeight,
-    margin: '0 0 16px',
+    margin,
+    padding,
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    wordBreak: 'break-word',
+    maxWidth: '100%',
+  };
+
+  const getAlignmentClass = () => {
+    switch (align) {
+      case 'center':
+        return 'text-center';
+      case 'right':
+        return 'text-right';
+      case 'justify':
+        return 'text-justify';
+      default:
+        return 'text-left';
+    }
+  };
+
+  const getFontSizeClass = () => {
+    if (fontSize <= 12) return 'text-xs';
+    if (fontSize <= 14) return 'text-sm';
+    if (fontSize <= 16) return 'text-base';
+    if (fontSize <= 18) return 'text-lg';
+    if (fontSize <= 20) return 'text-xl';
+    if (fontSize <= 24) return 'text-2xl';
+    if (fontSize <= 30) return 'text-3xl';
+    return 'text-4xl';
+  };
+
+  const getFontWeightClass = () => {
+    switch (fontWeight) {
+      case 'light':
+        return 'font-light';
+      case 'normal':
+        return 'font-normal';
+      case 'medium':
+        return 'font-medium';
+      case 'bold':
+        return 'font-bold';
+      case 'extrabold':
+        return 'font-extrabold';
+      default:
+        return 'font-normal';
+    }
   };
 
   return (
     <EmailText
-      className={clsx({
-        'text-base-content': daisyui,
-      })}
+      className={clsx(
+        // Base responsive classes
+        'block w-full leading-relaxed',
+        getAlignmentClass(),
+        getFontSizeClass(),
+        getFontWeightClass(),
+        // DaisyUI specific classes
+        {
+          'text-base-content': daisyui,
+          'text-gray-800': !daisyui,
+        },
+      )}
       style={style}
     >
       {content}

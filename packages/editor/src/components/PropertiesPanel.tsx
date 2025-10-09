@@ -15,7 +15,13 @@ import type {
 } from '@react-email-dnd/shared';
 // Container types are inferred at usage; no direct type imports needed here
 
-export type ColorOption = string | { value: string; label?: string };
+export type ColorOption =
+  | string
+  | {
+      hex: string; // visual color used for inline styles and email-safe values
+      class?: string; // optional CSS class (e.g., tailwind/daisyUI) applied in editor previews
+      label?: string;
+    };
 
 export interface CustomBlockPropEditorProps<
   Props extends Record<string, unknown> = Record<string, unknown>,
@@ -27,13 +33,17 @@ export interface CustomBlockPropEditorProps<
   daisyui?: boolean;
   colors?: ColorOption[];
   textColors?: ColorOption[];
+  bgColors?: ColorOption[];
   disabled?: boolean;
 }
 
 export type CustomBlockPropEditor<Props extends Record<string, unknown> = Record<string, unknown>> =
   React.ComponentType<CustomBlockPropEditorProps<Props>>;
 
-export type CustomBlockPropEditors = Record<string, CustomBlockPropEditor<Record<string, unknown>>>;
+// Using `any` by design to allow heterogeneous prop editors keyed by component name.
+// Each editor component retains its own strict props type.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CustomBlockPropEditors = Record<string, CustomBlockPropEditor<any>>;
 
 interface PropertiesPanelProps {
   className?: string;
@@ -42,6 +52,7 @@ interface PropertiesPanelProps {
   unlockable?: boolean;
   colors?: ColorOption[];
   textColors?: ColorOption[];
+  bgColors?: ColorOption[];
   customBlockPropEditors?: CustomBlockPropEditors;
 }
 
@@ -96,27 +107,29 @@ function ColorPicker({ value, onChange, colors, daisyui, disabled }: ColorPicker
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const swatches = useMemo(() => {
+  type Swatch = { hex: string; className?: string; label: string };
+
+  const swatches = useMemo<Swatch[]>(() => {
     if (!colors) return [];
-
     return colors
-      .map((color) => {
-        if (typeof color === 'string') {
-          return { value: color, label: color };
+      .map((entry): Swatch | null => {
+        if (typeof entry === 'string') {
+          return { hex: entry, label: entry };
         }
-
-        if (!color?.value) {
-          return null;
-        }
-
-        return { value: color.value, label: color.label ?? color.value };
+        if (!entry?.hex) return null;
+        return { hex: entry.hex, className: entry.class, label: entry.label ?? entry.hex };
       })
-      .filter((entry): entry is { value: string; label: string } => Boolean(entry?.value));
+      .filter((e): e is Swatch => e !== null);
   }, [colors]);
 
-  const handleColorSelect = (color: string) => {
-    setPreviewColor(color);
-    onChange(color);
+  // Get the first custom color to use as default when opening
+  const firstCustomColor = useMemo(() => {
+    return swatches.length > 0 ? swatches[0].hex : value;
+  }, [swatches, value]);
+
+  const handleColorSelect = (hex: string) => {
+    setPreviewColor(hex);
+    onChange(hex);
     setIsOpen(false);
   };
 
@@ -152,7 +165,13 @@ function ColorPicker({ value, onChange, colors, daisyui, disabled }: ColorPicker
         ref={buttonRef}
         type="button"
         disabled={disabled}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen) {
+            // When opening, set preview to first custom color if available
+            setPreviewColor(firstCustomColor);
+          }
+          setIsOpen(!isOpen);
+        }}
         className={clsx(
           'w-16 h-14 rounded-xl border-2 transition-all duration-200 flex items-center justify-center',
           {
@@ -184,21 +203,22 @@ function ColorPicker({ value, onChange, colors, daisyui, disabled }: ColorPicker
           })}
         >
           <div className="flex flex-wrap gap-3 w-60">
-            {swatches.map((color) => (
+            {swatches.map((sw) => (
               <button
-                key={color.value}
+                key={`${sw.label}-${sw.hex}`}
                 type="button"
-                onClick={() => handleColorSelect(color.value)}
+                onClick={() => handleColorSelect(sw.hex)}
                 className={clsx(
                   'w-10 h-10 rounded-full border-2 transition-all duration-200 hover:scale-105',
+                  sw.className,
                   {
                     'border-gray-300 hover:border-gray-400': !daisyui,
                     'border-base-300 hover:border-primary/50': daisyui,
-                    'ring-2 ring-blue-500 ring-offset-2': previewColor === color.value,
+                    'ring-2 ring-blue-500 ring-offset-2': previewColor === sw.hex,
                   },
                 )}
-                style={{ backgroundColor: color.value }}
-                aria-label={`Select color ${color.label}`}
+                style={{ backgroundColor: sw.hex }}
+                aria-label={`Select color ${sw.label}`}
               />
             ))}
           </div>
@@ -490,6 +510,30 @@ function HeadingPropsForm({
         />
         <span className={helpCls}>Number or percentage (e.g., 1.6 or 150%)</span>
       </div>
+
+      <div>
+        <label className={labelCls}>Margin</label>
+        <input
+          type="text"
+          value={props.margin || '0 0 16px'}
+          onChange={(e) => onUpdate({ margin: e.target.value })}
+          placeholder="0 0 16px"
+          className={fieldCls}
+        />
+        <span className={helpCls}>CSS margin (e.g., 16px or 16px 0)</span>
+      </div>
+
+      <div>
+        <label className={labelCls}>Padding</label>
+        <input
+          type="text"
+          value={props.padding || '0'}
+          onChange={(e) => onUpdate({ padding: e.target.value })}
+          placeholder="0"
+          className={fieldCls}
+        />
+        <span className={helpCls}>CSS padding (e.g., 8px or 8px 12px)</span>
+      </div>
     </fieldset>
   );
 }
@@ -687,6 +731,30 @@ function TextPropsForm({
           className={fieldCls}
         />
         <span className={helpCls}>Number or percentage (e.g., 1.6 or 150%)</span>
+      </div>
+
+      <div>
+        <label className={labelCls}>Margin</label>
+        <input
+          type="text"
+          value={props.margin || '0 0 16px'}
+          onChange={(e) => onUpdate({ margin: e.target.value })}
+          placeholder="0 0 16px"
+          className={fieldCls}
+        />
+        <span className={helpCls}>CSS margin (e.g., 16px or 16px 0)</span>
+      </div>
+
+      <div>
+        <label className={labelCls}>Padding</label>
+        <input
+          type="text"
+          value={props.padding || '0'}
+          onChange={(e) => onUpdate({ padding: e.target.value })}
+          placeholder="0"
+          className={fieldCls}
+        />
+        <span className={helpCls}>CSS padding (e.g., 8px or 8px 12px)</span>
       </div>
     </fieldset>
   );
@@ -892,6 +960,56 @@ function ButtonPropsForm({
         />
         <span className={helpCls}>Pixels (0-50)</span>
       </div>
+
+      <div>
+        <label className={labelCls}>Padding</label>
+        <input
+          type="text"
+          value={props.padding || '12px 24px'}
+          onChange={(e) => onUpdate({ padding: e.target.value })}
+          placeholder="12px 24px"
+          className={fieldCls}
+        />
+        <span className={helpCls}>CSS padding (e.g., 12px 24px)</span>
+      </div>
+
+      <div>
+        <label className={labelCls}>Font Size</label>
+        <input
+          type="number"
+          value={props.fontSize || 14}
+          onChange={(e) => onUpdate({ fontSize: Number(e.target.value) })}
+          className={fieldCls}
+          min="8"
+          max="72"
+        />
+        <span className={helpCls}>Pixels (8-72)</span>
+      </div>
+
+      <div>
+        <label className={labelCls}>Font Weight</label>
+        <select
+          value={props.fontWeight || 'bold'}
+          onChange={(e) => onUpdate({ fontWeight: e.target.value as 'normal' | 'medium' | 'bold' })}
+          className={selectCls}
+        >
+          <option value="normal">Normal</option>
+          <option value="medium">Medium</option>
+          <option value="bold">Bold</option>
+        </select>
+      </div>
+
+      <div>
+        <label className={labelCls}>Margin</label>
+        <input
+          type="text"
+          value={props.margin || '12px 0'}
+          onChange={(e) => onUpdate({ margin: e.target.value })}
+          placeholder="12px 0"
+          className={fieldCls}
+        />
+        <span className={helpCls}>CSS margin (e.g., 12px 0)</span>
+      </div>
     </fieldset>
   );
 }
@@ -1086,24 +1204,24 @@ function ImagePropsForm({
           <label className={labelCls}>Width</label>
           <input
             type="number"
-            value={props.width || 600}
+            value={props.width ?? 600}
             onChange={(e) => onUpdate({ width: Number(e.target.value) })}
             className={fieldCls}
-            min="1"
+            min="0"
           />
-          <span className={helpCls}>Pixels</span>
+          <span className={helpCls}>Pixels (0 for auto)</span>
         </div>
 
         <div>
           <label className={labelCls}>Height</label>
           <input
             type="number"
-            value={props.height || 200}
+            value={props.height ?? 200}
             onChange={(e) => onUpdate({ height: Number(e.target.value) })}
             className={fieldCls}
-            min="1"
+            min="0"
           />
-          <span className={helpCls}>Pixels</span>
+          <span className={helpCls}>Pixels (0 for auto)</span>
         </div>
       </div>
 
@@ -1144,6 +1262,30 @@ function ImagePropsForm({
         />
         <span className={helpCls}>Pixels (0 for sharp corners)</span>
       </div>
+
+      <div>
+        <label className={labelCls}>Margin</label>
+        <input
+          type="text"
+          value={props.margin || '12px 0'}
+          onChange={(e) => onUpdate({ margin: e.target.value })}
+          placeholder="12px 0"
+          className={fieldCls}
+        />
+        <span className={helpCls}>CSS margin (e.g., 12px 0)</span>
+      </div>
+
+      <div>
+        <label className={labelCls}>Padding</label>
+        <input
+          type="text"
+          value={props.padding || '0'}
+          onChange={(e) => onUpdate({ padding: e.target.value })}
+          placeholder="0"
+          className={fieldCls}
+        />
+        <span className={helpCls}>CSS padding (e.g., 8px)</span>
+      </div>
     </fieldset>
   );
 }
@@ -1154,6 +1296,7 @@ export function PropertiesPanel({
   unlockable = true,
   colors,
   textColors,
+  bgColors,
   customBlockPropEditors,
 }: PropertiesPanelProps) {
   const {
@@ -1264,7 +1407,7 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'button' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
-            colors={colors}
+            colors={bgColors ?? colors}
             textColors={textColors}
             disabled={isLocked}
           />
@@ -1275,7 +1418,7 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'image' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
-            colors={colors}
+            colors={bgColors ?? colors}
             disabled={isLocked}
           />
         );
@@ -1285,7 +1428,7 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'heading' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
-            colors={colors}
+            colors={bgColors ?? colors}
             textColors={textColors}
             disabled={isLocked}
           />
@@ -1336,6 +1479,7 @@ export function PropertiesPanel({
             daisyui={daisyui}
             colors={colors}
             textColors={textColors}
+            bgColors={bgColors}
             disabled={isLocked}
           />
         );
@@ -1430,6 +1574,12 @@ export function PropertiesPanel({
       const section = document.sections.find((s) => s.id === selectedContainer.id);
       if (!section) return null;
       const locked = !!section.locked;
+      console.log(
+        '🔍 Section selected:',
+        section.id,
+        'current backgroundColor:',
+        section.backgroundColor,
+      );
       return (
         <fieldset className="space-y-6" disabled={locked}>
           {unlockable && (
@@ -1447,19 +1597,35 @@ export function PropertiesPanel({
           )}
           <div>
             <label className={labelCls}>Background</label>
-            <input
-              type="text"
-              value={section.backgroundColor ?? ''}
-              onChange={(e) =>
-                updateContainerProps({
-                  kind: 'section',
-                  id: section.id,
-                  props: { backgroundColor: e.target.value },
-                })
-              }
-              className={fieldCls}
-              placeholder="#ffffff or transparent"
-            />
+            <div className="flex items-center gap-3">
+              <ColorPicker
+                value={section.backgroundColor ?? '#ffffff'}
+                onChange={(color) => {
+                  console.log('🎨 Section color changed:', color, 'for section:', section.id);
+                  updateContainerProps({
+                    kind: 'section',
+                    id: section.id,
+                    props: { backgroundColor: color },
+                  });
+                }}
+                colors={bgColors ?? colors}
+                daisyui={daisyui}
+                disabled={locked}
+              />
+              <input
+                type="text"
+                value={section.backgroundColor ?? ''}
+                onChange={(e) =>
+                  updateContainerProps({
+                    kind: 'section',
+                    id: section.id,
+                    props: { backgroundColor: e.target.value },
+                  })
+                }
+                className={fieldCls}
+                placeholder="#ffffff or transparent"
+              />
+            </div>
           </div>
           <div>
             <label className={labelCls}>Padding</label>
@@ -1515,19 +1681,34 @@ export function PropertiesPanel({
           )}
           <div>
             <label className={labelCls}>Background</label>
-            <input
-              type="text"
-              value={row.backgroundColor ?? ''}
-              onChange={(e) =>
-                updateContainerProps({
-                  kind: 'row',
-                  id: row.id,
-                  props: { backgroundColor: e.target.value },
-                })
-              }
-              className={fieldCls}
-              placeholder="#f8fafc"
-            />
+            <div className="flex items-center gap-3">
+              <ColorPicker
+                value={row.backgroundColor ?? '#f8fafc'}
+                onChange={(color) =>
+                  updateContainerProps({
+                    kind: 'row',
+                    id: row.id,
+                    props: { backgroundColor: color },
+                  })
+                }
+                colors={bgColors ?? colors}
+                daisyui={daisyui}
+                disabled={locked}
+              />
+              <input
+                type="text"
+                value={row.backgroundColor ?? ''}
+                onChange={(e) =>
+                  updateContainerProps({
+                    kind: 'row',
+                    id: row.id,
+                    props: { backgroundColor: e.target.value },
+                  })
+                }
+                className={fieldCls}
+                placeholder="#f8fafc"
+              />
+            </div>
           </div>
           <div>
             <label className={labelCls}>Padding</label>
@@ -1603,19 +1784,34 @@ export function PropertiesPanel({
           )}
           <div>
             <label className={labelCls}>Background</label>
-            <input
-              type="text"
-              value={column.backgroundColor ?? ''}
-              onChange={(e) =>
-                updateContainerProps({
-                  kind: 'column',
-                  id: column.id,
-                  props: { backgroundColor: e.target.value },
-                })
-              }
-              className={fieldCls}
-              placeholder="#ffffff"
-            />
+            <div className="flex items-center gap-3">
+              <ColorPicker
+                value={column.backgroundColor ?? '#ffffff'}
+                onChange={(color) =>
+                  updateContainerProps({
+                    kind: 'column',
+                    id: column.id,
+                    props: { backgroundColor: color },
+                  })
+                }
+                colors={bgColors ?? colors}
+                daisyui={daisyui}
+                disabled={locked}
+              />
+              <input
+                type="text"
+                value={column.backgroundColor ?? ''}
+                onChange={(e) =>
+                  updateContainerProps({
+                    kind: 'column',
+                    id: column.id,
+                    props: { backgroundColor: e.target.value },
+                  })
+                }
+                className={fieldCls}
+                placeholder="#ffffff"
+              />
+            </div>
           </div>
           <div>
             <label className={labelCls}>Padding</label>

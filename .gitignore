@@ -14,3 +14,4 @@ GEMINI.md
 
 node_modules
 dist
+.cursor

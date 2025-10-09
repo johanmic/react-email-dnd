@@ -4,6 +4,14 @@ import type {
   CustomBlockRegistry,
 } from "@react-email-dnd/shared"
 
+export type ColorOption =
+  | string
+  | {
+      hex: string
+      class?: string
+      label?: string
+    }
+
 export type RendererFormat = "react" | "react-text" | "html" | "plain-text"
 
 export interface RendererOptions {
@@ -17,6 +25,12 @@ export interface RendererOptions {
   componentName?: string
   /** Optional registry of custom blocks for React rendering. */
   customBlocks?: CustomBlockRegistry
+  /** When true, enable Tailwind config injection for daisyUI theming. */
+  daisyui?: boolean
+  /** Optional theme colors to inject into Tailwind config when daisyui is enabled. */
+  theme?: Record<string, string>
+  /** Optional high-level color palette (hex/class/label) used to extend Tailwind theme colors. */
+  colors?: ColorOption[]
 }
 
 export interface RenderRequest {

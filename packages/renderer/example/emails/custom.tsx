@@ -5,121 +5,41 @@ interface CustomProps {
   document: CanvasDocument
 }
 
-const t: CanvasDocument = {
-  version: 1,
-  meta: {
-    title: "Sample Email",
-    description: "A sample email created with react-email-dnd",
-    tags: ["sample", "email"],
-  },
-  sections: [
-    {
-      id: "section-1",
-      type: "section",
-      backgroundColor: "#ffffff",
-      padding: "20px",
-      className: "rounded-xl",
-      locked: true,
-      rows: [
-        {
-          id: "row-1",
-          type: "row",
-          gutter: 24,
-          backgroundColor: "#f8fafc",
-          padding: "12px",
-          className: "ring-1 ring-slate-200",
-          locked: true,
-          columns: [
-            {
-              id: "column-1",
-              type: "column",
-              width: 100,
-              backgroundColor: "#ffffff",
-              padding: "16px",
-              className: "shadow-md rounded-lg",
-              locked: true,
-              blocks: [
-                {
-                  id: "heading-1",
-                  type: "heading",
-                  locked: true,
-                  props: {
-                    content: "Welcome to our newsletter!",
-                    as: "h1",
-                    align: "center",
-                    fontSize: 32,
-                    color: "#333333",
-                    fontWeight: "bold",
-                  },
-                },
-                {
-                  id: "hero-custom-1",
-                  type: "custom",
-                  locked: true,
-                  props: {
-                    componentName: "HeroBlock",
-                    props: {
-                      title: "Summer sale is live",
-                      description:
-                        "Save up to 30% across the entire catalog this week only.",
-                      ctaLabel: "Explore deals",
-                      ctaHref: "https://example.com/sale",
-                      backgroundColor: "#0ea5e9",
-                      textColor: "#ffffff",
-                    },
-                  },
-                },
-                {
-                  id: "text-1",
-                  type: "text",
-                  locked: true,
-                  props: {
-                    content:
-                      "Thank you for subscribing to our newsletter. We have exciting updates to share with you.",
-                    align: "center",
-                    fontSize: 16,
-                    color: "#666666",
-                    lineHeight: "1.5",
-                  },
-                },
-                {
-                  id: "button-1",
-                  type: "button",
-                  locked: true,
-                  props: {
-                    label: "Read More",
-                    href: "https://example.com",
-                    align: "center",
-                    backgroundColor: "#007bff",
-                    color: "#ffffff",
-                    borderRadius: 4,
-                  },
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: "section-fe676c45-b169-4015-bd7b-d8cdabec0cce",
-      type: "section",
-      rows: [],
-    },
-  ],
-  variables: {
-    user_name: "John Doe",
-    order_id: "123456",
-    title: "Welcome to our newsletter!",
-    description:
-      "Thank you for subscribing to our newsletter. We have exciting updates to share with you.",
-    button_label: "Read More",
-    button_href: "https://example.com",
-  },
-}
+import themes from "../themes.json"
+import email from "../email.json"
+const forest = themes.forest
+const colors = [
+  forest.primary,
+  forest.secondary,
+  forest.accent,
+  forest.neutral,
+  forest.info,
+  forest.success,
+  forest.warning,
+  forest.error,
+]
+const textColors = [
+  "primary",
+  "secondary",
+  "accent",
+  "neutral",
+  "info",
+  "success",
+  "warning",
+  "error",
+].map((name) => ({
+  hex: forest[`${name}-content` as keyof typeof forest],
+  class: `text-${name}`,
+}))
+
+const t: CanvasDocument = email as CanvasDocument
 
 export default function Custom({ document }: { document: CanvasDocument }) {
-  const result = renderDocument({ document, options: { format: "react" } })
+  const theme = themes.dark
+  const result = renderDocument({
+    document,
+    options: { format: "react", theme, daisyui: true, colors },
+  })
   return result.format === "react" ? result.node : null
 }
 

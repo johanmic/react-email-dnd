@@ -11,6 +11,8 @@ export const imageDefaults: ImageBlockProps = {
   height: 200,
   align: 'center',
   borderRadius: 0,
+  margin: '12px 0',
+  padding: '0',
 };
 
 export const imageDefinition: BlockDefinition<ImageBlock> = {
@@ -31,30 +33,80 @@ export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
     height,
     align = 'center',
     borderRadius = 0,
+    margin = '12px 0',
+    padding = '0',
     daisyui = false,
     placeholder,
   } = props;
 
   const wrapperStyle: CSSProperties = {
     textAlign: align,
-    margin: '12px 0',
+    width: '100%',
+  };
+
+  const getAlignmentClass = () => {
+    switch (align) {
+      case 'center':
+        return 'text-center';
+      case 'right':
+        return 'text-right';
+      case 'left':
+        return 'text-left';
+      default:
+        return 'text-center';
+    }
+  };
+
+  const getBorderRadiusClass = () => {
+    if (borderRadius === 0) return '';
+    if (borderRadius <= 4) return 'rounded-sm';
+    if (borderRadius <= 8) return 'rounded-md';
+    if (borderRadius <= 12) return 'rounded-lg';
+    if (borderRadius <= 16) return 'rounded-xl';
+    if (borderRadius <= 24) return 'rounded-2xl';
+    return 'rounded-3xl';
+  };
+
+  const getSizeClass = () => {
+    const imgWidth = (width ?? imageDefaults.width) as number;
+    if (imgWidth <= 200) return 'max-w-xs';
+    if (imgWidth <= 300) return 'max-w-sm';
+    if (imgWidth <= 400) return 'max-w-md';
+    if (imgWidth <= 500) return 'max-w-lg';
+    if (imgWidth <= 600) return 'max-w-xl';
+    if (imgWidth <= 800) return 'max-w-2xl';
+    if (imgWidth <= 1000) return 'max-w-3xl';
+    return 'max-w-4xl';
   };
 
   return (
-    <div style={wrapperStyle}>
+    <div style={wrapperStyle} className={clsx('w-full', getAlignmentClass())}>
       <Img
         src={src || placeholder || imageDefaults.src}
         alt={alt}
         href={href}
-        width={width}
-        height={height}
-        className={clsx({
-          'rounded-lg': daisyui,
-        })}
+        width={width ?? imageDefaults.width}
+        height={height ?? imageDefaults.height}
+        className={clsx(
+          // Base responsive classes
+          'block mx-auto',
+          getSizeClass(),
+          getBorderRadiusClass(),
+          // DaisyUI specific classes
+          {
+            'rounded-lg': daisyui && borderRadius > 0,
+            'shadow-lg': daisyui,
+          },
+        )}
         style={{
-          borderRadius: daisyui ? undefined : borderRadius,
+          borderRadius: daisyui ? undefined : `${borderRadius}px`,
+          margin,
+          padding,
           display: 'inline-block',
           maxWidth: '100%',
+          height: 'auto',
+          border: 'none',
+          outline: 'none',
         }}
       />
     </div>

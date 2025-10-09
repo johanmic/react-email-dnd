@@ -12,11 +12,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Sidebar, DEFAULT_CONTENT_ITEMS } from './Sidebar';
 import { Main } from './Main';
 import { Header } from './Header';
-import {
-  PropertiesPanel,
-  type ColorOption,
-  type CustomBlockPropEditors,
-} from './PropertiesPanel';
+import { PropertiesPanel, type ColorOption, type CustomBlockPropEditors } from './PropertiesPanel';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import {
   handleSidebarDrop,
@@ -60,7 +56,11 @@ export interface EmailEditorProps {
   colors?: ColorOption[];
   /** Optional palette specifically for text colors; falls back to `colors` when omitted */
   textColors?: ColorOption[];
+  /** Optional palette specifically for background colors; falls back to `colors` when omitted */
+  bgColors?: ColorOption[];
   /** Custom content blocks that should be available from the sidebar */
+  // Using `any` by design to allow heterogeneous custom block props across definitions.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customBlocks?: CustomBlockDefinition<any>[];
   /** Custom properties forms for custom content blocks, keyed by component name */
   customBlockPropEditors?: CustomBlockPropEditors;
@@ -75,6 +75,7 @@ export function EmailEditor({
   onDocumentChange,
   colors,
   textColors,
+  bgColors,
   customBlocks = [],
   customBlockPropEditors,
 }: EmailEditorProps) {
@@ -83,16 +84,10 @@ export function EmailEditor({
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const contentBlocks = useMemo(() => {
-    return [
-      ...DEFAULT_CONTENT_ITEMS,
-      ...customBlocks,
-    ] as BlockDefinition<CanvasContentBlock>[];
+    return [...DEFAULT_CONTENT_ITEMS, ...customBlocks] as BlockDefinition<CanvasContentBlock>[];
   }, [customBlocks]);
 
-  const blockDefinitionMap = useMemo(
-    () => buildBlockDefinitionMap(contentBlocks),
-    [contentBlocks],
-  );
+  const blockDefinitionMap = useMemo(() => buildBlockDefinitionMap(contentBlocks), [contentBlocks]);
 
   const customBlockRegistry = useMemo(
     () => buildCustomBlockRegistry(contentBlocks),
@@ -662,6 +657,7 @@ export function EmailEditor({
           daisyui={daisyui}
           colors={colors}
           textColors={textColors}
+          bgColors={bgColors}
           customBlockPropEditors={customBlockPropEditors}
         />
       </div>

@@ -13,6 +13,7 @@ export const headingDefaults: HeadingBlockProps = {
   lineHeight: '1.3',
   fontWeight: 'bold',
   margin: '0 0 16px',
+  padding: '0',
 };
 
 export const headingDefinition: BlockDefinition<HeadingBlock> = {
@@ -34,6 +35,7 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
     lineHeight = '1.3',
     fontWeight = 'bold',
     margin = '0 0 16px',
+    padding = '0',
     daisyui = false,
   } = props;
 
@@ -41,11 +43,57 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
 
   const style: CSSProperties = {
     textAlign: align,
-    fontSize,
+    fontSize: `${fontSize}px`,
     color,
     lineHeight,
     fontWeight: resolvedFontWeight,
     margin,
+    padding,
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    wordBreak: 'break-word',
+    maxWidth: '100%',
+  };
+
+  const getAlignmentClass = () => {
+    switch (align) {
+      case 'center':
+        return 'text-center';
+      case 'right':
+        return 'text-right';
+      case 'justify':
+        return 'text-justify';
+      default:
+        return 'text-left';
+    }
+  };
+
+  const getFontSizeClass = () => {
+    if (fontSize <= 16) return 'text-base';
+    if (fontSize <= 18) return 'text-lg';
+    if (fontSize <= 20) return 'text-xl';
+    if (fontSize <= 24) return 'text-2xl';
+    if (fontSize <= 30) return 'text-3xl';
+    if (fontSize <= 36) return 'text-4xl';
+    if (fontSize <= 48) return 'text-5xl';
+    return 'text-6xl';
+  };
+
+  const getFontWeightClass = () => {
+    switch (fontWeight) {
+      case 'light':
+        return 'font-light';
+      case 'normal':
+        return 'font-normal';
+      case 'medium':
+        return 'font-medium';
+      case 'bold':
+        return 'font-bold';
+      case 'extrabold':
+        return 'font-extrabold';
+      default:
+        return 'font-bold';
+    }
   };
 
   const getDaisyUIHeadingClass = () => {
@@ -72,9 +120,18 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
   return (
     <EmailHeading
       as={as}
-      className={clsx({
-        [getDaisyUIHeadingClass()]: daisyui,
-      })}
+      className={clsx(
+        // Base responsive classes
+        'block w-full leading-tight',
+        getAlignmentClass(),
+        getFontSizeClass(),
+        getFontWeightClass(),
+        // DaisyUI specific classes
+        {
+          [getDaisyUIHeadingClass()]: daisyui,
+          'text-gray-900': !daisyui,
+        },
+      )}
       style={style}
     >
       {content}

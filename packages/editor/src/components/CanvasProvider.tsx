@@ -51,15 +51,14 @@ type CanvasAction =
   | { type: 'save'; snapshot: CanvasDocument }
   | { type: 'undo' }
   | { type: 'selectBlock'; blockId: string | null }
-  |
-    | {
-        type: 'selectContainer';
-        container:
-          | { kind: 'section'; id: string }
-          | { kind: 'row'; id: string }
-          | { kind: 'column'; id: string }
-          | null;
-      }
+  | {
+      type: 'selectContainer';
+      container:
+        | { kind: 'section'; id: string }
+        | { kind: 'row'; id: string }
+        | { kind: 'column'; id: string }
+        | null;
+    }
   | { type: 'updateBlockProps'; blockId: string; props: Record<string, unknown> }
   | {
       type: 'updateContainerProps';
@@ -255,12 +254,14 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
     }
     case 'updateContainerProps': {
       const { target } = action;
+      console.log('🔄 updateContainerProps called:', target);
       let next = state.present;
       if (target.kind === 'section') {
         next = {
           ...next,
           sections: next.sections.map((s) => (s.id === target.id ? { ...s, ...target.props } : s)),
         };
+        console.log('📝 Updated section:', target.id, 'with props:', target.props);
       } else if (target.kind === 'row') {
         next = {
           ...next,
@@ -269,6 +270,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
             rows: s.rows.map((r) => (r.id === target.id ? { ...r, ...target.props } : r)),
           })),
         };
+        console.log('📝 Updated row:', target.id, 'with props:', target.props);
       } else if (target.kind === 'column') {
         next = {
           ...next,
@@ -280,7 +282,9 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
             })),
           })),
         };
+        console.log('📝 Updated column:', target.id, 'with props:', target.props);
       }
+      console.log('📄 New document state:', next);
       return pushToHistory(state, next);
     }
     case 'setPreviewMode': {
@@ -360,10 +364,12 @@ export function CanvasProvider({
 
   const save = useCallback(() => {
     if (documentsAreEqual(state.present, state.savedSnapshot)) {
+      console.log('💾 Save skipped - no changes detected');
       return;
     }
 
     const snapshot = cloneCanvasDocument(state.present);
+    console.log('💾 SAVING DOCUMENT:', snapshot);
     dispatch({ type: 'save', snapshot });
     onSave?.(snapshot);
   }, [onSave, state.present, state.savedSnapshot]);

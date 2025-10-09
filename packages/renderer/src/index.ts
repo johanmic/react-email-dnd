@@ -1,46 +1,74 @@
-import type { RenderRequest, RenderResult, RendererOptions } from './types';
-import { renderHtml } from './renderers/html';
-import { renderPlainText } from './renderers/plain-text';
-import { renderReact } from './renderers/react';
-import { renderReactText } from './renderers/react-text';
-import type { RenderContext } from './types';
+import type {
+  RenderRequest,
+  RenderResult,
+  RendererOptions,
+  ColorOption,
+} from "./types"
+import { renderHtml } from "./renderers/html"
+import { renderPlainText } from "./renderers/plain-text"
+import { renderReact } from "./renderers/react"
+import { renderReactText } from "./renderers/react-text"
+import type { RenderContext } from "./types"
 
 function createContext(options: RendererOptions): RenderContext {
   return {
     variables: options.variables,
-  };
+  }
 }
 
-export function renderDocument({ document, options }: RenderRequest): RenderResult {
-  const context = createContext(options);
+export function renderDocument({
+  document,
+  options,
+}: RenderRequest): RenderResult {
+  const context = createContext(options)
+
+  // Normalize palette: allow providing colors as strings or {hex,class,label}. We'll expose
+  // a simple theme extension map (name->hex) for Tailwind when daisyui is enabled.
+  const normalizedPalette = (options.colors ?? [])
+    .map((c): { hex: string; label: string } | null => {
+      if (typeof c === "string") return { hex: c, label: c }
+      if (!c?.hex) return null
+      return { hex: c.hex, label: c.label ?? c.hex }
+    })
+    .filter(Boolean) as { hex: string; label: string }[]
+
+  // If theme misssing but colors provided, create a stable theme extension.
+  if (options.daisyui && !options.theme && normalizedPalette.length > 0) {
+    const merged: Record<string, string> = {}
+    normalizedPalette.forEach((p, idx) => {
+      merged[p.label.replace(/\s+/g, "_").toLowerCase() || `c${idx}`] = p.hex
+    })
+    // eslint-disable-next-line no-param-reassign
+    options.theme = merged
+  }
 
   switch (options.format) {
-    case 'react':
+    case "react":
       return {
-        format: 'react',
+        format: "react",
         node: renderReact(document, context, options),
-      };
-    case 'react-text':
+      }
+    case "react-text":
       return {
-        format: 'react-text',
+        format: "react-text",
         code: renderReactText(document, context, options),
-      };
-    case 'html':
+      }
+    case "html":
       return {
-        format: 'html',
+        format: "html",
         html: renderHtml(document, context, options),
-      };
-    case 'plain-text':
+      }
+    case "plain-text":
       return {
-        format: 'plain-text',
+        format: "plain-text",
         text: renderPlainText(document, context, options),
-      };
+      }
     default: {
-      const exhaustive: never = options.format;
-      throw new Error(`Unsupported render format: ${exhaustive}`);
+      const exhaustive: never = options.format
+      throw new Error(`Unsupported render format: ${exhaustive}`)
     }
   }
 }
 
-export * from './types';
-export { renderReactText } from './renderers/react-text';
+export * from "./types"
+export { renderReactText } from "./renderers/react-text"

@@ -50,11 +50,15 @@ export function buildBlockDefinitionMap(
 
 export function buildCustomBlockRegistry(
   blocks: BlockDefinition<CanvasContentBlock>[],
-): Record<string, CustomBlockDefinition<any>> {
+): // eslint-disable-next-line @typescript-eslint/no-explicit-any
+Record<string, CustomBlockDefinition<any>> {
+  // Allow heterogeneous custom components; each definition carries its own prop type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return blocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
     if (block.type !== 'custom') {
       return acc;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const customBlock = block as CustomBlockDefinition<any>;
     const componentName = customBlock.defaults.componentName;
     if (!componentName) {

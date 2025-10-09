@@ -10,6 +10,8 @@ export interface MainProps {
   sections: CanvasSection[];
   daisyui?: boolean;
   unlockable?: boolean;
+  // Using `any` by design to allow heterogeneous custom block props across definitions.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customBlockRegistry?: Record<string, CustomBlockDefinition<any>>;
 }
 

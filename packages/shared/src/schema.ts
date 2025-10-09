@@ -2,8 +2,14 @@ import type { ComponentType } from "react"
 import type { IconProps } from "@phosphor-icons/react"
 import { z, type ZodError } from "zod"
 
-const alignmentSchema = z.enum(["left", "center", "right"])
-const fontWeightSchema = z.enum(["normal", "medium", "bold"])
+const alignmentSchema = z.enum(["left", "center", "right", "justify"])
+const fontWeightSchema = z.enum([
+  "light",
+  "normal",
+  "medium",
+  "bold",
+  "extrabold",
+])
 
 export const buttonBlockPropsSchema = z.object({
   label: z.string(),
@@ -12,6 +18,10 @@ export const buttonBlockPropsSchema = z.object({
   backgroundColor: z.string().optional(),
   color: z.string().optional(),
   borderRadius: z.number().optional(),
+  padding: z.string().optional(),
+  fontSize: z.number().optional(),
+  fontWeight: fontWeightSchema.optional(),
+  margin: z.string().optional(),
 })
 export type ButtonBlockProps = z.infer<typeof buttonBlockPropsSchema>
 
@@ -22,6 +32,8 @@ export const textBlockPropsSchema = z.object({
   color: z.string().optional(),
   lineHeight: z.string().optional(),
   fontWeight: fontWeightSchema.optional(),
+  margin: z.string().optional(),
+  padding: z.string().optional(),
 })
 export type TextBlockProps = z.infer<typeof textBlockPropsSchema>
 
@@ -34,6 +46,7 @@ export const headingBlockPropsSchema = z.object({
   lineHeight: z.string().optional(),
   fontWeight: fontWeightSchema.optional(),
   margin: z.string().optional(),
+  padding: z.string().optional(),
 })
 export type HeadingBlockProps = z.infer<typeof headingBlockPropsSchema>
 
@@ -46,6 +59,8 @@ export const imageBlockPropsSchema = z.object({
   align: alignmentSchema.optional(),
   borderRadius: z.number().optional(),
   placeholder: z.string().optional(),
+  margin: z.string().optional(),
+  padding: z.string().optional(),
 })
 export type ImageBlockProps = z.infer<typeof imageBlockPropsSchema>
 
@@ -55,6 +70,7 @@ export const dividerBlockPropsSchema = z.object({
   width: z.string().optional(),
   align: alignmentSchema.optional(),
   margin: z.string().optional(),
+  padding: z.string().optional(),
 })
 export type DividerBlockProps = z.infer<typeof dividerBlockPropsSchema>
 

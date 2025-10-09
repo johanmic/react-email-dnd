@@ -1,8 +1,8 @@
-import { EmailEditor, CanvasProvider } from 'react-email-dnd';
+import { EmailEditor, CanvasProvider } from '@react-email-dnd';
 import type { CanvasDocument } from '@react-email-dnd/shared';
-import 'react-email-dnd/styles.css';
+import '@react-email-dnd/styles.css';
 import { useState, useCallback } from 'react';
-import { createSampleCanvasDocument } from './sample-document';
+import { createSampleCanvasDocument, bb } from './sample-document';
 import { customBlocks, customBlockPropEditors } from './custom-blocks';
 import themes from '../themes.json';
 const forest = themes.forest;
@@ -17,17 +17,19 @@ const colors = [
   forest.error,
 ];
 const textColors = [
-  ...new Set([
-    forest['primary-content'],
-    forest['secondary-content'],
-    forest['accent-content'],
-    forest['neutral-content'],
-    forest['info-content'],
-    forest['success-content'],
-    forest['warning-content'],
-    forest['error-content'],
-  ]),
-];
+  'primary',
+  'secondary',
+  'accent',
+  'neutral',
+  'info',
+  'success',
+  'warning',
+  'error',
+].map((name) => ({
+  hex: forest[`${name}-content` as keyof typeof forest],
+  class: `text-${name}`,
+}));
+
 function App() {
   const [document, setDocument] = useState<CanvasDocument | undefined>(
     createSampleCanvasDocument(),
@@ -43,6 +45,18 @@ function App() {
     console.log('🟨 DOCUMENT CHANGED:', data);
     setDocument(data);
   }, []);
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(async () => {
+    try {
+      const text = JSON.stringify(document ?? null, null, 2);
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      console.log('✅ Copied document to clipboard');
+      console.log('📄 Current document:', document);
+    } catch (err) {
+      console.error('Failed to copy document to clipboard', err);
+    }
+  }, [document]);
 
   const uploadFile = useCallback(async (file: File) => {
     // Demo uploader: simulate latency and return a blob URL.
@@ -77,16 +91,22 @@ function App() {
             Clear
           </button>
           <button
-            onClick={() => console.log('Current document:', document)}
+            onClick={handleCopy}
             className="px-4 py-2 btn btn-success btn-soft transition-colors"
           >
-            Log to Console
+            {copied ? 'Copied!' : 'Copy to Clipboard'}
+          </button>
+          <button
+            onClick={() => console.log('📄 Current document state:', document)}
+            className="px-4 py-2 btn btn-info btn-soft transition-colors"
+          >
+            Log Document
           </button>
         </div>
       </header>
       <main className="flex-1 overflow-hidden">
         <CanvasProvider
-          initialDocument={document}
+          initialDocument={bb}
           onSave={handleSave}
           onDocumentChange={handleDocumentChange}
           uploadFile={uploadFile}
@@ -95,7 +115,7 @@ function App() {
             colors={colors}
             textColors={textColors}
             daisyui={true}
-            unlockable={false}
+            unlockable={true}
             customBlocks={customBlocks}
             customBlockPropEditors={customBlockPropEditors}
           />

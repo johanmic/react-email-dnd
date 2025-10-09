@@ -18,6 +18,7 @@ const COMPONENT_IMPORTS = [
   "Button",
   "Hr",
   "Img",
+  "Tailwind",
 ]
 
 function pushLine(lines: Line[], depth: number, content: string) {
@@ -47,6 +48,10 @@ export function renderReactText(
   const previewText =
     document.meta.description ?? document.meta.title ?? "Preview text"
   const lines: Line[] = []
+  const tailwindConfig =
+    options.daisyui && options.theme
+      ? { theme: { extend: { colors: options.theme } } }
+      : undefined
 
   pushLine(
     lines,
@@ -64,7 +69,18 @@ export function renderReactText(
     `<Preview>${escapeForText(substitute(previewText, context))}</Preview>`
   )
   pushLine(lines, 3, "<Body>")
-  pushLine(lines, 4, "<Container>")
+  if (tailwindConfig) {
+    pushLine(
+      lines,
+      4,
+      `<Tailwind config={{presets:[pixelBasedPreset], theme: { extend: { colors: ${JSON.stringify(
+        options.theme
+      )} } } }}>`
+    )
+  } else {
+    pushLine(lines, 4, "<Tailwind>")
+  }
+  pushLine(lines, 5, "<Container>")
 
   document.sections.forEach((section) => {
     const sectionStyle: Record<string, unknown> = {}
@@ -77,7 +93,7 @@ export function renderReactText(
     const sectionClassAttr = section.className
       ? ` className=\"${section.className}\"`
       : ""
-    pushLine(lines, 5, `<Section${sectionClassAttr}${sectionStyleAttr}>`)
+    pushLine(lines, 6, `<Section${sectionClassAttr}${sectionStyleAttr}>`)
 
     section.rows.forEach((row) => {
       const rowStyle: Record<string, unknown> = {}
@@ -90,7 +106,7 @@ export function renderReactText(
       const rowClassAttr = row.className
         ? ` className=\"${row.className}\"`
         : ""
-      pushLine(lines, 6, `<Row${rowClassAttr}${rowStyleAttr}>`)
+      pushLine(lines, 7, `<Row${rowClassAttr}${rowStyleAttr}>`)
 
       row.columns.forEach((column) => {
         const width =
@@ -105,7 +121,7 @@ export function renderReactText(
         const colClassAttr = column.className
           ? ` className=\"${column.className}\"`
           : ""
-        pushLine(lines, 7, `<Column${width}${colClassAttr}${colStyleAttr}>`)
+        pushLine(lines, 8, `<Column${width}${colClassAttr}${colStyleAttr}>`)
 
         column.blocks.forEach((block) => {
           switch (block.type) {
@@ -129,7 +145,7 @@ export function renderReactText(
                 : ""
               pushLine(
                 lines,
-                8,
+                9,
                 `<Heading as="${tag}"${styleAttr}>${content}</Heading>`
               )
               break
@@ -150,7 +166,7 @@ export function renderReactText(
               const styleAttr = Object.keys(style).length
                 ? ` style={${JSON.stringify(style)}}`
                 : ""
-              pushLine(lines, 8, `<Text${styleAttr}>${content}</Text>`)
+              pushLine(lines, 9, `<Text${styleAttr}>${content}</Text>`)
               break
             }
             case "button": {
@@ -172,7 +188,7 @@ export function renderReactText(
                 : ""
               pushLine(
                 lines,
-                8,
+                9,
                 `<Button href="${href || "#"}"${styleAttr}>${label}</Button>`
               )
               break
@@ -200,7 +216,7 @@ export function renderReactText(
                 : ""
               pushLine(
                 lines,
-                8,
+                9,
                 `<Img src="${src}" alt="${alt}"${widthAttr}${heightAttr}${styleAttr} />`
               )
               break
@@ -215,19 +231,19 @@ export function renderReactText(
               const styleAttr = Object.keys(style).length
                 ? ` style={${JSON.stringify(style)}}`
                 : ""
-              pushLine(lines, 8, `<Hr${styleAttr} />`)
+              pushLine(lines, 9, `<Hr${styleAttr} />`)
               break
             }
             case "custom": {
               const propsObj = deepSubstitute(block.props.props, context)
               pushLine(
                 lines,
-                8,
+                9,
                 `{/* Custom block: ${block.props.componentName} */}`
               )
               pushLine(
                 lines,
-                8,
+                9,
                 `{/* Props: ${escapeForText(JSON.stringify(propsObj))} */}`
               )
               break
@@ -237,16 +253,17 @@ export function renderReactText(
           }
         })
 
-        pushLine(lines, 7, "</Column>")
+        pushLine(lines, 8, "</Column>")
       })
 
-      pushLine(lines, 6, "</Row>")
+      pushLine(lines, 7, "</Row>")
     })
 
-    pushLine(lines, 5, "</Section>")
+    pushLine(lines, 6, "</Section>")
   })
 
-  pushLine(lines, 4, "</Container>")
+  pushLine(lines, 5, "</Container>")
+  pushLine(lines, 4, "</Tailwind>")
   pushLine(lines, 3, "</Body>")
   pushLine(lines, 2, "</Html>")
   pushLine(lines, 1, ");")

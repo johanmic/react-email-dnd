@@ -80,6 +80,8 @@ function withSubstitutions(
 function renderEmailBlock(
   block: CanvasContentBlock,
   variables: Record<string, string> | undefined,
+  // Using `any` by design to allow heterogeneous custom block props across definitions.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customRegistry: Record<string, CustomBlockDefinition<any>>,
 ) {
   const b = withSubstitutions(block, variables);
@@ -113,10 +115,15 @@ function renderEmailBlock(
 function renderEmailColumn(
   column: CanvasColumn,
   variables: Record<string, string> | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customRegistry: Record<string, CustomBlockDefinition<any>>,
 ) {
+  const columnStyle: Record<string, unknown> = {};
+  if (column.backgroundColor) columnStyle.backgroundColor = column.backgroundColor;
+  if (column.padding) columnStyle.padding = column.padding;
+
   return (
-    <Column key={column.id}>
+    <Column key={column.id} className={column.className} style={columnStyle}>
       {column.blocks.map((block) => (
         <div key={block.id}>{renderEmailBlock(block, variables, customRegistry)}</div>
       ))}
@@ -130,10 +137,16 @@ function renderEmailColumn(
 function renderEmailRow(
   row: CanvasRow,
   variables: Record<string, string> | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customRegistry: Record<string, CustomBlockDefinition<any>>,
 ) {
+  const rowStyle: Record<string, unknown> = {};
+  if (row.gutter != null) rowStyle.gap = `${row.gutter}px`;
+  if (row.backgroundColor) rowStyle.backgroundColor = row.backgroundColor;
+  if (row.padding) rowStyle.padding = row.padding;
+
   return (
-    <Row key={row.id}>
+    <Row key={row.id} className={row.className} style={rowStyle}>
       {row.columns.map((column) => renderEmailColumn(column, variables, customRegistry))}
     </Row>
   );
@@ -145,17 +158,24 @@ function renderEmailRow(
 function renderEmailSection(
   section: CanvasSection,
   variables: Record<string, string> | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customRegistry: Record<string, CustomBlockDefinition<any>>,
 ) {
+  const sectionStyle: Record<string, unknown> = {};
+  if (section.backgroundColor) sectionStyle.backgroundColor = section.backgroundColor;
+  if (section.padding) sectionStyle.padding = section.padding;
+
   return (
-    <Section key={section.id}>
+    <Section key={section.id} className={section.className} style={sectionStyle}>
       {section.rows.map((row) => renderEmailRow(row, variables, customRegistry))}
     </Section>
   );
 }
 
 export interface RenderEmailDocumentOptions {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customBlocks?: CustomBlockDefinition<any>[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customBlockRegistry?: Record<string, CustomBlockDefinition<any>>;
 }
 
@@ -173,20 +193,18 @@ export function renderEmailDocument(
   options: RenderEmailDocumentOptions = {},
 ) {
   const merged = { ...(document.variables ?? {}), ...(runtimeVariables ?? {}) };
-  const registry: Record<string, CustomBlockDefinition<any>> =
-    options.customBlockRegistry ??
-    (options.customBlocks
-      ? options.customBlocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
-          acc[block.defaults.componentName] = block;
-          return acc;
-        }, {})
-      : {});
+  // Using `any` by design at the registry boundary; each entry keeps its own prop type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const registry: Record<string, CustomBlockDefinition<any>> = options.customBlockRegistry ??
+  (options.customBlocks
+    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      options.customBlocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
+        acc[block.defaults.componentName] = block;
+        return acc;
+      }, {})
+    : {});
 
-  return (
-    <>
-      {document.sections.map((section) => renderEmailSection(section, merged, registry))}
-    </>
-  );
+  return <>{document.sections.map((section) => renderEmailSection(section, merged, registry))}</>;
 }
 
 /**

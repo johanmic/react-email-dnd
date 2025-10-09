@@ -38,9 +38,15 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
-      react-email-dnd:
+      '@react-email-dnd/editor':
         specifier: link:..
         version: link:..
+      '@react-email-dnd/shared':
+        specifier: link:../../shared
+        version: link:../../shared
+      '@react-email-dnd/renderer':
+        specifier: link:../../renderer
+        version: link:../../renderer
       tailwindcss:
         specifier: ^4.1.13
         version: 4.1.13

@@ -1,8 +1,8 @@
 import { Section, Row, Column, Heading, Text, Button } from '@react-email/components';
-import type { CustomBlockDefinition, CustomBlockPropEditorProps } from 'react-email-dnd';
+import type { CustomBlockDefinition, CustomBlockPropEditorProps } from '@react-email-dnd';
 import { SparkleIcon } from '@phosphor-icons/react';
 
-export interface HeroBlockProps {
+export interface HeroBlockProps extends Record<string, unknown> {
   title: string;
   description: string;
   ctaLabel: string;
