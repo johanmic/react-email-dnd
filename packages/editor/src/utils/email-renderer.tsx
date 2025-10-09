@@ -1,5 +1,6 @@
 import * as ReactEmailComponents from '@react-email/components';
 import type { RowProps, ColumnProps, SectionProps } from '@react-email/components';
+import { resolvePaddingClasses, resolvePaddingStyle } from './padding';
 
 const ReactEmailModule = ReactEmailComponents as {
   Row: React.ComponentType<RowProps>;
@@ -8,6 +9,11 @@ const ReactEmailModule = ReactEmailComponents as {
 };
 
 const { Row, Column, Section } = ReactEmailModule;
+
+function combineClasses(...values: Array<string | null | undefined>): string | undefined {
+  const merged = values.filter((value) => Boolean(value && value.trim())).join(' ');
+  return merged.length > 0 ? merged : undefined;
+}
 import type {
   CanvasDocument,
   CanvasSection,
@@ -120,10 +126,23 @@ function renderEmailColumn(
 ) {
   const columnStyle: Record<string, unknown> = {};
   if (column.backgroundColor) columnStyle.backgroundColor = column.backgroundColor;
-  if (column.padding) columnStyle.padding = column.padding;
+  const columnPaddingStyle = resolvePaddingStyle(column.padding);
+  const columnPaddingClasses = resolvePaddingClasses(column.padding).filter(
+    (className) => !className.includes(':'),
+  );
+  if (columnPaddingStyle) columnStyle.padding = columnPaddingStyle;
+  if (column.width != null) columnStyle.width = column.width;
 
   return (
-    <Column key={column.id} className={column.className} style={columnStyle}>
+    <Column
+      key={column.id}
+      className={combineClasses(
+        column.backgroundClassName,
+        column.className,
+        columnPaddingClasses.join(' '),
+      )}
+      style={columnStyle}
+    >
       {column.blocks.map((block) => (
         <div key={block.id}>{renderEmailBlock(block, variables, customRegistry)}</div>
       ))}
@@ -143,10 +162,18 @@ function renderEmailRow(
   const rowStyle: Record<string, unknown> = {};
   if (row.gutter != null) rowStyle.gap = `${row.gutter}px`;
   if (row.backgroundColor) rowStyle.backgroundColor = row.backgroundColor;
-  if (row.padding) rowStyle.padding = row.padding;
+  const rowPaddingStyle = resolvePaddingStyle(row.padding);
+  const rowPaddingClasses = resolvePaddingClasses(row.padding).filter(
+    (className) => !className.includes(':'),
+  );
+  if (rowPaddingStyle) rowStyle.padding = rowPaddingStyle;
 
   return (
-    <Row key={row.id} className={row.className} style={rowStyle}>
+    <Row
+      key={row.id}
+      className={combineClasses(row.backgroundClassName, row.className, rowPaddingClasses.join(' '))}
+      style={rowStyle}
+    >
       {row.columns.map((column) => renderEmailColumn(column, variables, customRegistry))}
     </Row>
   );
@@ -163,10 +190,22 @@ function renderEmailSection(
 ) {
   const sectionStyle: Record<string, unknown> = {};
   if (section.backgroundColor) sectionStyle.backgroundColor = section.backgroundColor;
-  if (section.padding) sectionStyle.padding = section.padding;
+  const sectionPaddingStyle = resolvePaddingStyle(section.padding);
+  const sectionPaddingClasses = resolvePaddingClasses(section.padding).filter(
+    (className) => !className.includes(':'),
+  );
+  if (sectionPaddingStyle) sectionStyle.padding = sectionPaddingStyle;
 
   return (
-    <Section key={section.id} className={section.className} style={sectionStyle}>
+    <Section
+      key={section.id}
+      className={combineClasses(
+        section.backgroundClassName,
+        section.className,
+        sectionPaddingClasses.join(' '),
+      )}
+      style={sectionStyle}
+    >
       {section.rows.map((row) => renderEmailRow(row, variables, customRegistry))}
     </Section>
   );

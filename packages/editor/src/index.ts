@@ -78,6 +78,9 @@ export type {
   ColorOption,
 } from './components/PropertiesPanel';
 
+export type { PaddingOptionEntry } from './utils/padding';
+export { normalizePaddingOptions, getDefaultPaddingOptionEntries } from './utils/padding';
+
 export * from './hooks/useCanvasStore';
 
 export * from './utils/email-renderer';

@@ -3,6 +3,7 @@ import { Button as EmailButton } from '@react-email/components';
 import { HandPointingIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, ButtonBlock, ButtonBlockProps } from '@react-email-dnd/shared';
+import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
 
 export const buttonDefaults: ButtonBlockProps = {
   label: 'Call to action',
@@ -31,8 +32,10 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
     label,
     href,
     align = 'center',
-    backgroundColor = '#2563eb',
-    color = '#ffffff',
+    backgroundColor,
+    backgroundClassName,
+    color,
+    colorClassName,
     borderRadius = 6,
     padding = '12px 24px',
     fontSize = 14,
@@ -40,14 +43,26 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
     margin = '12px 0',
     daisyui = false,
     editorMode = false,
+    className: customClassName,
   } = props;
 
   const resolvedFontWeight = fontWeight === 'medium' ? 500 : fontWeight;
+  const paddingStyle = resolvePaddingStyle(padding);
+  const paddingClasses = resolvePaddingClasses(padding);
 
   const wrapperStyle: CSSProperties = {
     textAlign: align,
     width: '100%',
   };
+
+  const defaultBackground = '#2563eb';
+  const defaultTextColor = '#ffffff';
+  const hasBackgroundClass = Boolean(backgroundClassName);
+  const hasTextClass = Boolean(colorClassName);
+
+  const inlineBackgroundColor =
+    hasBackgroundClass || daisyui ? undefined : backgroundColor ?? defaultBackground;
+  const inlineTextColor = hasTextClass || daisyui ? undefined : color ?? defaultTextColor;
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (editorMode) {
@@ -94,14 +109,30 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
     }
   };
 
-  const getPaddingClass = () => {
-    const paddingValue = padding.replace(/px/g, '');
-    const [topBottom] = paddingValue.split(' ').map(Number);
+  const getFallbackPaddingClass = () => {
+    if (paddingClasses.length > 0) {
+      return undefined;
+    }
+    const basePaddingValue = paddingStyle ?? (typeof padding === 'string' ? padding : undefined);
+    if (!basePaddingValue) {
+      return undefined;
+    }
 
-    if (topBottom <= 8) return 'py-1';
-    if (topBottom <= 12) return 'py-2';
-    if (topBottom <= 16) return 'py-3';
-    if (topBottom <= 20) return 'py-4';
+    const [topToken] = basePaddingValue.split(/\s+/);
+    if (!topToken) {
+      return undefined;
+    }
+
+    const pxMatch = topToken.match(/([\d.]+)px/);
+    const numeric = pxMatch ? parseFloat(pxMatch[1]) : Number(topToken);
+    if (!Number.isFinite(numeric)) {
+      return undefined;
+    }
+
+    if (numeric <= 8) return 'py-1';
+    if (numeric <= 12) return 'py-2';
+    if (numeric <= 16) return 'py-3';
+    if (numeric <= 20) return 'py-4';
     return 'py-5';
   };
 
@@ -115,21 +146,22 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
           'hover:opacity-90 active:opacity-75',
           getSizeClass(),
           getFontWeightClass(),
-          getPaddingClass(),
+          getFallbackPaddingClass(),
           // DaisyUI specific classes
           {
             btn: daisyui,
-            'btn-primary': daisyui && backgroundColor === '#2563eb',
-            'btn-secondary': daisyui && backgroundColor === '#6b7280',
-            'btn-accent': daisyui && backgroundColor === '#8b5cf6',
-            'btn-neutral': daisyui && backgroundColor === '#374151',
-            'btn-success': daisyui && backgroundColor === '#059669',
-            'btn-warning': daisyui && backgroundColor === '#d97706',
-            'btn-error': daisyui && backgroundColor === '#dc2626',
-            'btn-info': daisyui && backgroundColor === '#0891b2',
+            'btn-primary': daisyui && !hasBackgroundClass && backgroundColor === '#2563eb',
+            'btn-secondary': daisyui && !hasBackgroundClass && backgroundColor === '#6b7280',
+            'btn-accent': daisyui && !hasBackgroundClass && backgroundColor === '#8b5cf6',
+            'btn-neutral': daisyui && !hasBackgroundClass && backgroundColor === '#374151',
+            'btn-success': daisyui && !hasBackgroundClass && backgroundColor === '#059669',
+            'btn-warning': daisyui && !hasBackgroundClass && backgroundColor === '#d97706',
+            'btn-error': daisyui && !hasBackgroundClass && backgroundColor === '#dc2626',
+            'btn-info': daisyui && !hasBackgroundClass && backgroundColor === '#0891b2',
             // Fallback for custom colors
             'btn-ghost':
               daisyui &&
+              !hasBackgroundClass &&
               ![
                 '#2563eb',
                 '#6b7280',
@@ -141,13 +173,17 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
                 '#0891b2',
               ].includes(backgroundColor),
           },
+          backgroundClassName,
+          colorClassName,
+          customClassName,
+          paddingClasses,
         )}
         style={{
           display: 'inline-block',
-          backgroundColor: daisyui ? undefined : backgroundColor,
-          color: daisyui ? undefined : color,
+          backgroundColor: inlineBackgroundColor,
+          color: inlineTextColor,
           borderRadius: daisyui ? undefined : `${borderRadius}px`,
-          padding: daisyui ? undefined : padding,
+          padding: daisyui ? undefined : paddingStyle ?? (typeof padding === 'string' ? padding : undefined),
           fontSize: `${fontSize}px`,
           fontWeight: resolvedFontWeight,
           margin,

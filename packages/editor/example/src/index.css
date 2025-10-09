@@ -1,8 +1,11 @@
 @import "tailwindcss";
-/* @plugin "daisyui"; */
+/* daisyUI theme config */
 @plugin "daisyui" {
-    themes: light --default, dark --prefersdark, forest;
-  }
+  themes: light --default, dark --prefersdark, forest;
+}
 
-@source "../src/**/*.{ts,tsx}";
-@source "../dist/**/*.{js,jsx,ts,tsx}";
+/* Make Tailwind scan both the example and the library sources */
+@source "./**/*.{ts,tsx}";
+@source "../../src/**/*.{ts,tsx}";
+@source "../../shared/src/**/*.{ts,tsx}";
+@source "../../renderer/src/**/*.{ts,tsx}";

@@ -28,7 +28,7 @@ export function renderDocument({
     .map((c): { hex: string; label: string } | null => {
       if (typeof c === "string") return { hex: c, label: c }
       if (!c?.hex) return null
-      return { hex: c.hex, label: c.label ?? c.hex }
+      return { hex: c.hex, label: c.label ?? c.tw ?? c.hex }
     })
     .filter(Boolean) as { hex: string; label: string }[]
 

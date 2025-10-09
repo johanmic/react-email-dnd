@@ -11,76 +11,150 @@ function renderBlock(
 ): string {
   switch (block.type) {
     case "heading":
-      return `<h${block.props.as?.slice(1) ?? 2} style="${[
+      const headingTag = block.props.as ?? "h2"
+      const headingColor =
+        block.props.color ??
+        (block.props.colorClassName ? undefined : "#111827")
+      const headingStyles = [
         block.props.align ? `text-align:${block.props.align}` : "",
         block.props.fontSize != null
           ? `font-size:${block.props.fontSize}px`
           : "",
-        block.props.color ? `color:${block.props.color}` : "",
+        headingColor ? `color:${headingColor}` : "",
         block.props.lineHeight ? `line-height:${block.props.lineHeight}` : "",
         block.props.fontWeight ? `font-weight:${block.props.fontWeight}` : "",
         block.props.margin ? `margin:${block.props.margin}` : "",
+        block.props.padding ? `padding:${block.props.padding}` : "",
       ]
         .filter(Boolean)
-        .join(";")}">${substitute(block.props.content, context) ?? ""}</h${
-        block.props.as?.slice(1) ?? 2
-      }>`
+        .join(";")
+      const headingClasses = [
+        block.props.className,
+        block.props.colorClassName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+      const headingClassAttr =
+        headingClasses.length > 0 ? ` class="${headingClasses}"` : ""
+      const headingStyleAttr =
+        headingStyles.length > 0 ? ` style="${headingStyles}"` : ""
+      return `<${headingTag}${headingClassAttr}${headingStyleAttr}>${
+        substitute(block.props.content, context) ?? ""
+      }</${headingTag}>`
     case "text":
-      return `<p style="${[
+      const textColor =
+        block.props.colorClassName ? undefined : block.props.color ?? "#1f2937"
+      const textStyles = [
         block.props.align ? `text-align:${block.props.align}` : "",
         block.props.fontSize != null
           ? `font-size:${block.props.fontSize}px`
           : "",
-        block.props.color ? `color:${block.props.color}` : "",
+        textColor ? `color:${textColor}` : "",
         block.props.lineHeight ? `line-height:${block.props.lineHeight}` : "",
         block.props.fontWeight ? `font-weight:${block.props.fontWeight}` : "",
+        block.props.margin ? `margin:${block.props.margin}` : "",
+        block.props.padding ? `padding:${block.props.padding}` : "",
       ]
         .filter(Boolean)
-        .join(";")}">${substitute(block.props.content, context) ?? ""}</p>`
+        .join(";")
+      const textClasses = [
+        block.props.className,
+        block.props.colorClassName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+      const textClassAttr =
+        textClasses.length > 0 ? ` class="${textClasses}"` : ""
+      const textStyleAttr =
+        textStyles.length > 0 ? ` style="${textStyles}"` : ""
+      return `<p${textClassAttr}${textStyleAttr}>${
+        substitute(block.props.content, context) ?? ""
+      }</p>`
     case "button":
-      return `<a href="${
+      const resolvedHref =
         substitute(block.props.href, context) ?? block.props.href ?? "#"
-      }" style="${[
+      const buttonBackground =
+        block.props.backgroundColor ??
+        (block.props.backgroundClassName ? undefined : "#2563eb")
+      const buttonColor =
+        block.props.color ??
+        (block.props.colorClassName ? undefined : "#ffffff")
+      const buttonStyles = [
         "display:inline-block",
-        "padding:12px 24px",
-        block.props.backgroundColor
-          ? `background:${block.props.backgroundColor}`
-          : "",
-        block.props.color ? `color:${block.props.color}` : "",
+        block.props.padding ? `padding:${block.props.padding}` : "padding:12px 24px",
+        buttonBackground ? `background:${buttonBackground}` : "",
+        buttonColor ? `color:${buttonColor}` : "",
         block.props.borderRadius != null
           ? `border-radius:${block.props.borderRadius}px`
           : "",
+        block.props.fontSize != null
+          ? `font-size:${block.props.fontSize}px`
+          : "",
+        block.props.fontWeight ? `font-weight:${block.props.fontWeight}` : "",
+        block.props.margin ? `margin:${block.props.margin}` : "",
         block.props.align ? `text-align:${block.props.align}` : "",
         "text-decoration:none",
       ]
         .filter(Boolean)
-        .join(
-          ";"
-        )}">${substitute(block.props.label, context) ?? block.props.label}</a>`
+        .join(";")
+      const buttonClasses = [
+        block.props.className,
+        block.props.backgroundClassName,
+        block.props.colorClassName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+      const buttonClassAttr =
+        buttonClasses.length > 0 ? ` class="${buttonClasses}"` : ""
+      const buttonStyleAttr =
+        buttonStyles.length > 0 ? ` style="${buttonStyles}"` : ""
+      return `<a href="${resolvedHref}"${buttonClassAttr}${buttonStyleAttr}>${
+        substitute(block.props.label, context) ?? block.props.label
+      }</a>`
     case "image":
-      return `<img src="${substitute(block.props.src, context) ?? block.props.src}" alt="${
-        substitute(block.props.alt, context) ?? ""
-      }" style="${[
+      const imageStyles = [
         block.props.width != null ? `width:${block.props.width}px` : "",
         block.props.height != null ? `height:${block.props.height}px` : "",
         block.props.borderRadius != null
           ? `border-radius:${block.props.borderRadius}px`
           : "",
+        block.props.margin ? `margin:${block.props.margin}` : "",
+        block.props.padding ? `padding:${block.props.padding}` : "",
       ]
         .filter(Boolean)
-        .join(";")}" />`
+        .join(";")
+      const imageClassAttr = block.props.className
+        ? ` class="${block.props.className}"`
+        : ""
+      const imageStyleAttr = imageStyles.length > 0 ? ` style="${imageStyles}"` : ""
+      return `<img src="${substitute(block.props.src, context) ?? block.props.src}" alt="${
+        substitute(block.props.alt, context) ?? ""
+      }"${imageClassAttr}${imageStyleAttr} />`
     case "divider":
-      return `<hr style="${[
+      const dividerColor =
+        block.props.color ??
+        (block.props.colorClassName ? undefined : "#e5e7eb")
+      const dividerStyles = [
         block.props.margin ? `margin:${block.props.margin}` : "margin:16px 0",
+        block.props.padding ? `padding:${block.props.padding}` : "",
         `border-style:solid`,
         `border-width:${block.props.thickness ?? 1}px`,
-        block.props.color
-          ? `border-color:${block.props.color}`
-          : "border-color:#e5e7eb",
+        dividerColor ? `border-color:${dividerColor}` : "",
         block.props.width ? `width:${block.props.width}` : "",
       ]
         .filter(Boolean)
-        .join(";")}" />`
+        .join(";")
+      const dividerClasses = [
+        block.props.className,
+        block.props.colorClassName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+      const dividerClassAttr =
+        dividerClasses.length > 0 ? ` class="${dividerClasses}"` : ""
+      const dividerStyleAttr =
+        dividerStyles.length > 0 ? ` style="${dividerStyles}"` : ""
+      return `<hr${dividerClassAttr}${dividerStyleAttr} />`
     case "custom":
       return `<div data-custom-block="${block.props.componentName}" data-props='${JSON.stringify(
         deepSubstitute(block.props.props, context)
@@ -106,9 +180,14 @@ export function renderHtml(
       .filter(Boolean)
       .join(";")
     const sectionStyleAttr = sectionStyle ? ` style="${sectionStyle}"` : ""
-    const sectionClassAttr = section.className
-      ? ` class="${section.className}"`
-      : ""
+    const sectionClasses = [
+      section.backgroundClassName,
+      section.className,
+    ]
+      .filter(Boolean)
+      .join(" ")
+    const sectionClassAttr =
+      sectionClasses.length > 0 ? ` class="${sectionClasses}"` : ""
     lines.push(
       `  <section data-id="${section.id}"${sectionClassAttr}${sectionStyleAttr}>`
     )
@@ -122,7 +201,10 @@ export function renderHtml(
         .filter(Boolean)
         .join(";")
       const rowStyleAttr = rowStyle ? ` style="${rowStyle}"` : ""
-      const rowClassAttr = row.className ? ` ${row.className}` : ""
+      const rowClasses = [row.backgroundClassName, row.className]
+        .filter(Boolean)
+        .join(" ")
+      const rowClassAttr = rowClasses.length > 0 ? ` ${rowClasses}` : ""
       lines.push(
         `    <div class="red-row${rowClassAttr}" data-id="${row.id}"${rowStyleAttr}>`
       )
@@ -135,7 +217,13 @@ export function renderHtml(
           .filter(Boolean)
           .join(";")
         const columnStyleAttr = columnStyle ? ` style="${columnStyle}"` : ""
-        const colClassAttr = column.className ? ` ${column.className}` : ""
+        const colClasses = [
+          column.backgroundClassName,
+          column.className,
+        ]
+          .filter(Boolean)
+          .join(" ")
+        const colClassAttr = colClasses.length > 0 ? ` ${colClasses}` : ""
         lines.push(
           `      <div class="red-column${colClassAttr}" data-id="${column.id}"${columnStyleAttr}>`
         )

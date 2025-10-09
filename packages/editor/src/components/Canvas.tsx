@@ -27,6 +27,7 @@ import { Text } from './text';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import { ConfirmModal } from './ConfirmModal';
 import { removeColumn, removeRow, removeSection } from '../utils/drag-drop';
+import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
 
 export interface CanvasProps {
   sections: CanvasSection[];
@@ -599,9 +600,13 @@ function CanvasColumnView({
   const sortableItems = column.blocks.map((block) => `canvas-block-${block.id}`);
 
   // Inline styles from the JSON input should take precedence
+  const columnPaddingStyle = resolvePaddingStyle(column.padding);
+  const columnPaddingClasses = resolvePaddingClasses(column.padding);
+  const hasCustomPadding = columnPaddingClasses.length > 0 || columnPaddingStyle != null;
+
   const columnInlineStyle: CSSProperties = {
     ...(column.backgroundColor ? { background: column.backgroundColor } : {}),
-    ...(column.padding ? { padding: column.padding } : {}),
+    ...(columnPaddingStyle ? { padding: columnPaddingStyle } : {}),
   };
 
   const { selectContainer } = useCanvasStore();
@@ -668,16 +673,18 @@ function CanvasColumnView({
         <div
           ref={setDroppableNodeRef}
           className={clsx(
-            'min-h-[140px] rounded-lg border border-dashed transition',
-            { 'p-4': !column.padding },
+            'min-h-[140px] rounded-lg border border-dashed transition flex flex-col items-stretch',
+            { 'p-4': !hasCustomPadding },
             {
-              'border-slate-300/20 bg-white/70': !daisyui,
-              'border-base-300/20 bg-base-100/70': daisyui,
+              'border-slate-300/20 bg-white': !daisyui,
+              'border-base-300/20 bg-base-100': daisyui,
               'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver && !isDisabled,
               '!border-red-600/80 !bg-red-100/30 shadow-[0_0_0_3px_rgba(220,38,38,0.15)]':
                 isOver && isDisabled,
             },
+            column.backgroundClassName,
             column.className,
+            columnPaddingClasses,
           )}
           style={columnInlineStyle}
           onClick={onContainerClick}
@@ -756,13 +763,18 @@ function CanvasRowView({
   };
 
   const isMobile = previewMode === 'mobile';
+  const rowPaddingStyle = resolvePaddingStyle(row.padding);
+  const rowPaddingClasses = resolvePaddingClasses(row.padding);
+
   const gridStyle: CSSProperties = {
     gap: row.gutter ?? 24,
     gridTemplateColumns: isMobile
       ? 'repeat(1, minmax(0, 1fr))'
       : `repeat(${Math.max(row.columns.length, 1)}, minmax(0, 1fr))`,
+    alignItems: 'start',
+    justifyItems: 'stretch',
     ...(row.backgroundColor ? { background: row.backgroundColor } : {}),
-    ...(row.padding ? { padding: row.padding } : {}),
+    ...(rowPaddingStyle ? { padding: rowPaddingStyle } : {}),
   };
 
   const sortableColumnItems = row.columns.map((column) => `canvas-column-${column.id}`);
@@ -829,7 +841,12 @@ function CanvasRowView({
       >
         <div
           ref={setRowDroppableRef}
-          className={clsx('grid w-full', row.className)}
+          className={clsx(
+            'grid w-full',
+            row.backgroundClassName,
+            row.className,
+            rowPaddingClasses,
+          )}
           style={gridStyle}
           onClick={onContainerClick}
         >
@@ -910,11 +927,15 @@ function CanvasSectionView({
 
   const sortableRowItems = section.rows.map((row) => `canvas-row-${row.id}`);
 
+  const sectionPaddingStyle = resolvePaddingStyle(section.padding);
+  const sectionPaddingClasses = resolvePaddingClasses(section.padding);
+  const hasSectionPadding = sectionPaddingClasses.length > 0 || sectionPaddingStyle != null;
+
   // Inline styles from the JSON input should always take precedence over theme classes
   const sectionInlineStyle: CSSProperties = {
     // Using background instead of backgroundColor to reset any background-image from theme gradients
     ...(section.backgroundColor ? { background: section.backgroundColor } : {}),
-    ...(section.padding ? { padding: section.padding } : {}),
+    ...(sectionPaddingStyle ? { padding: sectionPaddingStyle } : {}),
   };
 
   return (
@@ -966,20 +987,19 @@ function CanvasSectionView({
         className={clsx(
           'flex flex-col gap-4 rounded-[0.9rem] border transition w-full max-w-full box-border',
           // Only apply default padding class when no explicit padding is provided
-          { 'p-5': !section.padding },
+          { 'p-5': !hasSectionPadding },
           // Border is always themed, but background classes should not conflict with JSON background
           {
-            'border-blue-300/30': !daisyui,
-            'border-primary/30': daisyui,
-            // Apply gradient backgrounds only when no explicit backgroundColor is provided
-            'bg-gradient-to-b from-blue-50/60 to-blue-100/40': !daisyui && !section.backgroundColor,
-            'bg-gradient-to-b from-primary/5 to-primary/10': daisyui && !section.backgroundColor,
+            'border-blue-300/30 bg-white': !daisyui,
+            'border-primary/30 bg-base-100': daisyui,
             'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]':
               isOver && !section.locked,
             '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
               isOver && section.locked,
           },
+          section.backgroundClassName,
           section.className,
+          sectionPaddingClasses,
         )}
         style={sectionInlineStyle}
         onClick={(e) => {

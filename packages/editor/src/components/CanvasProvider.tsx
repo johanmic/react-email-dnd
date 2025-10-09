@@ -22,6 +22,7 @@ import {
   findBlockById,
   updateBlockProps,
 } from '../utils/document';
+import { withCombinedClassNames } from '../utils/classNames';
 
 interface CanvasState {
   past: CanvasDocument[];
@@ -328,6 +329,7 @@ export function CanvasProvider({
 }: CanvasProviderProps) {
   const [state, dispatch] = useReducer(canvasReducer, initialDocument, createInitialState);
   const lastInitialDocumentRef = useRef<CanvasDocument | null>(null);
+  const lastNotifiedDocumentRef = useRef<CanvasDocument | null>(null);
 
   const updateTitle = useCallback((title: string) => {
     dispatch({ type: 'updateTitle', title });
@@ -339,9 +341,8 @@ export function CanvasProvider({
       options?: { commit?: boolean; replaceHistory?: boolean; markAsSaved?: boolean },
     ) => {
       dispatch({ type: 'setDocument', document, options });
-      onDocumentChange?.(document);
     },
-    [onDocumentChange],
+    [],
   );
 
   useEffect(() => {
@@ -362,6 +363,25 @@ export function CanvasProvider({
     setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
   }, [initialDocument, setDocument]);
 
+  useEffect(() => {
+    if (!onDocumentChange) {
+      lastNotifiedDocumentRef.current = null;
+      return;
+    }
+
+    const current = state.present;
+    const exportSnapshot = withCombinedClassNames(current);
+    if (
+      lastNotifiedDocumentRef.current &&
+      documentsAreEqual(lastNotifiedDocumentRef.current, exportSnapshot)
+    ) {
+      return;
+    }
+
+    lastNotifiedDocumentRef.current = cloneCanvasDocument(exportSnapshot);
+    onDocumentChange(exportSnapshot);
+  }, [onDocumentChange, state.present]);
+
   const save = useCallback(() => {
     if (documentsAreEqual(state.present, state.savedSnapshot)) {
       console.log('💾 Save skipped - no changes detected');
@@ -371,7 +391,7 @@ export function CanvasProvider({
     const snapshot = cloneCanvasDocument(state.present);
     console.log('💾 SAVING DOCUMENT:', snapshot);
     dispatch({ type: 'save', snapshot });
-    onSave?.(snapshot);
+    onSave?.(withCombinedClassNames(snapshot));
   }, [onSave, state.present, state.savedSnapshot]);
 
   const canUndo = state.past.length > 0;

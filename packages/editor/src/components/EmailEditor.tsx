@@ -12,7 +12,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Sidebar, DEFAULT_CONTENT_ITEMS } from './Sidebar';
 import { Main } from './Main';
 import { Header } from './Header';
-import { PropertiesPanel, type ColorOption, type CustomBlockPropEditors } from './PropertiesPanel';
+import type { ColorOption, Padding } from '@react-email-dnd/shared';
+import { PropertiesPanel, type CustomBlockPropEditors } from './PropertiesPanel';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import {
   handleSidebarDrop,
@@ -40,6 +41,8 @@ import type {
 } from '@react-email-dnd/shared';
 import clsx from 'clsx';
 import { buildBlockDefinitionMap, buildCustomBlockRegistry } from '../utils/block-library';
+import { withCombinedClassNames } from '../utils/classNames';
+import { normalizePaddingOptions } from '../utils/padding';
 export interface EmailEditorProps {
   showHeader?: boolean;
   className?: string;
@@ -64,6 +67,8 @@ export interface EmailEditorProps {
   customBlocks?: CustomBlockDefinition<any>[];
   /** Custom properties forms for custom content blocks, keyed by component name */
   customBlockPropEditors?: CustomBlockPropEditors;
+  /** Preset padding options displayed as quick-select buttons */
+  padding?: Record<string, Padding>;
 }
 
 export function EmailEditor({
@@ -78,6 +83,7 @@ export function EmailEditor({
   bgColors,
   customBlocks = [],
   customBlockPropEditors,
+  padding,
 }: EmailEditorProps) {
   const { document, setDocument } = useCanvasStore();
   const sections = document.sections;
@@ -92,6 +98,11 @@ export function EmailEditor({
   const customBlockRegistry = useMemo(
     () => buildCustomBlockRegistry(contentBlocks),
     [contentBlocks],
+  );
+
+  const paddingOptionEntries = useMemo(
+    () => normalizePaddingOptions(padding),
+    [padding],
   );
 
   const getPointerCenter = (
@@ -183,7 +194,9 @@ export function EmailEditor({
     setDocument(nextDocument);
 
     // Notify parent component of document changes
-    onDocumentChange?.(nextDocument);
+    if (onDocumentChange) {
+      onDocumentChange(withCombinedClassNames(nextDocument));
+    }
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -658,7 +671,9 @@ export function EmailEditor({
           colors={colors}
           textColors={textColors}
           bgColors={bgColors}
+          unlockable={unlockable}
           customBlockPropEditors={customBlockPropEditors}
+          paddingOptions={paddingOptionEntries}
         />
       </div>
       <DragOverlay>

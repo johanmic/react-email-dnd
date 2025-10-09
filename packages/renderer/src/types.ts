@@ -7,8 +7,9 @@ import type {
 export type ColorOption =
   | string
   | {
-      hex: string
+      hex?: string
       class?: string
+      tw?: string
       label?: string
     }
 

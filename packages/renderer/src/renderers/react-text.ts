@@ -19,6 +19,7 @@ const COMPONENT_IMPORTS = [
   "Hr",
   "Img",
   "Tailwind",
+  "pixelBasedPreset",
 ]
 
 function pushLine(lines: Line[], depth: number, content: string) {
@@ -38,6 +39,16 @@ function escapeForText(value: string | undefined): string {
     .replace(/>/g, "&gt;")
 }
 
+function buildClassAttr(
+  ...values: Array<string | null | undefined>
+): string {
+  const classes = values
+    .filter((value) => Boolean(value && value.trim()))
+    .join(" ")
+  if (!classes) return ""
+  return ` className=\"${escapeForAttribute(classes)}\"`
+}
+
 export function renderReactText(
   document: CanvasDocument,
   context: RenderContext,
@@ -48,11 +59,6 @@ export function renderReactText(
   const previewText =
     document.meta.description ?? document.meta.title ?? "Preview text"
   const lines: Line[] = []
-  const tailwindConfig =
-    options.daisyui && options.theme
-      ? { theme: { extend: { colors: options.theme } } }
-      : undefined
-
   pushLine(
     lines,
     0,
@@ -62,24 +68,23 @@ export function renderReactText(
   pushLine(lines, 0, `export function ${componentName}() {`)
   pushLine(lines, 1, "return (")
   pushLine(lines, 2, "<Html>")
-  pushLine(lines, 3, "<Head />")
-  pushLine(
-    lines,
-    3,
-    `<Preview>${escapeForText(substitute(previewText, context))}</Preview>`
-  )
-  pushLine(lines, 3, "<Body>")
-  if (tailwindConfig) {
+  const tailwindConfigAttr =
+    options.daisyui && options.theme
+      ? ` config={{presets:[pixelBasedPreset], theme: { extend: { colors: ${JSON.stringify(
+          options.theme
+        )} } } }}`
+      : " config={{presets:[pixelBasedPreset]}}"
+
+  pushLine(lines, 3, `<Tailwind${tailwindConfigAttr}>`)
+  pushLine(lines, 4, "<Head />")
+  if (previewText) {
     pushLine(
       lines,
       4,
-      `<Tailwind config={{presets:[pixelBasedPreset], theme: { extend: { colors: ${JSON.stringify(
-        options.theme
-      )} } } }}>`
+      `<Preview>${escapeForText(substitute(previewText, context))}</Preview>`
     )
-  } else {
-    pushLine(lines, 4, "<Tailwind>")
   }
+  pushLine(lines, 4, "<Body>")
   pushLine(lines, 5, "<Container>")
 
   document.sections.forEach((section) => {
@@ -90,38 +95,40 @@ export function renderReactText(
     const sectionStyleAttr = Object.keys(sectionStyle).length
       ? ` style={${JSON.stringify(sectionStyle)}}`
       : ""
-    const sectionClassAttr = section.className
-      ? ` className=\"${section.className}\"`
-      : ""
+    const sectionClassAttr = buildClassAttr(
+      section.backgroundClassName,
+      section.className
+    )
     pushLine(lines, 6, `<Section${sectionClassAttr}${sectionStyleAttr}>`)
 
     section.rows.forEach((row) => {
       const rowStyle: Record<string, unknown> = {}
-      if (row.gutter != null) rowStyle.gap = row.gutter
+      if (row.gutter != null) rowStyle.gap = `${row.gutter}px`
       if (row.backgroundColor) rowStyle.backgroundColor = row.backgroundColor
       if (row.padding) rowStyle.padding = row.padding
       const rowStyleAttr = Object.keys(rowStyle).length
         ? ` style={${JSON.stringify(rowStyle)}}`
         : ""
-      const rowClassAttr = row.className
-        ? ` className=\"${row.className}\"`
-        : ""
+      const rowClassAttr = buildClassAttr(
+        row.backgroundClassName,
+        row.className
+      )
       pushLine(lines, 7, `<Row${rowClassAttr}${rowStyleAttr}>`)
 
       row.columns.forEach((column) => {
-        const width =
-          column.width != null ? ` width={${JSON.stringify(column.width)}}` : ""
         const colStyle: Record<string, unknown> = {}
         if (column.backgroundColor)
           colStyle.backgroundColor = column.backgroundColor
         if (column.padding) colStyle.padding = column.padding
+        if (column.width != null) colStyle.width = column.width
         const colStyleAttr = Object.keys(colStyle).length
           ? ` style={${JSON.stringify(colStyle)}}`
           : ""
-        const colClassAttr = column.className
-          ? ` className=\"${column.className}\"`
-          : ""
-        pushLine(lines, 8, `<Column${width}${colClassAttr}${colStyleAttr}>`)
+        const colClassAttr = buildClassAttr(
+          column.backgroundClassName,
+          column.className
+        )
+        pushLine(lines, 8, `<Column${colClassAttr}${colStyleAttr}>`)
 
         column.blocks.forEach((block) => {
           switch (block.type) {
@@ -134,19 +141,27 @@ export function renderReactText(
               if (block.props.align) style.textAlign = block.props.align
               if (block.props.fontSize != null)
                 style.fontSize = block.props.fontSize
-              if (block.props.color) style.color = block.props.color
+              const headingColor =
+                block.props.color ??
+                (block.props.colorClassName ? undefined : "#111827")
+              if (headingColor) style.color = headingColor
               if (block.props.lineHeight)
                 style.lineHeight = block.props.lineHeight
               if (block.props.fontWeight)
                 style.fontWeight = block.props.fontWeight
               if (block.props.margin) style.margin = block.props.margin
+              if (block.props.padding) style.padding = block.props.padding
               const styleAttr = Object.keys(style).length
                 ? ` style={${JSON.stringify(style)}}`
                 : ""
+              const classAttr = buildClassAttr(
+                block.props.colorClassName,
+                block.props.className
+              )
               pushLine(
                 lines,
                 9,
-                `<Heading as="${tag}"${styleAttr}>${content}</Heading>`
+                `<Heading as="${tag}"${classAttr}${styleAttr}>${content}</Heading>`
               )
               break
             }
@@ -158,15 +173,25 @@ export function renderReactText(
               if (block.props.align) style.textAlign = block.props.align
               if (block.props.fontSize != null)
                 style.fontSize = block.props.fontSize
-              if (block.props.color) style.color = block.props.color
+              const textColor =
+                block.props.colorClassName
+                  ? undefined
+                  : block.props.color ?? "#1f2937"
+              if (textColor) style.color = textColor
               if (block.props.lineHeight)
                 style.lineHeight = block.props.lineHeight
               if (block.props.fontWeight)
                 style.fontWeight = block.props.fontWeight
+              if (block.props.margin) style.margin = block.props.margin
+              if (block.props.padding) style.padding = block.props.padding
               const styleAttr = Object.keys(style).length
                 ? ` style={${JSON.stringify(style)}}`
                 : ""
-              pushLine(lines, 9, `<Text${styleAttr}>${content}</Text>`)
+              const classAttr = buildClassAttr(
+                block.props.colorClassName,
+                block.props.className
+              )
+              pushLine(lines, 9, `<Text${classAttr}${styleAttr}>${content}</Text>`)
               break
             }
             case "button": {
@@ -177,19 +202,37 @@ export function renderReactText(
                 substitute(block.props.href, context) ?? block.props.href
               )
               const style: Record<string, unknown> = {}
-              if (block.props.backgroundColor)
-                style.backgroundColor = block.props.backgroundColor
-              if (block.props.color) style.color = block.props.color
+              style.display = "inline-block"
+              style.textDecoration = "none"
+              const backgroundColor =
+                block.props.backgroundColor ??
+                (block.props.backgroundClassName ? undefined : "#2563eb")
+              if (backgroundColor) style.backgroundColor = backgroundColor
+              const buttonColor =
+                block.props.color ??
+                (block.props.colorClassName ? undefined : "#ffffff")
+              if (buttonColor) style.color = buttonColor
               if (block.props.borderRadius != null)
                 style.borderRadius = block.props.borderRadius
               if (block.props.align) style.textAlign = block.props.align
+              if (block.props.padding) style.padding = block.props.padding
+              if (block.props.fontSize != null)
+                style.fontSize = block.props.fontSize
+              if (block.props.fontWeight)
+                style.fontWeight = block.props.fontWeight
+              if (block.props.margin) style.margin = block.props.margin
               const styleAttr = Object.keys(style).length
                 ? ` style={${JSON.stringify(style)}}`
                 : ""
+              const classAttr = buildClassAttr(
+                block.props.backgroundClassName,
+                block.props.colorClassName,
+                block.props.className
+              )
               pushLine(
                 lines,
                 9,
-                `<Button href="${href || "#"}"${styleAttr}>${label}</Button>`
+                `<Button href="${href || "#"}"${classAttr}${styleAttr}>${label}</Button>`
               )
               break
             }
@@ -211,13 +254,16 @@ export function renderReactText(
               const style: Record<string, unknown> = {}
               if (block.props.borderRadius != null)
                 style.borderRadius = block.props.borderRadius
+              if (block.props.margin) style.margin = block.props.margin
+              if (block.props.padding) style.padding = block.props.padding
               const styleAttr = Object.keys(style).length
                 ? ` style={${JSON.stringify(style)}}`
                 : ""
+              const classAttr = buildClassAttr(block.props.className)
               pushLine(
                 lines,
                 9,
-                `<Img src="${src}" alt="${alt}"${widthAttr}${heightAttr}${styleAttr} />`
+                `<Img src="${src}" alt="${alt}"${widthAttr}${heightAttr}${classAttr}${styleAttr} />`
               )
               break
             }
@@ -226,12 +272,19 @@ export function renderReactText(
               if (block.props.margin) style.margin = block.props.margin
               if (block.props.thickness != null)
                 style.borderWidth = block.props.thickness
-              if (block.props.color) style.borderColor = block.props.color
+              const dividerColor =
+                block.props.color ??
+                (block.props.colorClassName ? undefined : "#e5e7eb")
+              if (dividerColor) style.borderColor = dividerColor
               if (block.props.width) style.width = block.props.width
               const styleAttr = Object.keys(style).length
                 ? ` style={${JSON.stringify(style)}}`
                 : ""
-              pushLine(lines, 9, `<Hr${styleAttr} />`)
+              const classAttr = buildClassAttr(
+                block.props.colorClassName,
+                block.props.className
+              )
+              pushLine(lines, 9, `<Hr${classAttr}${styleAttr} />`)
               break
             }
             case "custom": {
@@ -263,8 +316,8 @@ export function renderReactText(
   })
 
   pushLine(lines, 5, "</Container>")
-  pushLine(lines, 4, "</Tailwind>")
-  pushLine(lines, 3, "</Body>")
+  pushLine(lines, 4, "</Body>")
+  pushLine(lines, 3, "</Tailwind>")
   pushLine(lines, 2, "</Html>")
   pushLine(lines, 1, ");")
   pushLine(lines, 0, "}")

@@ -10,18 +10,35 @@ const fontWeightSchema = z.enum([
   "bold",
   "extrabold",
 ])
+export const paddingValueSchema = z.union([z.string(), z.number()])
+export const responsivePaddingSchema = z.record(z.string(), paddingValueSchema)
+export const paddingSchema = z.union([z.string(), z.number(), responsivePaddingSchema])
+export type Padding = z.infer<typeof paddingSchema>
 
+export const colorOptionSchema = z.union([
+  z.string(),
+  z.object({
+    hex: z.string().optional(),
+    class: z.string().optional(),
+    tw: z.string().optional(),
+    labelClass: z.string().optional(),
+    label: z.string().optional(),
+  }),
+])
 export const buttonBlockPropsSchema = z.object({
   label: z.string(),
   href: z.string().optional(),
   align: alignmentSchema.optional(),
   backgroundColor: z.string().optional(),
+  backgroundClassName: z.string().optional(),
   color: z.string().optional(),
+  colorClassName: z.string().optional(),
   borderRadius: z.number().optional(),
-  padding: z.string().optional(),
+  padding: paddingSchema.optional(),
   fontSize: z.number().optional(),
   fontWeight: fontWeightSchema.optional(),
   margin: z.string().optional(),
+  className: z.string().optional(),
 })
 export type ButtonBlockProps = z.infer<typeof buttonBlockPropsSchema>
 
@@ -30,12 +47,15 @@ export const textBlockPropsSchema = z.object({
   align: alignmentSchema.optional(),
   fontSize: z.number().optional(),
   color: z.string().optional(),
+  colorClassName: z.string().optional(),
   lineHeight: z.string().optional(),
   fontWeight: fontWeightSchema.optional(),
   margin: z.string().optional(),
-  padding: z.string().optional(),
+  padding: paddingSchema.optional(),
+  className: z.string().optional(),
 })
 export type TextBlockProps = z.infer<typeof textBlockPropsSchema>
+export type ColorOption = z.infer<typeof colorOptionSchema>
 
 export const headingBlockPropsSchema = z.object({
   content: z.string(),
@@ -43,10 +63,12 @@ export const headingBlockPropsSchema = z.object({
   align: alignmentSchema.optional(),
   fontSize: z.number().optional(),
   color: z.string().optional(),
+  colorClassName: z.string().optional(),
   lineHeight: z.string().optional(),
   fontWeight: fontWeightSchema.optional(),
   margin: z.string().optional(),
-  padding: z.string().optional(),
+  padding: paddingSchema.optional(),
+  className: z.string().optional(),
 })
 export type HeadingBlockProps = z.infer<typeof headingBlockPropsSchema>
 
@@ -60,17 +82,20 @@ export const imageBlockPropsSchema = z.object({
   borderRadius: z.number().optional(),
   placeholder: z.string().optional(),
   margin: z.string().optional(),
-  padding: z.string().optional(),
+  padding: paddingSchema.optional(),
+  className: z.string().optional(),
 })
 export type ImageBlockProps = z.infer<typeof imageBlockPropsSchema>
 
 export const dividerBlockPropsSchema = z.object({
   color: z.string().optional(),
+  colorClassName: z.string().optional(),
   thickness: z.number().optional(),
   width: z.string().optional(),
   align: alignmentSchema.optional(),
   margin: z.string().optional(),
-  padding: z.string().optional(),
+  padding: paddingSchema.optional(),
+  className: z.string().optional(),
 })
 export type DividerBlockProps = z.infer<typeof dividerBlockPropsSchema>
 
@@ -136,7 +161,8 @@ export const canvasColumnSchema = blockBaseSchema.extend({
   type: z.literal("column"),
   width: z.number().optional(),
   backgroundColor: z.string().optional(),
-  padding: z.string().optional(),
+  backgroundClassName: z.string().optional(),
+  padding: paddingSchema.optional(),
   className: z.string().optional(),
   blocks: z.array(canvasContentBlockSchema),
 })
@@ -147,7 +173,8 @@ export const canvasRowSchema = blockBaseSchema.extend({
   columns: z.array(canvasColumnSchema),
   gutter: z.number().optional(),
   backgroundColor: z.string().optional(),
-  padding: z.string().optional(),
+  backgroundClassName: z.string().optional(),
+  padding: paddingSchema.optional(),
   className: z.string().optional(),
 })
 export type CanvasRow = z.infer<typeof canvasRowSchema>
@@ -156,7 +183,8 @@ export const canvasSectionSchema = blockBaseSchema.extend({
   type: z.literal("section"),
   rows: z.array(canvasRowSchema),
   backgroundColor: z.string().optional(),
-  padding: z.string().optional(),
+  backgroundClassName: z.string().optional(),
+  padding: paddingSchema.optional(),
   className: z.string().optional(),
 })
 export type CanvasSection = z.infer<typeof canvasSectionSchema>

@@ -117,7 +117,7 @@ export function updateSectionProps(
   document: CanvasDocument,
   sectionId: string,
   updatedProps: Partial<
-    Pick<CanvasSection, 'backgroundColor' | 'padding' | 'className' | 'locked'>
+    Pick<CanvasSection, 'backgroundColor' | 'backgroundClassName' | 'padding' | 'className' | 'locked'>
   >,
 ): CanvasDocument {
   const next = cloneCanvasDocument(document);
@@ -131,7 +131,7 @@ export function updateRowProps(
   document: CanvasDocument,
   rowId: string,
   updatedProps: Partial<
-    Pick<CanvasRow, 'backgroundColor' | 'padding' | 'className' | 'gutter' | 'locked'>
+    Pick<CanvasRow, 'backgroundColor' | 'backgroundClassName' | 'padding' | 'className' | 'gutter' | 'locked'>
   >,
 ): CanvasDocument {
   const next = cloneCanvasDocument(document);
@@ -146,7 +146,7 @@ export function updateColumnProps(
   document: CanvasDocument,
   columnId: string,
   updatedProps: Partial<
-    Pick<CanvasColumn, 'backgroundColor' | 'padding' | 'className' | 'width' | 'locked'>
+    Pick<CanvasColumn, 'backgroundColor' | 'backgroundClassName' | 'padding' | 'className' | 'width' | 'locked'>
   >,
 ): CanvasDocument {
   const next = cloneCanvasDocument(document);

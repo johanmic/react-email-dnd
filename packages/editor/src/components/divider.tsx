@@ -3,6 +3,7 @@ import { Hr } from '@react-email/components';
 import { Minus } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, DividerBlock, DividerBlockProps } from '@react-email-dnd/shared';
+import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
 
 export const dividerDefaults: DividerBlockProps = {
   color: '#e5e7eb',
@@ -24,19 +25,27 @@ export const DividerIcon = Minus;
 
 export function Divider(props: DividerBlockProps & { daisyui?: boolean }) {
   const {
-    color = '#e5e7eb',
+    color,
+    colorClassName,
     thickness = 1,
     width = '100%',
     align = 'center',
     margin = '16px 0',
     padding = '0',
     daisyui = false,
+    className: customClassName,
   } = props;
+
+  const paddingStyle = resolvePaddingStyle(padding);
+  const paddingClasses = resolvePaddingClasses(padding);
 
   const wrapperStyle: CSSProperties = {
     textAlign: align,
     width: '100%',
   };
+
+  const defaultColor = '#e5e7eb';
+  const inlineColor = colorClassName ? undefined : color ?? defaultColor;
 
   const getAlignmentClass = () => {
     switch (align) {
@@ -68,9 +77,10 @@ export function Divider(props: DividerBlockProps & { daisyui?: boolean }) {
 
   const lineStyle: CSSProperties = {
     border: 'none',
-    borderTop: daisyui ? undefined : `${thickness}px solid ${color}`,
+    borderTop:
+      daisyui || !inlineColor ? undefined : `${thickness}px solid ${inlineColor}`,
     margin,
-    padding,
+    ...(paddingStyle ? { padding: paddingStyle } : {}),
     width,
     display: 'inline-block',
     maxWidth: '100%',
@@ -87,8 +97,11 @@ export function Divider(props: DividerBlockProps & { daisyui?: boolean }) {
           // DaisyUI specific classes
           {
             divider: daisyui,
-            'border-gray-300': !daisyui,
+            'border-gray-300': !daisyui && !colorClassName,
           },
+          colorClassName,
+          customClassName,
+          paddingClasses,
         )}
         style={lineStyle}
       />

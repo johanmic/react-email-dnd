@@ -3,6 +3,7 @@ import { Text as EmailText } from '@react-email/components';
 import { TextT } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, TextBlock, TextBlockProps } from '@react-email-dnd/shared';
+import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
 
 export const textDefaults: TextBlockProps = {
   content: 'Start typing your message here.',
@@ -29,28 +30,35 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
     content,
     align = 'left',
     fontSize = 16,
-    color = '#1f2937',
+    color,
+    colorClassName,
     lineHeight = '1.6',
     fontWeight = 'normal',
     margin = '0 0 16px',
     padding = '0',
     daisyui = false,
+    className: customClassName,
   } = props;
 
+  const paddingStyle = resolvePaddingStyle(padding);
+  const paddingClasses = resolvePaddingClasses(padding);
+
   const resolvedFontWeight = fontWeight === 'medium' ? 500 : fontWeight;
+  const defaultColor = '#1f2937';
+  const inlineColor = colorClassName ? undefined : color ?? defaultColor;
 
   const style: CSSProperties = {
     textAlign: align,
     fontSize: `${fontSize}px`,
-    color,
     lineHeight,
     fontWeight: resolvedFontWeight,
     margin,
-    padding,
+    ...(paddingStyle ? { padding: paddingStyle } : {}),
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     wordBreak: 'break-word',
     maxWidth: '100%',
+    ...(inlineColor ? { color: inlineColor } : {}),
   };
 
   const getAlignmentClass = () => {
@@ -104,9 +112,12 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
         getFontWeightClass(),
         // DaisyUI specific classes
         {
-          'text-base-content': daisyui,
-          'text-gray-800': !daisyui,
+          'text-base-content': daisyui && !colorClassName,
+          'text-gray-800': !daisyui && !colorClassName,
         },
+        colorClassName,
+        customClassName,
+        paddingClasses,
       )}
       style={style}
     >

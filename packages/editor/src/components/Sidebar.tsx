@@ -36,6 +36,7 @@ export interface SidebarProps {
   structureItems?: StructurePaletteItem[];
   blocks?: BlockDefinition<CanvasContentBlock>[];
   daisyui?: boolean;
+  columns?: 1 | 2 | 3;
 }
 
 interface VariableDraft {
@@ -48,6 +49,7 @@ export function Sidebar({
   structureItems = DEFAULT_STRUCTURE_ITEMS,
   blocks = DEFAULT_CONTENT_ITEMS,
   daisyui = false,
+  columns = 2,
 }: SidebarProps) {
   const { variables, upsertVariable, deleteVariable } = useCanvasStore();
   const [newKey, setNewKey] = useState('');
@@ -58,6 +60,15 @@ export function Sidebar({
   const variableEntries = useMemo(() => Object.entries(variables), [variables]);
 
   const createDraftId = useCallback(() => Math.random().toString(36).slice(2, 10), []);
+
+  const gridListClasses = useMemo(
+    () =>
+      clsx('w-full grid gap-3 grid-cols-1', {
+        'md:grid-cols-2': columns === 2,
+        'md:grid-cols-3': columns === 3,
+      }),
+    [columns],
+  );
 
   const handleAddVariable = () => {
     const key = newKey.trim();
@@ -135,7 +146,10 @@ export function Sidebar({
 
   return (
     <aside
-      className={clsx('w-52 border-l p-2.5 sticky top-0 h-screen overflow-y-auto', {
+      className={clsx('border-l p-2.5 sticky top-0 h-screen overflow-y-auto', {
+        'w-52': columns === 1,
+        'w-80': columns === 2,
+        'w-96': columns === 3,
         'flex flex-col gap-5 bg-slate-50': !daisyui,
         'border-black': !daisyui,
         'flex flex-col gap-5 border-primary items-center border-l-primary-content': daisyui,
@@ -150,12 +164,7 @@ export function Sidebar({
         >
           Structure
         </p>
-        <div
-          className={clsx({
-            'grid gap-3': !daisyui,
-            'flex flex-col gap-3': daisyui,
-          })}
-        >
+        <div className={gridListClasses}>
           {structureItems.map((item) => (
             <SidebarItem
               id={item.id}
@@ -190,12 +199,7 @@ export function Sidebar({
         >
           Content
         </div>
-        <div
-          className={clsx({
-            'grid gap-3': !daisyui,
-            'flex flex-col gap-3': daisyui,
-          })}
-        >
+        <div className={gridListClasses}>
           {blocks.map((block) => {
             const paletteId = getSidebarBlockId(block);
             return (

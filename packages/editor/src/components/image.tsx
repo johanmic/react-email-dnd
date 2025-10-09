@@ -3,6 +3,7 @@ import { Img } from '@react-email/components';
 import { ImageSquareIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, ImageBlock, ImageBlockProps } from '@react-email-dnd/shared';
+import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
 
 export const imageDefaults: ImageBlockProps = {
   src: 'https://placehold.co/600x200',
@@ -37,7 +38,11 @@ export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
     padding = '0',
     daisyui = false,
     placeholder,
+    className: customClassName,
   } = props;
+
+  const paddingStyle = resolvePaddingStyle(padding);
+  const paddingClasses = resolvePaddingClasses(padding);
 
   const wrapperStyle: CSSProperties = {
     textAlign: align,
@@ -97,11 +102,13 @@ export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
             'rounded-lg': daisyui && borderRadius > 0,
             'shadow-lg': daisyui,
           },
+          customClassName,
+          paddingClasses,
         )}
         style={{
           borderRadius: daisyui ? undefined : `${borderRadius}px`,
           margin,
-          padding,
+          ...(paddingStyle ? { padding: paddingStyle } : {}),
           display: 'inline-block',
           maxWidth: '100%',
           height: 'auto',

@@ -35,7 +35,7 @@ const textColors = [
 const t: CanvasDocument = email as CanvasDocument
 
 export default function Custom({ document }: { document: CanvasDocument }) {
-  const theme = themes.dark
+  const theme = themes.forest
   const result = renderDocument({
     document,
     options: { format: "react", theme, daisyui: true, colors },

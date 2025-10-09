@@ -3,6 +3,7 @@ import { Heading as EmailHeading } from '@react-email/components';
 import { TextHIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, HeadingBlock, HeadingBlockProps } from '@react-email-dnd/shared';
+import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
 
 export const headingDefaults: HeadingBlockProps = {
   content: 'Add a clear headline',
@@ -31,28 +32,35 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
     as = 'h2',
     align = 'left',
     fontSize = 24,
-    color = '#111827',
+    color,
+    colorClassName,
     lineHeight = '1.3',
     fontWeight = 'bold',
     margin = '0 0 16px',
     padding = '0',
     daisyui = false,
+    className: customClassName,
   } = props;
 
+  const paddingStyle = resolvePaddingStyle(padding);
+  const paddingClasses = resolvePaddingClasses(padding);
+
   const resolvedFontWeight = fontWeight === 'medium' ? 500 : fontWeight;
+  const defaultColor = '#111827';
+  const inlineColor = color ?? (colorClassName ? undefined : defaultColor);
 
   const style: CSSProperties = {
     textAlign: align,
     fontSize: `${fontSize}px`,
-    color,
     lineHeight,
     fontWeight: resolvedFontWeight,
     margin,
-    padding,
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     wordBreak: 'break-word',
     maxWidth: '100%',
+    ...(inlineColor ? { color: inlineColor } : {}),
+    ...(paddingStyle ? { padding: paddingStyle } : {}),
   };
 
   const getAlignmentClass = () => {
@@ -126,11 +134,11 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
         getAlignmentClass(),
         getFontSizeClass(),
         getFontWeightClass(),
-        // DaisyUI specific classes
-        {
-          [getDaisyUIHeadingClass()]: daisyui,
-          'text-gray-900': !daisyui,
-        },
+        !colorClassName &&
+          (daisyui ? getDaisyUIHeadingClass() : 'text-gray-900'),
+        colorClassName,
+        customClassName,
+        paddingClasses,
       )}
       style={style}
     >

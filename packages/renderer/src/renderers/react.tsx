@@ -21,6 +21,15 @@ const {
   pixelBasedPreset,
 } = ReactEmail as any
 
+const mergeClassNames = (
+  ...values: Array<string | null | undefined>
+): string | undefined => {
+  const merged = values
+    .filter((value) => Boolean(value && value.trim()))
+    .join(" ")
+  return merged.length > 0 ? merged : undefined
+}
+
 export function renderReact(
   document: CanvasDocument,
   context: RenderContext,
@@ -37,14 +46,14 @@ export function renderReact(
 
   return (
     <Html>
-      <Head />
-      {previewText ? (
-        <Preview>{substitute(previewText, context)}</Preview>
-      ) : null}
-      <Body>
-        <Tailwind
-          {...(tailwindConfig ? ({ config: tailwindConfig } as any) : {})}
-        >
+      <Tailwind
+        {...(tailwindConfig ? ({ config: tailwindConfig } as any) : {})}
+      >
+        <Head />
+        {previewText ? (
+          <Preview>{substitute(previewText, context)}</Preview>
+        ) : null}
+        <Body>
           <Container>
             {document.sections.map((section) => {
               const sectionStyle: Record<string, unknown> = {}
@@ -55,7 +64,10 @@ export function renderReact(
               return (
                 <Section
                   key={section.id}
-                  className={section.className}
+                  className={mergeClassNames(
+                    section.backgroundClassName,
+                    section.className
+                  )}
                   style={sectionStyle}
                 >
                   {section.rows.map((row) => {
@@ -68,7 +80,10 @@ export function renderReact(
                     return (
                       <Row
                         key={row.id}
-                        className={row.className}
+                        className={mergeClassNames(
+                          row.backgroundClassName,
+                          row.className
+                        )}
                         style={rowStyle}
                       >
                         {row.columns.map((column) => {
@@ -76,11 +91,16 @@ export function renderReact(
                           if (column.backgroundColor)
                             colStyle.backgroundColor = column.backgroundColor
                           if (column.padding) colStyle.padding = column.padding
+                          if (column.width != null)
+                            colStyle.width = column.width
 
                           return (
                             <Column
                               key={column.id}
-                              className={column.className}
+                              className={mergeClassNames(
+                                column.backgroundClassName,
+                                column.className
+                              )}
                               style={colStyle}
                             >
                               {column.blocks.map((block) => {
@@ -96,7 +116,6 @@ export function renderReact(
                                     const style: Record<string, unknown> = {
                                       textAlign: align,
                                       fontSize: `${fontSize}px`,
-                                      color: block.props.color ?? "#111827",
                                       lineHeight:
                                         block.props.lineHeight ?? "1.3",
                                       fontWeight:
@@ -109,6 +128,15 @@ export function renderReact(
                                         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                                       wordBreak: "break-word",
                                       maxWidth: "100%",
+                                    }
+
+                                    const inlineColor =
+                                      block.props.color ??
+                                      (block.props.colorClassName
+                                        ? undefined
+                                        : "#111827")
+                                    if (inlineColor) {
+                                      style.color = inlineColor
                                     }
 
                                     // Generate responsive classes
@@ -173,17 +201,22 @@ export function renderReact(
                                       }
                                     }
 
-                                    const className = [
+                                    const className = mergeClassNames(
                                       "block w-full leading-tight",
                                       getAlignmentClass(),
                                       getFontSizeClass(),
                                       getFontWeightClass(),
-                                      options.daisyui
+                                      options.daisyui &&
+                                        !block.props.colorClassName
                                         ? getDaisyUIHeadingClass()
-                                        : "text-gray-900",
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" ")
+                                        : undefined,
+                                      !options.daisyui &&
+                                        !block.props.colorClassName
+                                        ? "text-gray-900"
+                                        : undefined,
+                                      block.props.colorClassName,
+                                      block.props.className
+                                    )
 
                                     return (
                                       <REHeading
@@ -209,7 +242,6 @@ export function renderReact(
                                     const style: Record<string, unknown> = {
                                       textAlign: align,
                                       fontSize: `${fontSize}px`,
-                                      color: block.props.color ?? "#1f2937",
                                       lineHeight:
                                         block.props.lineHeight ?? "1.6",
                                       fontWeight:
@@ -222,6 +254,14 @@ export function renderReact(
                                         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                                       wordBreak: "break-word",
                                       maxWidth: "100%",
+                                    }
+
+                                    const inlineColor =
+                                      block.props.colorClassName
+                                        ? undefined
+                                        : block.props.color ?? "#1f2937"
+                                    if (inlineColor) {
+                                      style.color = inlineColor
                                     }
 
                                     // Generate responsive classes
@@ -266,17 +306,22 @@ export function renderReact(
                                       }
                                     }
 
-                                    const className = [
+                                    const className = mergeClassNames(
                                       "block w-full leading-relaxed",
                                       getAlignmentClass(),
                                       getFontSizeClass(),
                                       getFontWeightClass(),
-                                      options.daisyui
+                                      options.daisyui &&
+                                        !block.props.colorClassName
                                         ? "text-base-content"
-                                        : "text-gray-800",
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" ")
+                                        : undefined,
+                                      !options.daisyui &&
+                                        !block.props.colorClassName
+                                        ? "text-gray-800"
+                                        : undefined,
+                                      block.props.colorClassName,
+                                      block.props.className
+                                    )
 
                                     return (
                                       <REText
@@ -296,19 +341,33 @@ export function renderReact(
                                     const fontSize = block.props.fontSize ?? 14
                                     const fontWeight =
                                       block.props.fontWeight ?? "bold"
-                                    const backgroundColor =
+                                    const backgroundClassName =
+                                      block.props.backgroundClassName
+                                    const colorClassName =
+                                      block.props.colorClassName
+                                    const hasBackgroundClass = Boolean(
+                                      backgroundClassName
+                                    )
+                                    const hasTextClass = Boolean(
+                                      colorClassName
+                                    )
+                                    const resolvedBackgroundColor =
                                       block.props.backgroundColor ?? "#2563eb"
+                                    const resolvedTextColor =
+                                      block.props.color ?? "#ffffff"
 
                                     // Apply base styles with sensible defaults
                                     const style: Record<string, unknown> = {
                                       display: "inline-block",
                                       textDecoration: "none",
-                                      backgroundColor: options.daisyui
-                                        ? undefined
-                                        : backgroundColor,
-                                      color: options.daisyui
-                                        ? undefined
-                                        : (block.props.color ?? "#ffffff"),
+                                      backgroundColor:
+                                        options.daisyui || hasBackgroundClass
+                                          ? undefined
+                                          : resolvedBackgroundColor,
+                                      color:
+                                        options.daisyui || hasTextClass
+                                          ? undefined
+                                          : resolvedTextColor,
                                       borderRadius: options.daisyui
                                         ? undefined
                                         : `${block.props.borderRadius ?? 6}px`,
@@ -378,15 +437,13 @@ export function renderReact(
                                     }
 
                                     const getPaddingClass = () => {
-                                      const padding =
+                                      const paddingValue = (
                                         block.props.padding ?? "12px 24px"
-                                      const paddingValue = padding.replace(
-                                        /px/g,
-                                        ""
                                       )
-                                      const [topBottom] = paddingValue
+                                        .replace(/px/g, "")
                                         .split(" ")
                                         .map(Number)
+                                      const topBottom = paddingValue[0] ?? 12
 
                                       if (topBottom <= 8) return "py-1"
                                       if (topBottom <= 12) return "py-2"
@@ -395,44 +452,43 @@ export function renderReact(
                                       return "py-5"
                                     }
 
-                                    const getDaisyUIClass = () => {
-                                      if (!options.daisyui) return ""
+                                    const daisyUIColor = (() => {
+                                      if (!options.daisyui || hasBackgroundClass)
+                                        return undefined
+                                      switch (resolvedBackgroundColor) {
+                                        case "#2563eb":
+                                          return "btn-primary"
+                                        case "#6b7280":
+                                          return "btn-secondary"
+                                        case "#8b5cf6":
+                                          return "btn-accent"
+                                        case "#374151":
+                                          return "btn-neutral"
+                                        case "#059669":
+                                          return "btn-success"
+                                        case "#d97706":
+                                          return "btn-warning"
+                                        case "#dc2626":
+                                          return "btn-error"
+                                        case "#0891b2":
+                                          return "btn-info"
+                                        default:
+                                          return "btn-ghost"
+                                      }
+                                    })()
 
-                                      const baseClass = "btn"
-                                      const colorClass =
-                                        backgroundColor === "#2563eb"
-                                          ? "btn-primary"
-                                          : backgroundColor === "#6b7280"
-                                            ? "btn-secondary"
-                                            : backgroundColor === "#8b5cf6"
-                                              ? "btn-accent"
-                                              : backgroundColor === "#374151"
-                                                ? "btn-neutral"
-                                                : backgroundColor === "#059669"
-                                                  ? "btn-success"
-                                                  : backgroundColor ===
-                                                      "#d97706"
-                                                    ? "btn-warning"
-                                                    : backgroundColor ===
-                                                        "#dc2626"
-                                                      ? "btn-error"
-                                                      : backgroundColor ===
-                                                          "#0891b2"
-                                                        ? "btn-info"
-                                                        : "btn-ghost"
-
-                                      return `${baseClass} ${colorClass}`
-                                    }
-
-                                    const className = [
-                                      "inline-block no-underline cursor-pointer transition-all duration-200 hover:opacity-90 active:opacity-75",
+                                    const className = mergeClassNames(
+                                      "inline-block no-underline cursor-pointer transition-all duration-200",
+                                      "hover:opacity-90 active:opacity-75",
                                       getSizeClass(),
                                       getFontWeightClass(),
                                       getPaddingClass(),
-                                      options.daisyui ? getDaisyUIClass() : "",
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" ")
+                                      options.daisyui ? "btn" : undefined,
+                                      daisyUIColor,
+                                      backgroundClassName,
+                                      colorClassName,
+                                      block.props.className
+                                    )
 
                                     const href =
                                       substitute(block.props.href, context) ??
@@ -532,16 +588,15 @@ export function renderReact(
                                       return "max-w-4xl"
                                     }
 
-                                    const className = [
+                                    const className = mergeClassNames(
                                       "block mx-auto",
                                       getSizeClass(),
                                       getBorderRadiusClass(),
                                       options.daisyui && borderRadius > 0
                                         ? "rounded-lg shadow-lg"
-                                        : "",
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" ")
+                                        : undefined,
+                                      block.props.className
+                                    )
 
                                     return (
                                       <div
@@ -564,23 +619,25 @@ export function renderReact(
                                     const align = block.props.align ?? "center"
                                     const thickness = block.props.thickness ?? 1
                                     const width = block.props.width ?? "100%"
-                                    const color = block.props.color ?? "#e5e7eb"
+                                    const colorClassName =
+                                      block.props.colorClassName
+                                    const resolvedColor =
+                                      block.props.color ??
+                                      (colorClassName ? undefined : "#e5e7eb")
 
                                     // Apply base styles with sensible defaults
                                     const style: Record<string, unknown> = {
                                       margin: block.props.margin ?? "16px 0",
                                       padding: block.props.padding ?? "0",
                                       borderWidth: `${thickness}px`,
-                                      borderColor: options.daisyui
-                                        ? undefined
-                                        : color,
                                       width: width,
                                       border: "none",
-                                      borderTop: options.daisyui
-                                        ? undefined
-                                        : `${thickness}px solid ${color}`,
                                       display: "inline-block",
                                       maxWidth: "100%",
+                                    }
+
+                                    if (!options.daisyui && resolvedColor) {
+                                      style.borderTop = `${thickness}px solid ${resolvedColor}`
                                     }
 
                                     const wrapperStyle: Record<
@@ -620,16 +677,17 @@ export function renderReact(
                                       return "border-t-8"
                                     }
 
-                                    const className = [
+                                    const className = mergeClassNames(
                                       "block",
                                       getWidthClass(),
                                       getThicknessClass(),
-                                      options.daisyui
-                                        ? "divider"
-                                        : "border-gray-300",
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" ")
+                                      options.daisyui ? "divider" : undefined,
+                                      !options.daisyui && !colorClassName
+                                        ? "border-gray-300"
+                                        : undefined,
+                                      colorClassName,
+                                      block.props.className
+                                    )
 
                                     return (
                                       <div
@@ -695,8 +753,8 @@ export function renderReact(
               )
             })}
           </Container>
-        </Tailwind>
-      </Body>
+        </Body>
+      </Tailwind>
     </Html>
   )
 }

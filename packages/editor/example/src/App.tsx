@@ -6,6 +6,16 @@ import { createSampleCanvasDocument, bb } from './sample-document';
 import { customBlocks, customBlockPropEditors } from './custom-blocks';
 import themes from '../themes.json';
 const forest = themes.forest;
+const baseColorNames = [
+  'primary',
+  'secondary',
+  'accent',
+  'neutral',
+  'info',
+  'success',
+  'warning',
+  'error',
+];
 const colors = [
   forest.primary,
   forest.secondary,
@@ -16,19 +26,26 @@ const colors = [
   forest.warning,
   forest.error,
 ];
-const textColors = [
-  'primary',
-  'secondary',
-  'accent',
-  'neutral',
-  'info',
-  'success',
-  'warning',
-  'error',
-].map((name) => ({
-  hex: forest[`${name}-content` as keyof typeof forest],
-  class: `text-${name}`,
+const padding = {
+  none: '0',
+  small: '4',
+  medium: { base: '6', md: '8' },
+  large: { base: '8', md: '12' },
+  verylarge: '12px 24px',
+};
+const bgColors = baseColorNames.map((name) => ({
+  class: `bg-${name}`,
+  label: name,
+  labelClass: `bg-${name}`,
 }));
+const textColors = baseColorNames.map((name) => ({
+  // hex: forest[`${name}-content` as keyof typeof forest],
+  class: `text-${name}-content`,
+  labelClass: `bg-${name}`,
+  label: name,
+}));
+
+console.log({ textColors, bgColors });
 
 function App() {
   const [document, setDocument] = useState<CanvasDocument | undefined>(
@@ -42,7 +59,7 @@ function App() {
   }, []);
 
   const handleDocumentChange = useCallback((data: CanvasDocument) => {
-    console.log('🟨 DOCUMENT CHANGED:', data);
+    console.log('🟨 DOCUMENT CHANGED:', JSON.stringify(data, null, 2));
     setDocument(data);
   }, []);
   const [copied, setCopied] = useState(false);
@@ -78,6 +95,7 @@ function App() {
       <header className="p-4 shadow-sm flex justify-between items-center bg-base-100">
         <h1 className="text-2xl font-bold text-primary/80">React Email DnD</h1>
         <div className="flex gap-3">
+          <div className="bg-neutral p-4">Hej</div>
           <button
             onClick={loadSampleDocument}
             className="px-4 py-2 btn btn-primary btn-soft transition-colors"
@@ -114,10 +132,12 @@ function App() {
           <EmailEditor
             colors={colors}
             textColors={textColors}
+            bgColors={bgColors}
             daisyui={true}
             unlockable={true}
             customBlocks={customBlocks}
             customBlockPropEditors={customBlockPropEditors}
+            padding={padding}
           />
         </CanvasProvider>
       </main>
