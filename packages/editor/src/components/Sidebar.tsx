@@ -146,7 +146,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={clsx('border-l p-2.5 sticky top-0 h-screen overflow-y-auto', {
+      className={clsx('border-l p-2.5 sticky top-0 h-screen overflow-y-scroll', {
         'w-52': columns === 1,
         'w-80': columns === 2,
         'w-96': columns === 3,
@@ -231,7 +231,7 @@ export function Sidebar({
       </div>
       <div className="flex flex-col gap-3 w-full items-center">
         <div
-          className={clsx('my-2 w-full px-2 flex items-center justify-between', {
+          className={clsx('my-2 w-full flex items-center justify-between', {
             'text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
             'text-sm font-bold uppercase leading-none text-base-content/60': daisyui,
           })}

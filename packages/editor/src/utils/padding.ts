@@ -134,9 +134,11 @@ function sanitizeArbitraryValue(value: string): string {
   return value.trim().replace(/\s+/g, '_').replace(/\]/g, '\\]').replace(/\[/g, '\\[');
 }
 
-function toTailwindPaddingClass(value: string | number): string | undefined {
+type SpacingShorthand = 'p' | 'm';
+
+function toTailwindSpacingClass(value: string | number, shorthand: SpacingShorthand): string | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
-    return `p-${trimTrailingZeros(value)}`;
+    return `${shorthand}-${trimTrailingZeros(value)}`;
   }
 
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -144,20 +146,20 @@ function toTailwindPaddingClass(value: string | number): string | undefined {
     return undefined;
   }
 
-  if (trimmed.startsWith('p-')) {
+  if (trimmed.startsWith('p-') || trimmed.startsWith('m-')) {
     return trimmed;
   }
 
   const numericValue = parseNumericString(trimmed);
   if (numericValue != null) {
-    return `p-${trimTrailingZeros(numericValue)}`;
+    return `${shorthand}-${trimTrailingZeros(numericValue)}`;
   }
 
-  return `p-[${sanitizeArbitraryValue(trimmed)}]`;
+  return `${shorthand}-[${sanitizeArbitraryValue(trimmed)}]`;
 }
 
-function normalizeArbitraryToCss(value: string): string {
-  const arbitraryMatch = value.match(/^p-\[(.*)\]$/);
+function normalizeArbitraryToCss(value: string, shorthand: SpacingShorthand): string {
+  const arbitraryMatch = value.match(new RegExp(`^${shorthand}-\\[(.*)]$`));
   if (!arbitraryMatch) {
     return value;
   }
@@ -165,7 +167,7 @@ function normalizeArbitraryToCss(value: string): string {
   return arbitraryMatch[1].replace(/\\\]/g, ']').replace(/\\\[/g, '[').replace(/_/g, ' ');
 }
 
-function toCssPaddingValue(value: string | number): string {
+function toCssSpacingValue(value: string | number, shorthand: SpacingShorthand): string {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return numberToPx(value);
   }
@@ -175,15 +177,15 @@ function toCssPaddingValue(value: string | number): string {
     return '';
   }
 
-  if (trimmed.startsWith('p-')) {
-    const numericMatch = trimmed.match(/^p-([0-9]+(?:\.[0-9]+)?)$/);
+  if (trimmed.startsWith('p-') || trimmed.startsWith('m-')) {
+    const numericMatch = trimmed.match(/^[pm]-([0-9]+(?:\.[0-9]+)?)$/);
     if (numericMatch) {
       const num = Number(numericMatch[1]);
       if (!Number.isNaN(num)) {
         return numberToPx(num);
       }
     }
-    return normalizeArbitraryToCss(trimmed);
+    return normalizeArbitraryToCss(trimmed, shorthand);
   }
 
   const numericValue = parseNumericString(trimmed);
@@ -205,29 +207,29 @@ function pickBasePaddingValue(padding: PaddingRecord): string | number | undefin
   return firstEntry;
 }
 
-export function resolvePaddingClasses(padding: Padding | undefined): string[] {
-  if (!padding) {
+function resolveSpacingClasses(value: Padding | undefined, shorthand: SpacingShorthand): string[] {
+  if (!value) {
     return [];
   }
 
-  if (typeof padding === 'string') {
-    const className = toTailwindPaddingClass(padding);
+  if (typeof value === 'string') {
+    const className = toTailwindSpacingClass(value, shorthand);
     return className ? [className] : [];
   }
 
-  if (typeof padding === 'number' && Number.isFinite(padding)) {
-    return [`p-${trimTrailingZeros(padding)}`];
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return [`${shorthand}-${trimTrailingZeros(value)}`];
   }
 
-  if (!isRecordPadding(padding)) {
+  if (!isRecordPadding(value)) {
     return [];
   }
 
   const resolved: string[] = [];
   const seen = new Set<string>();
 
-  for (const [key, rawValue] of Object.entries(padding)) {
-    const className = toTailwindPaddingClass(rawValue);
+  for (const [key, rawValue] of Object.entries(value)) {
+    const className = toTailwindSpacingClass(rawValue, shorthand);
     if (!className) {
       continue;
     }
@@ -244,31 +246,47 @@ export function resolvePaddingClasses(padding: Padding | undefined): string[] {
   return resolved;
 }
 
-export function resolvePaddingStyle(padding: Padding | undefined): string | undefined {
-  if (!padding) {
+function resolveSpacingStyle(value: Padding | undefined, shorthand: SpacingShorthand): string | undefined {
+  if (!value) {
     return undefined;
   }
 
-  if (typeof padding === 'string') {
-    const cssValue = toCssPaddingValue(padding);
+  if (typeof value === 'string') {
+    const cssValue = toCssSpacingValue(value, shorthand);
     return cssValue || undefined;
   }
 
-  if (typeof padding === 'number' && Number.isFinite(padding)) {
-    return numberToPx(padding);
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return numberToPx(value);
   }
 
-  if (!isRecordPadding(padding)) {
+  if (!isRecordPadding(value)) {
     return undefined;
   }
 
-  const baseValue = pickBasePaddingValue(padding);
+  const baseValue = pickBasePaddingValue(value);
   if (baseValue == null) {
     return undefined;
   }
 
-  const cssValue = toCssPaddingValue(baseValue);
+  const cssValue = toCssSpacingValue(baseValue, shorthand);
   return cssValue || undefined;
+}
+
+export function resolvePaddingClasses(padding: Padding | undefined): string[] {
+  return resolveSpacingClasses(padding, 'p');
+}
+
+export function resolvePaddingStyle(padding: Padding | undefined): string | undefined {
+  return resolveSpacingStyle(padding, 'p');
+}
+
+export function resolveMarginClasses(margin: Padding | undefined): string[] {
+  return resolveSpacingClasses(margin, 'm');
+}
+
+export function resolveMarginStyle(margin: Padding | undefined): string | undefined {
+  return resolveSpacingStyle(margin, 'm');
 }
 
 function normalizePaddingRecord(input: unknown): PaddingRecord | undefined {

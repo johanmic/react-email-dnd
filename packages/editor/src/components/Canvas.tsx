@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
-import { DotsSixVerticalIcon, Trash, Lock, LockOpen } from '@phosphor-icons/react';
+import { DotsSixVerticalIcon, Trash, Lock, LockOpen, Eye, EyeSlash } from '@phosphor-icons/react';
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -27,12 +27,18 @@ import { Text } from './text';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import { ConfirmModal } from './ConfirmModal';
 import { removeColumn, removeRow, removeSection } from '../utils/drag-drop';
-import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
+import {
+  resolvePaddingClasses,
+  resolvePaddingStyle,
+  resolveMarginClasses,
+  resolveMarginStyle,
+} from '../utils/padding';
 
 export interface CanvasProps {
   sections: CanvasSection[];
   daisyui?: boolean;
   unlockable?: boolean;
+  showHidden?: boolean;
   customBlockRegistry?: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }
 
@@ -82,6 +88,32 @@ function ElementTab({ type, daisyui }: { type: 'Section' | 'Row' | 'Column'; dai
       {type}
     </div>
   );
+}
+
+type ContainerAlignment = 'left' | 'center' | 'right' | 'justify' | undefined;
+
+function alignmentClassName(align: ContainerAlignment): string | undefined {
+  if (!align) {
+    return undefined;
+  }
+  switch (align) {
+    case 'center':
+      return 'text-center';
+    case 'right':
+      return 'text-right';
+    case 'justify':
+      return 'text-justify';
+    case 'left':
+    default:
+      return 'text-left';
+  }
+}
+
+function alignmentStyle(align: ContainerAlignment): CSSProperties | undefined {
+  if (!align) {
+    return undefined;
+  }
+  return { textAlign: align };
 }
 
 function renderBlock(
@@ -448,23 +480,217 @@ function SectionDeleteButton({ sectionId, daisyui }: { sectionId: string; daisyu
   );
 }
 
+// Hidden toggle button components
+function ColumnHiddenButton({
+  columnId,
+  hidden,
+  daisyui,
+}: {
+  columnId: string;
+  hidden: boolean;
+  daisyui?: boolean;
+}) {
+  const { document, setDocument } = useCanvasStore();
+
+  const toggleHidden = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newHiddenState = !hidden;
+
+    // Cascading hidden: hide/show all children (blocks)
+    const nextSections = document.sections.map((section) => ({
+      ...section,
+      rows: section.rows.map((row) => ({
+        ...row,
+        columns: row.columns.map((col) => {
+          if (col.id !== columnId) return col;
+
+          return {
+            ...col,
+            hidden: newHiddenState,
+            blocks: col.blocks.map((block) => ({
+              ...block,
+              hidden: newHiddenState,
+            })),
+          };
+        }),
+      })),
+    }));
+    setDocument({ ...document, sections: nextSections });
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={hidden ? 'Show column' : 'Hide column'}
+      className={clsx(
+        'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+        {
+          'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && hidden,
+          'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !hidden,
+          'bg-info/10 text-info hover:bg-info/20': daisyui && hidden,
+          'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !hidden,
+        },
+      )}
+      onClick={toggleHidden}
+    >
+      {hidden ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
+    </button>
+  );
+}
+
+function RowHiddenButton({
+  rowId,
+  hidden,
+  daisyui,
+}: {
+  rowId: string;
+  hidden: boolean;
+  daisyui?: boolean;
+}) {
+  const { document, setDocument } = useCanvasStore();
+
+  const toggleHidden = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newHiddenState = !hidden;
+
+    // Cascading hidden: hide/show all children (columns, blocks)
+    const nextSections = document.sections.map((section) => ({
+      ...section,
+      rows: section.rows.map((row) => {
+        if (row.id !== rowId) return row;
+
+        return {
+          ...row,
+          hidden: newHiddenState,
+          columns: row.columns.map((col) => ({
+            ...col,
+            hidden: newHiddenState,
+            blocks: col.blocks.map((block) => ({
+              ...block,
+              hidden: newHiddenState,
+            })),
+          })),
+        };
+      }),
+    }));
+    setDocument({ ...document, sections: nextSections });
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={hidden ? 'Show row' : 'Hide row'}
+      className={clsx(
+        'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+        {
+          'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && hidden,
+          'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !hidden,
+          'bg-info/10 text-info hover:bg-info/20': daisyui && hidden,
+          'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !hidden,
+        },
+      )}
+      onClick={toggleHidden}
+    >
+      {hidden ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
+    </button>
+  );
+}
+
+function SectionHiddenButton({
+  sectionId,
+  hidden,
+  daisyui,
+}: {
+  sectionId: string;
+  hidden: boolean;
+  daisyui?: boolean;
+}) {
+  const { document, setDocument } = useCanvasStore();
+
+  const toggleHidden = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newHiddenState = !hidden;
+
+    // Cascading hidden: hide/show all children (rows, columns, blocks)
+    const nextSections = document.sections.map((section) => {
+      if (section.id !== sectionId) return section;
+
+      return {
+        ...section,
+        hidden: newHiddenState,
+        rows: section.rows.map((row) => ({
+          ...row,
+          hidden: newHiddenState,
+          columns: row.columns.map((col) => ({
+            ...col,
+            hidden: newHiddenState,
+            blocks: col.blocks.map((block) => ({
+              ...block,
+              hidden: newHiddenState,
+            })),
+          })),
+        })),
+      };
+    });
+    setDocument({ ...document, sections: nextSections });
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={hidden ? 'Show section' : 'Hide section'}
+      className={clsx(
+        'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+        {
+          'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && hidden,
+          'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !hidden,
+          'bg-info/10 text-info hover:bg-info/20': daisyui && hidden,
+          'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !hidden,
+        },
+      )}
+      onClick={toggleHidden}
+    >
+      {hidden ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
+    </button>
+  );
+}
+
 function CanvasBlockView({
   block,
   columnId,
   daisyui,
   isParentLocked = false,
+  showHidden = false,
   customBlockRegistry,
 }: {
   block: CanvasContentBlock;
   columnId: string;
   daisyui?: boolean;
   isParentLocked?: boolean;
+  showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
   const { selectBlock, selectedBlockId } = useCanvasStore();
+  const { document, setDocument } = useCanvasStore();
 
   // Block is disabled if it's locked, or if any parent container is locked
   const isDisabled = !!(block.locked || isParentLocked);
+
+  const handleToggleHidden = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newHiddenState = !block.hidden;
+    const nextSections = document.sections.map((section) => ({
+      ...section,
+      rows: section.rows.map((row) => ({
+        ...row,
+        columns: row.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) => (b.id === block.id ? { ...b, hidden: newHiddenState } : b)),
+        })),
+      })),
+    }));
+    setDocument({ ...document, sections: nextSections });
+  };
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-block-${block.id}`,
@@ -520,26 +746,46 @@ function CanvasBlockView({
       )}
       onClick={handleBlockClick}
     >
-      {!isDisabled && (
-        <button
-          type="button"
-          className={clsx(
-            'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-            {
-              'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-                !daisyui,
-              'bg-base-200 border text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-                daisyui,
-            },
-          )}
-          aria-label="Drag to reorder"
-          {...listeners}
-          {...attributes}
-          onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
-        >
-          <DotsSixVerticalIcon size={16} weight="bold" />
-        </button>
-      )}
+      <div className="flex gap-1">
+        {showHidden && (
+          <button
+            type="button"
+            aria-label={block.hidden ? 'Show block' : 'Hide block'}
+            className={clsx(
+              'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition cursor-pointer',
+              {
+                'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && block.hidden,
+                'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !block.hidden,
+                'bg-info/10 text-info hover:bg-info/20': daisyui && block.hidden,
+                'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !block.hidden,
+              },
+            )}
+            onClick={handleToggleHidden}
+          >
+            {block.hidden ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
+          </button>
+        )}
+        {!isDisabled && (
+          <button
+            type="button"
+            className={clsx(
+              'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+              {
+                'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                  !daisyui,
+                'bg-base-200 border text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                  daisyui,
+              },
+            )}
+            aria-label="Drag to reorder"
+            {...listeners}
+            {...attributes}
+            onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
+          >
+            <DotsSixVerticalIcon size={16} weight="bold" />
+          </button>
+        )}
+      </div>
       <div className="flex-1">
         {renderBlock(block, { daisyui, customBlocks: customBlockRegistry })}
       </div>
@@ -555,6 +801,7 @@ function CanvasColumnView({
   row,
   section,
   unlockable = true,
+  showHidden = false,
   customBlockRegistry,
 }: {
   column: CanvasColumn;
@@ -564,6 +811,7 @@ function CanvasColumnView({
   row: CanvasRow;
   section: CanvasSection;
   unlockable?: boolean;
+  showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
   // Column is disabled if it's locked, or if its parent row or section is locked
@@ -603,10 +851,19 @@ function CanvasColumnView({
   const columnPaddingStyle = resolvePaddingStyle(column.padding);
   const columnPaddingClasses = resolvePaddingClasses(column.padding);
   const hasCustomPadding = columnPaddingClasses.length > 0 || columnPaddingStyle != null;
+  const columnMarginStyle = resolveMarginStyle(column.margin);
+  const columnMarginClasses = resolveMarginClasses(column.margin);
+  const columnAlignmentClass = alignmentClassName(column.align);
+  const columnAlignmentStyle = alignmentStyle(column.align);
+  const columnHasBackgroundClass = Boolean(column.backgroundClassName);
 
   const columnInlineStyle: CSSProperties = {
-    ...(column.backgroundColor ? { background: column.backgroundColor } : {}),
+    ...(!columnHasBackgroundClass && column.backgroundColor
+      ? { background: column.backgroundColor }
+      : {}),
     ...(columnPaddingStyle ? { padding: columnPaddingStyle } : {}),
+    ...(columnMarginStyle ? { margin: columnMarginStyle } : {}),
+    ...(columnAlignmentStyle ?? {}),
   };
 
   const { selectContainer } = useCanvasStore();
@@ -621,20 +878,29 @@ function CanvasColumnView({
       ref={setNodeRef}
       style={sortableStyle}
       className={clsx(
-        'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition',
+        'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition cursor-pointer',
         {
           'border-purple-300/30 bg-purple-50/40': !daisyui,
           'border-accent/50 bg-accent/10': daisyui,
-          'bg-purple-100/60 shadow-lg': isDragging && !daisyui,
+          'bg-purple-200/60 shadow-lg': isDragging && !daisyui,
           'bg-base-300/60 shadow-lg': isDragging && daisyui,
           'opacity-70': isDisabled,
           '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
             isOver && isDisabled,
         },
       )}
+      onClick={onContainerClick}
     >
       <ElementTab type="Column" daisyui={daisyui} />
       <div className="flex justify-end gap-2">
+        {showHidden && (
+          <ColumnHiddenButton columnId={column.id} hidden={!!column.hidden} daisyui={daisyui} />
+        )}
+        {!showHidden && (
+          <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
+            <Eye size={16} weight="bold" />
+          </div>
+        )}
         <ColumnLockButton
           columnId={column.id}
           locked={!!column.locked}
@@ -685,9 +951,10 @@ function CanvasColumnView({
             column.backgroundClassName,
             column.className,
             columnPaddingClasses,
+            columnMarginClasses,
+            columnAlignmentClass,
           )}
           style={columnInlineStyle}
-          onClick={onContainerClick}
         >
           {column.blocks.length === 0 ? (
             <div
@@ -699,16 +966,19 @@ function CanvasColumnView({
               Drop content blocks here
             </div>
           ) : (
-            column.blocks.map((block) => (
-              <CanvasBlockView
-                key={block.id}
-                block={block}
-                columnId={column.id}
-                daisyui={daisyui}
-                isParentLocked={isDisabled}
-                customBlockRegistry={customBlockRegistry}
-              />
-            ))
+            column.blocks
+              .filter((block) => showHidden || !block.hidden)
+              .map((block) => (
+                <CanvasBlockView
+                  key={block.id}
+                  block={block}
+                  columnId={column.id}
+                  daisyui={daisyui}
+                  isParentLocked={isDisabled}
+                  showHidden={showHidden}
+                  customBlockRegistry={customBlockRegistry}
+                />
+              ))
           )}
         </div>
       </SortableContext>
@@ -722,6 +992,7 @@ function CanvasRowView({
   daisyui,
   section,
   unlockable = true,
+  showHidden = false,
   customBlockRegistry,
 }: {
   row: CanvasRow;
@@ -729,6 +1000,7 @@ function CanvasRowView({
   daisyui?: boolean;
   section: CanvasSection;
   unlockable?: boolean;
+  showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
   const { previewMode, selectContainer } = useCanvasStore();
@@ -765,6 +1037,11 @@ function CanvasRowView({
   const isMobile = previewMode === 'mobile';
   const rowPaddingStyle = resolvePaddingStyle(row.padding);
   const rowPaddingClasses = resolvePaddingClasses(row.padding);
+  const rowMarginStyle = resolveMarginStyle(row.margin);
+  const rowMarginClasses = resolveMarginClasses(row.margin);
+  const rowAlignmentClass = alignmentClassName(row.align);
+  const rowAlignmentStyle = alignmentStyle(row.align);
+  const rowHasBackgroundClass = Boolean(row.backgroundClassName);
 
   const gridStyle: CSSProperties = {
     gap: row.gutter ?? 24,
@@ -773,8 +1050,10 @@ function CanvasRowView({
       : `repeat(${Math.max(row.columns.length, 1)}, minmax(0, 1fr))`,
     alignItems: 'start',
     justifyItems: 'stretch',
-    ...(row.backgroundColor ? { background: row.backgroundColor } : {}),
+    ...(!rowHasBackgroundClass && row.backgroundColor ? { background: row.backgroundColor } : {}),
     ...(rowPaddingStyle ? { padding: rowPaddingStyle } : {}),
+    ...(rowMarginStyle ? { margin: rowMarginStyle } : {}),
+    ...(rowAlignmentStyle ?? {}),
   };
 
   const sortableColumnItems = row.columns.map((column) => `canvas-column-${column.id}`);
@@ -804,6 +1083,12 @@ function CanvasRowView({
     >
       <ElementTab type="Row" daisyui={daisyui} />
       <div className="flex justify-end gap-2">
+        {showHidden && <RowHiddenButton rowId={row.id} hidden={!!row.hidden} daisyui={daisyui} />}
+        {!showHidden && (
+          <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
+            <Eye size={16} weight="bold" />
+          </div>
+        )}
         <RowLockButton
           rowId={row.id}
           locked={!!row.locked}
@@ -846,6 +1131,8 @@ function CanvasRowView({
             row.backgroundClassName,
             row.className,
             rowPaddingClasses,
+            rowMarginClasses,
+            rowAlignmentClass,
           )}
           style={gridStyle}
           onClick={onContainerClick}
@@ -863,19 +1150,22 @@ function CanvasRowView({
               Drop columns here
             </div>
           ) : (
-            row.columns.map((column) => (
-              <CanvasColumnView
-                key={column.id}
-                column={column}
-                rowId={row.id}
-                sectionId={sectionId}
-                daisyui={daisyui}
-                row={row}
-                section={section}
-                unlockable={unlockable}
-                customBlockRegistry={customBlockRegistry}
-              />
-            ))
+            row.columns
+              .filter((column) => showHidden || !column.hidden)
+              .map((column) => (
+                <CanvasColumnView
+                  key={column.id}
+                  column={column}
+                  rowId={row.id}
+                  sectionId={sectionId}
+                  daisyui={daisyui}
+                  row={row}
+                  section={section}
+                  unlockable={unlockable}
+                  showHidden={showHidden}
+                  customBlockRegistry={customBlockRegistry}
+                />
+              ))
           )}
         </div>
       </SortableContext>
@@ -887,11 +1177,13 @@ function CanvasSectionView({
   section,
   daisyui,
   unlockable = true,
+  showHidden = false,
   customBlockRegistry,
 }: {
   section: CanvasSection;
   daisyui?: boolean;
   unlockable?: boolean;
+  showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
   const { selectContainer } = useCanvasStore();
@@ -930,12 +1222,21 @@ function CanvasSectionView({
   const sectionPaddingStyle = resolvePaddingStyle(section.padding);
   const sectionPaddingClasses = resolvePaddingClasses(section.padding);
   const hasSectionPadding = sectionPaddingClasses.length > 0 || sectionPaddingStyle != null;
+  const sectionMarginStyle = resolveMarginStyle(section.margin);
+  const sectionMarginClasses = resolveMarginClasses(section.margin);
+  const sectionAlignmentClass = alignmentClassName(section.align);
+  const sectionAlignmentStyle = alignmentStyle(section.align);
+  const sectionHasBackgroundClass = Boolean(section.backgroundClassName);
 
   // Inline styles from the JSON input should always take precedence over theme classes
   const sectionInlineStyle: CSSProperties = {
     // Using background instead of backgroundColor to reset any background-image from theme gradients
-    ...(section.backgroundColor ? { background: section.backgroundColor } : {}),
+    ...(!sectionHasBackgroundClass && section.backgroundColor
+      ? { background: section.backgroundColor }
+      : {}),
     ...(sectionPaddingStyle ? { padding: sectionPaddingStyle } : {}),
+    ...(sectionMarginStyle ? { margin: sectionMarginStyle } : {}),
+    ...(sectionAlignmentStyle ?? {}),
   };
 
   return (
@@ -953,6 +1254,14 @@ function CanvasSectionView({
     >
       <ElementTab type="Section" daisyui={daisyui} />
       <div className="flex justify-end gap-2">
+        {showHidden && (
+          <SectionHiddenButton sectionId={section.id} hidden={!!section.hidden} daisyui={daisyui} />
+        )}
+        {!showHidden && (
+          <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
+            <Eye size={16} weight="bold" />
+          </div>
+        )}
         <SectionLockButton
           sectionId={section.id}
           locked={!!section.locked}
@@ -1000,6 +1309,8 @@ function CanvasSectionView({
           section.backgroundClassName,
           section.className,
           sectionPaddingClasses,
+          sectionMarginClasses,
+          sectionAlignmentClass,
         )}
         style={sectionInlineStyle}
         onClick={(e) => {
@@ -1025,17 +1336,20 @@ function CanvasSectionView({
               Drop rows or column layouts here
             </div>
           ) : (
-            section.rows.map((row) => (
-              <CanvasRowView
-                key={row.id}
-                row={row}
-                sectionId={section.id}
-                daisyui={daisyui}
-                section={section}
-                unlockable={unlockable}
-                customBlockRegistry={customBlockRegistry}
-              />
-            ))
+            section.rows
+              .filter((row) => showHidden || !row.hidden)
+              .map((row) => (
+                <CanvasRowView
+                  key={row.id}
+                  row={row}
+                  sectionId={section.id}
+                  daisyui={daisyui}
+                  section={section}
+                  unlockable={unlockable}
+                  showHidden={showHidden}
+                  customBlockRegistry={customBlockRegistry}
+                />
+              ))
           )}
         </SortableContext>
       </section>
@@ -1047,6 +1361,7 @@ export function Canvas({
   sections,
   daisyui = false,
   unlockable = true,
+  showHidden = false,
   customBlockRegistry = {},
 }: CanvasProps) {
   const { selectBlock, selectContainer } = useCanvasStore();
@@ -1098,15 +1413,18 @@ export function Canvas({
           Drag a section to get started
         </div>
       ) : (
-        sections.map((section) => (
-          <CanvasSectionView
-            key={section.id}
-            section={section}
-            daisyui={daisyui}
-            unlockable={unlockable}
-            customBlockRegistry={customBlockRegistry}
-          />
-        ))
+        sections
+          .filter((section) => showHidden || !section.hidden)
+          .map((section) => (
+            <CanvasSectionView
+              key={section.id}
+              section={section}
+              daisyui={daisyui}
+              unlockable={unlockable}
+              showHidden={showHidden}
+              customBlockRegistry={customBlockRegistry}
+            />
+          ))
       )}
     </div>
   );

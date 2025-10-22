@@ -16,6 +16,7 @@ import type {
   CanvasColumn,
 } from '@react-email-dnd/shared';
 import {
+  applyLayoutDefaults,
   cloneCanvasDocument,
   createEmptyDocument,
   documentsAreEqual,
@@ -126,7 +127,10 @@ export interface CanvasStoreValue {
 const CanvasStoreContext = createContext<CanvasStoreValue | null>(null);
 
 function createInitialState(initialDocument?: CanvasDocument): CanvasState {
-  const base = cloneCanvasDocument(initialDocument ?? createEmptyDocument());
+  const sourceDocument = initialDocument
+    ? applyLayoutDefaults(initialDocument)
+    : createEmptyDocument();
+  const base = cloneCanvasDocument(sourceDocument);
 
   return {
     past: [],
@@ -179,7 +183,8 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
   switch (action.type) {
     case 'setDocument': {
       const options = action.options ?? {};
-      const nextDocument = cloneCanvasDocument(action.document);
+      const normalized = applyLayoutDefaults(action.document);
+      const nextDocument = cloneCanvasDocument(normalized);
 
       if (options.replaceHistory) {
         return replaceHistory(state, nextDocument, options.markAsSaved ?? true);

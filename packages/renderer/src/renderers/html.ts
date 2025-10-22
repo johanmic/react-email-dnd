@@ -28,10 +28,7 @@ function renderBlock(
       ]
         .filter(Boolean)
         .join(";")
-      const headingClasses = [
-        block.props.className,
-        block.props.colorClassName,
-      ]
+      const headingClasses = [block.props.className, block.props.colorClassName]
         .filter(Boolean)
         .join(" ")
       const headingClassAttr =
@@ -43,7 +40,8 @@ function renderBlock(
       }</${headingTag}>`
     case "text":
       const textColor =
-        block.props.colorClassName ? undefined : block.props.color ?? "#1f2937"
+        block.props.color ??
+        (block.props.colorClassName ? undefined : "#1f2937")
       const textStyles = [
         block.props.align ? `text-align:${block.props.align}` : "",
         block.props.fontSize != null
@@ -57,10 +55,7 @@ function renderBlock(
       ]
         .filter(Boolean)
         .join(";")
-      const textClasses = [
-        block.props.className,
-        block.props.colorClassName,
-      ]
+      const textClasses = [block.props.className, block.props.colorClassName]
         .filter(Boolean)
         .join(" ")
       const textClassAttr =
@@ -81,7 +76,9 @@ function renderBlock(
         (block.props.colorClassName ? undefined : "#ffffff")
       const buttonStyles = [
         "display:inline-block",
-        block.props.padding ? `padding:${block.props.padding}` : "padding:12px 24px",
+        block.props.padding
+          ? `padding:${block.props.padding}`
+          : "padding:12px 24px",
         buttonBackground ? `background:${buttonBackground}` : "",
         buttonColor ? `color:${buttonColor}` : "",
         block.props.borderRadius != null
@@ -126,7 +123,8 @@ function renderBlock(
       const imageClassAttr = block.props.className
         ? ` class="${block.props.className}"`
         : ""
-      const imageStyleAttr = imageStyles.length > 0 ? ` style="${imageStyles}"` : ""
+      const imageStyleAttr =
+        imageStyles.length > 0 ? ` style="${imageStyles}"` : ""
       return `<img src="${substitute(block.props.src, context) ?? block.props.src}" alt="${
         substitute(block.props.alt, context) ?? ""
       }"${imageClassAttr}${imageStyleAttr} />`
@@ -144,10 +142,7 @@ function renderBlock(
       ]
         .filter(Boolean)
         .join(";")
-      const dividerClasses = [
-        block.props.className,
-        block.props.colorClassName,
-      ]
+      const dividerClasses = [block.props.className, block.props.colorClassName]
         .filter(Boolean)
         .join(" ")
       const dividerClassAttr =
@@ -156,9 +151,12 @@ function renderBlock(
         dividerStyles.length > 0 ? ` style="${dividerStyles}"` : ""
       return `<hr${dividerClassAttr}${dividerStyleAttr} />`
     case "custom":
-      return `<div data-custom-block="${block.props.componentName}" data-props='${JSON.stringify(
-        deepSubstitute(block.props.props, context)
-      ).replace(/'/g, "&apos;")}'></div>`
+      const customProps = deepSubstitute(block.props.props, context)
+      const customPropsJson = JSON.stringify(customProps).replace(
+        /'/g,
+        "&apos;"
+      )
+      return `<div data-custom-block="${block.props.componentName}" data-props='${customPropsJson}'><!-- Custom block: ${block.props.componentName} --></div>`
     default:
       return ""
   }
@@ -172,77 +170,83 @@ export function renderHtml(
   const indent = options.indent ?? 2
   const lines: string[] = ['<div class="red-outer">']
 
-  document.sections.forEach((section) => {
-    const sectionStyle = [
-      section.backgroundColor ? `background:${section.backgroundColor}` : "",
-      section.padding ? `padding:${section.padding}` : "",
-    ]
-      .filter(Boolean)
-      .join(";")
-    const sectionStyleAttr = sectionStyle ? ` style="${sectionStyle}"` : ""
-    const sectionClasses = [
-      section.backgroundClassName,
-      section.className,
-    ]
-      .filter(Boolean)
-      .join(" ")
-    const sectionClassAttr =
-      sectionClasses.length > 0 ? ` class="${sectionClasses}"` : ""
-    lines.push(
-      `  <section data-id="${section.id}"${sectionClassAttr}${sectionStyleAttr}>`
-    )
-
-    section.rows.forEach((row) => {
-      const rowStyle = [
-        row.gutter != null ? `gap:${row.gutter}px` : "",
-        row.backgroundColor ? `background:${row.backgroundColor}` : "",
-        row.padding ? `padding:${row.padding}` : "",
+  document.sections
+    .filter((section) => !section.hidden)
+    .forEach((section) => {
+      const sectionStyle = [
+        section.backgroundColor ? `background:${section.backgroundColor}` : "",
+        section.padding ? `padding:${section.padding}` : "",
       ]
         .filter(Boolean)
         .join(";")
-      const rowStyleAttr = rowStyle ? ` style="${rowStyle}"` : ""
-      const rowClasses = [row.backgroundClassName, row.className]
+      const sectionStyleAttr = sectionStyle ? ` style="${sectionStyle}"` : ""
+      const sectionClasses = [section.backgroundClassName, section.className]
         .filter(Boolean)
         .join(" ")
-      const rowClassAttr = rowClasses.length > 0 ? ` ${rowClasses}` : ""
+      const sectionClassAttr =
+        sectionClasses.length > 0 ? ` class="${sectionClasses}"` : ""
       lines.push(
-        `    <div class="red-row${rowClassAttr}" data-id="${row.id}"${rowStyleAttr}>`
+        `  <section data-id="${section.id}"${sectionClassAttr}${sectionStyleAttr}>`
       )
 
-      row.columns.forEach((column) => {
-        const columnStyle = [
-          column.backgroundColor ? `background:${column.backgroundColor}` : "",
-          column.padding ? `padding:${column.padding}` : "",
-        ]
-          .filter(Boolean)
-          .join(";")
-        const columnStyleAttr = columnStyle ? ` style="${columnStyle}"` : ""
-        const colClasses = [
-          column.backgroundClassName,
-          column.className,
-        ]
-          .filter(Boolean)
-          .join(" ")
-        const colClassAttr = colClasses.length > 0 ? ` ${colClasses}` : ""
-        lines.push(
-          `      <div class="red-column${colClassAttr}" data-id="${column.id}"${columnStyleAttr}>`
-        )
+      section.rows
+        .filter((row) => !row.hidden)
+        .forEach((row) => {
+          const rowStyle = [
+            row.gutter != null ? `gap:${row.gutter}px` : "",
+            row.backgroundColor ? `background:${row.backgroundColor}` : "",
+            row.padding ? `padding:${row.padding}` : "",
+          ]
+            .filter(Boolean)
+            .join(";")
+          const rowStyleAttr = rowStyle ? ` style="${rowStyle}"` : ""
+          const rowClasses = [row.backgroundClassName, row.className]
+            .filter(Boolean)
+            .join(" ")
+          const rowClassAttr = rowClasses.length > 0 ? ` ${rowClasses}` : ""
+          lines.push(
+            `    <div class="red-row${rowClassAttr}" data-id="${row.id}"${rowStyleAttr}>`
+          )
 
-        column.blocks.forEach((block) => {
-          const rendered = renderBlock(block, context)
-          if (rendered) {
-            lines.push(`        ${rendered}`)
-          }
+          row.columns
+            .filter((column) => !column.hidden)
+            .forEach((column) => {
+              const columnStyle = [
+                column.backgroundColor
+                  ? `background:${column.backgroundColor}`
+                  : "",
+                column.padding ? `padding:${column.padding}` : "",
+              ]
+                .filter(Boolean)
+                .join(";")
+              const columnStyleAttr = columnStyle
+                ? ` style="${columnStyle}"`
+                : ""
+              const colClasses = [column.backgroundClassName, column.className]
+                .filter(Boolean)
+                .join(" ")
+              const colClassAttr = colClasses.length > 0 ? ` ${colClasses}` : ""
+              lines.push(
+                `      <div class="red-column${colClassAttr}" data-id="${column.id}"${columnStyleAttr}>`
+              )
+
+              column.blocks
+                .filter((block) => !block.hidden)
+                .forEach((block) => {
+                  const rendered = renderBlock(block, context)
+                  if (rendered) {
+                    lines.push(`        ${rendered}`)
+                  }
+                })
+
+              lines.push("      </div>")
+            })
+
+          lines.push("    </div>")
         })
 
-        lines.push("      </div>")
-      })
-
-      lines.push("    </div>")
+      lines.push("  </section>")
     })
-
-    lines.push("  </section>")
-  })
 
   lines.push("</div>")
 

@@ -325,6 +325,16 @@ export function insertEmptySectionAfter(
   return next;
 }
 
+export function insertEmptySectionAt(
+  sections: CanvasSection[],
+  targetIndex: number,
+): CanvasSection[] {
+  const next = [...sections];
+  const insertionIndex = Math.max(0, Math.min(targetIndex, next.length));
+  next.splice(insertionIndex, 0, createEmptySection());
+  return next;
+}
+
 // Canvas item position finding functions
 export interface BlockPosition {
   sectionId: string;
@@ -691,7 +701,12 @@ export function moveSectionToPosition(
 
   const result = [...sections];
   const [movedSection] = result.splice(fromIndex, 1);
-  result.splice(toIndex, 0, movedSection);
+
+  // Adjust target index if moving upward (fromIndex > toIndex)
+  // because removing the item shifts all subsequent indices down by 1
+  const adjustedToIndex = fromIndex > toIndex ? toIndex : toIndex - 1;
+
+  result.splice(adjustedToIndex, 0, movedSection);
 
   return result;
 }
@@ -732,7 +747,13 @@ export function handleSidebarDrop(
   overId: string,
   sections: CanvasSection[],
   blockDefinitions: BlockDefinitionMap,
+  pointerInfo?: { pointerY: number; overRect?: { top: number; height: number } | null },
 ): CanvasSection[] | null {
+  // Prevent drops back to sidebar - these should be handled as cancellations
+  if (overId.startsWith('sidebar-drop-')) {
+    return null;
+  }
+
   // Handle structure drops
   if (activeId === 'structure-section') {
     if (overId === 'canvas') {
@@ -740,12 +761,26 @@ export function handleSidebarDrop(
     }
     if (overId.startsWith('section-')) {
       const sectionId = overId.replace('section-', '');
+      const targetSectionIndex = findSectionPosition(sections, sectionId);
+      if (targetSectionIndex !== null && pointerInfo?.overRect) {
+        const insertAfter =
+          pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+        const finalTargetIndex = targetSectionIndex + (insertAfter ? 1 : 0);
+        return insertEmptySectionAt(sections, finalTargetIndex);
+      }
       return insertEmptySectionAfter(sections, sectionId);
     }
     if (overId.startsWith('row-')) {
       const rowId = overId.replace('row-', '');
       const pos = findRowPosition(sections as unknown as CanvasSection[], rowId);
       if (pos) {
+        const targetSectionIndex = findSectionPosition(sections, pos.sectionId);
+        if (targetSectionIndex !== null && pointerInfo?.overRect) {
+          const insertAfter =
+            pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+          const finalTargetIndex = targetSectionIndex + (insertAfter ? 1 : 0);
+          return insertEmptySectionAt(sections, finalTargetIndex);
+        }
         return insertEmptySectionAfter(sections, pos.sectionId);
       }
     }
@@ -753,6 +788,13 @@ export function handleSidebarDrop(
       const columnId = overId.replace('column-', '');
       const pos = findColumnPosition(sections, columnId);
       if (pos) {
+        const targetSectionIndex = findSectionPosition(sections, pos.sectionId);
+        if (targetSectionIndex !== null && pointerInfo?.overRect) {
+          const insertAfter =
+            pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+          const finalTargetIndex = targetSectionIndex + (insertAfter ? 1 : 0);
+          return insertEmptySectionAt(sections, finalTargetIndex);
+        }
         return insertEmptySectionAfter(sections, pos.sectionId);
       }
     }
@@ -760,11 +802,18 @@ export function handleSidebarDrop(
       const blockId = overId.replace('canvas-block-', '');
       const pos = findBlockPosition(sections, blockId);
       if (pos) {
+        const targetSectionIndex = findSectionPosition(sections, pos.sectionId);
+        if (targetSectionIndex !== null && pointerInfo?.overRect) {
+          const insertAfter =
+            pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+          const finalTargetIndex = targetSectionIndex + (insertAfter ? 1 : 0);
+          return insertEmptySectionAt(sections, finalTargetIndex);
+        }
         return insertEmptySectionAfter(sections, pos.sectionId);
       }
     }
-    // Fallback: add to end
-    return [...sections, createEmptySection()];
+    // No valid drop target found - return null to prevent adding items
+    return null;
   }
 
   if (activeId === 'structure-row' || activeId.startsWith('structure-columns-')) {
@@ -788,6 +837,12 @@ export function handleSidebarDrop(
       const rowId = overId.replace('row-', '');
       const pos = findRowPosition(sections, rowId);
       if (pos) {
+        if (pointerInfo?.overRect) {
+          const insertAfter =
+            pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+          const targetRowIndex = pos.rowIndex + (insertAfter ? 1 : 0);
+          return insertRowToSectionAt(sections, pos.sectionId, targetRowIndex, columnCount);
+        }
         return insertRowToSectionAt(sections, pos.sectionId, pos.rowIndex, columnCount);
       }
     }

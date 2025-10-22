@@ -56,8 +56,33 @@ export function describeBlock(
       )
     case "divider":
       return "——"
-    case "custom":
-      return block.props.componentName
+    case "custom": {
+      const componentName = block.props.componentName
+      const props = deepSubstitute(block.props.props, context)
+
+      // Try to extract meaningful text from common prop names
+      const textProps = [
+        "title",
+        "content",
+        "text",
+        "label",
+        "description",
+        "message",
+      ]
+      let description = componentName
+
+      for (const propName of textProps) {
+        if (props && typeof props === "object" && propName in props) {
+          const propValue = (props as any)[propName]
+          if (typeof propValue === "string" && propValue.trim()) {
+            description = `${componentName}: ${propValue}`
+            break
+          }
+        }
+      }
+
+      return description
+    }
     default:
       const exhaustive: never = block
       throw new Error(`Unsupported block type: ${String(exhaustive)}`)

@@ -1,6 +1,12 @@
 import { Section, Row, Column, Heading, Text, Button } from '@react-email/components';
-import type { CustomBlockDefinition, CustomBlockPropEditorProps } from '@react-email-dnd';
+import type {
+  CustomBlockDefinition,
+  CustomBlockPropEditor,
+  CustomBlockPropEditorProps,
+} from '@react-email-dnd';
 import { SparkleIcon } from '@phosphor-icons/react';
+import { footerBlockDefinition } from './footer';
+import { ComponentType } from 'react';
 
 export interface HeroBlockProps extends Record<string, unknown> {
   title: string;
@@ -63,9 +69,10 @@ export const heroBlockDefinition: CustomBlockDefinition<HeroBlockProps> = {
     },
   },
   component: HeroBlock,
+  propEditor: HeroBlockPropsEditor,
 };
 
-function HeroBlockPropsEditor({
+export function HeroBlockPropsEditor({
   value,
   onChange,
   disabled,
@@ -164,7 +171,4 @@ function HeroBlockPropsEditor({
   );
 }
 
-export const customBlocks = [heroBlockDefinition];
-export const customBlockPropEditors = {
-  HeroBlock: HeroBlockPropsEditor,
-};
+export const customBlocks = [heroBlockDefinition, footerBlockDefinition];

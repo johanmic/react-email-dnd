@@ -12,8 +12,18 @@ const fontWeightSchema = z.enum([
 ])
 export const paddingValueSchema = z.union([z.string(), z.number()])
 export const responsivePaddingSchema = z.record(z.string(), paddingValueSchema)
-export const paddingSchema = z.union([z.string(), z.number(), responsivePaddingSchema])
+export const paddingSchema = z.union([
+  z.string(),
+  z.number(),
+  responsivePaddingSchema,
+])
 export type Padding = z.infer<typeof paddingSchema>
+
+export interface PaddingOptionEntry {
+  id: string
+  label: string
+  value: Padding
+}
 
 export const colorOptionSchema = z.union([
   z.string(),
@@ -108,6 +118,7 @@ export type CustomBlockProps = z.infer<typeof customBlockPropsSchema>
 const blockBaseSchema = z.object({
   id: z.string(),
   locked: z.boolean().optional(),
+  hidden: z.boolean().optional(),
 })
 
 export const buttonBlockSchema = blockBaseSchema.extend({
@@ -163,6 +174,8 @@ export const canvasColumnSchema = blockBaseSchema.extend({
   backgroundColor: z.string().optional(),
   backgroundClassName: z.string().optional(),
   padding: paddingSchema.optional(),
+  margin: paddingSchema.optional(),
+  align: alignmentSchema.optional(),
   className: z.string().optional(),
   blocks: z.array(canvasContentBlockSchema),
 })
@@ -175,6 +188,8 @@ export const canvasRowSchema = blockBaseSchema.extend({
   backgroundColor: z.string().optional(),
   backgroundClassName: z.string().optional(),
   padding: paddingSchema.optional(),
+  margin: paddingSchema.optional(),
+  align: alignmentSchema.optional(),
   className: z.string().optional(),
 })
 export type CanvasRow = z.infer<typeof canvasRowSchema>
@@ -185,6 +200,8 @@ export const canvasSectionSchema = blockBaseSchema.extend({
   backgroundColor: z.string().optional(),
   backgroundClassName: z.string().optional(),
   padding: paddingSchema.optional(),
+  margin: paddingSchema.optional(),
+  align: alignmentSchema.optional(),
   className: z.string().optional(),
 })
 export type CanvasSection = z.infer<typeof canvasSectionSchema>
@@ -218,6 +235,7 @@ export type CanvasBlockBase<
 > = IdentifiedNode<Type> & {
   props: Props
   locked?: boolean
+  hidden?: boolean
 }
 
 export interface BlockDefinition<Block extends CanvasContentBlock> {
@@ -246,7 +264,31 @@ export interface CustomBlockDefinition<
    * custom block. Async components are not supported.
    */
   component: ComponentType<ComponentProps>
+  /**
+   * Optional prop editor component for editing the block's properties in the editor.
+   * If not provided, the block will be read-only in the editor.
+   */
+  propEditor?: ComponentType<CustomBlockPropEditorProps<ComponentProps>>
 }
+
+export interface CustomBlockPropEditorProps<
+  Props extends Record<string, unknown> = Record<string, unknown>,
+> {
+  value: Props
+  block: CanvasContentBlock & { type: "custom" }
+  onChange: (patch: Partial<Props>) => void
+  onReplace: (value: Props) => void
+  daisyui?: boolean
+  colors?: ColorOption[]
+  textColors?: ColorOption[]
+  bgColors?: ColorOption[]
+  disabled?: boolean
+  paddingOptions?: PaddingOptionEntry[]
+}
+
+export type CustomBlockPropEditor<
+  Props extends Record<string, unknown> = Record<string, unknown>,
+> = ComponentType<CustomBlockPropEditorProps<Props>>
 
 export type CustomBlockRegistry = Record<string, CustomBlockDefinition<any>>
 

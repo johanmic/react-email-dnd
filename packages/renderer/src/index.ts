@@ -9,6 +9,7 @@ import { renderPlainText } from "./renderers/plain-text"
 import { renderReact } from "./renderers/react"
 import { renderReactText } from "./renderers/react-text"
 import type { RenderContext } from "./types"
+import { buildDaisyUIBaseStyles } from "./utils/daisyui"
 
 function createContext(options: RendererOptions): RenderContext {
   return {
@@ -42,21 +43,32 @@ export function renderDocument({
     options.theme = merged
   }
 
+  const baseStyles =
+    options.daisyui && options.theme
+      ? buildDaisyUIBaseStyles(options.theme)
+      : undefined
+
   switch (options.format) {
     case "react":
       return {
         format: "react",
-        node: renderReact(document, context, options),
+        node: renderReact(document, context, options, baseStyles),
       }
     case "react-text":
       return {
         format: "react-text",
-        code: renderReactText(document, context, options),
+        code: renderReactText(document, context, options, baseStyles),
       }
     case "html":
       return {
         format: "html",
-        html: renderHtml(document, context, options),
+        html: baseStyles
+          ? `<style>${baseStyles}</style>\n${renderHtml(
+              document,
+              context,
+              options
+            )}`
+          : renderHtml(document, context, options),
       }
     case "plain-text":
       return {

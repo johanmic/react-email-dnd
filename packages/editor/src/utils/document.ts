@@ -7,6 +7,15 @@ import type {
 } from '@react-email-dnd/shared';
 
 const DEFAULT_TITLE = 'Untitled email';
+const DEFAULT_SECTION_PADDING: CanvasSection['padding'] = '8';
+const DEFAULT_SECTION_MARGIN: CanvasSection['margin'] = '0';
+const DEFAULT_SECTION_ALIGN: CanvasSection['align'] = 'left';
+const DEFAULT_ROW_PADDING: CanvasRow['padding'] = '6';
+const DEFAULT_ROW_MARGIN: CanvasRow['margin'] = '0';
+const DEFAULT_ROW_ALIGN: CanvasRow['align'] = 'left';
+const DEFAULT_COLUMN_PADDING: CanvasColumn['padding'] = '4';
+const DEFAULT_COLUMN_MARGIN: CanvasColumn['margin'] = '0';
+const DEFAULT_COLUMN_ALIGN: CanvasColumn['align'] = 'left';
 
 function generateId(prefix: string): string {
   const globalCrypto =
@@ -36,6 +45,9 @@ export function createEmptySection(): CanvasSection {
     id: generateId('section'),
     type: 'section',
     rows: [],
+    padding: DEFAULT_SECTION_PADDING,
+    margin: DEFAULT_SECTION_MARGIN,
+    align: DEFAULT_SECTION_ALIGN,
   };
 }
 
@@ -47,11 +59,49 @@ export function documentsAreEqual(a: CanvasDocument, b: CanvasDocument): boolean
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+function withColumnDefaults(column: CanvasColumn): CanvasColumn {
+  return {
+    ...column,
+    padding: column.padding ?? DEFAULT_COLUMN_PADDING,
+    margin: column.margin ?? DEFAULT_COLUMN_MARGIN,
+    align: column.align ?? DEFAULT_COLUMN_ALIGN,
+  };
+}
+
+function withRowDefaults(row: CanvasRow): CanvasRow {
+  return {
+    ...row,
+    padding: row.padding ?? DEFAULT_ROW_PADDING,
+    margin: row.margin ?? DEFAULT_ROW_MARGIN,
+    align: row.align ?? DEFAULT_ROW_ALIGN,
+    columns: row.columns.map(withColumnDefaults),
+  };
+}
+
+function withSectionDefaults(section: CanvasSection): CanvasSection {
+  return {
+    ...section,
+    padding: section.padding ?? DEFAULT_SECTION_PADDING,
+    margin: section.margin ?? DEFAULT_SECTION_MARGIN,
+    align: section.align ?? DEFAULT_SECTION_ALIGN,
+    rows: section.rows.map(withRowDefaults),
+  };
+}
+
+export function applyLayoutDefaults(document: CanvasDocument): CanvasDocument {
+  const normalized = cloneCanvasDocument(document);
+  normalized.sections = normalized.sections.map(withSectionDefaults);
+  return normalized;
+}
+
 export function createEmptyRow(columnCount: number = 1) {
   return {
     id: generateId('row'),
     type: 'row' as const,
     gutter: 16,
+    padding: DEFAULT_ROW_PADDING,
+    margin: DEFAULT_ROW_MARGIN,
+    align: DEFAULT_ROW_ALIGN,
     columns: Array.from({ length: columnCount }, () => createEmptyColumn()),
   };
 }
@@ -60,6 +110,9 @@ export function createEmptyColumn() {
   return {
     id: generateId('column'),
     type: 'column' as const,
+    padding: DEFAULT_COLUMN_PADDING,
+    margin: DEFAULT_COLUMN_MARGIN,
+    align: DEFAULT_COLUMN_ALIGN,
     blocks: [] as CanvasContentBlock[],
   };
 }
@@ -117,7 +170,10 @@ export function updateSectionProps(
   document: CanvasDocument,
   sectionId: string,
   updatedProps: Partial<
-    Pick<CanvasSection, 'backgroundColor' | 'backgroundClassName' | 'padding' | 'className' | 'locked'>
+    Pick<
+      CanvasSection,
+      'backgroundColor' | 'backgroundClassName' | 'padding' | 'margin' | 'className' | 'align' | 'locked'
+    >
   >,
 ): CanvasDocument {
   const next = cloneCanvasDocument(document);
@@ -131,7 +187,10 @@ export function updateRowProps(
   document: CanvasDocument,
   rowId: string,
   updatedProps: Partial<
-    Pick<CanvasRow, 'backgroundColor' | 'backgroundClassName' | 'padding' | 'className' | 'gutter' | 'locked'>
+    Pick<
+      CanvasRow,
+      'backgroundColor' | 'backgroundClassName' | 'padding' | 'margin' | 'className' | 'gutter' | 'align' | 'locked'
+    >
   >,
 ): CanvasDocument {
   const next = cloneCanvasDocument(document);
@@ -146,7 +205,10 @@ export function updateColumnProps(
   document: CanvasDocument,
   columnId: string,
   updatedProps: Partial<
-    Pick<CanvasColumn, 'backgroundColor' | 'backgroundClassName' | 'padding' | 'className' | 'width' | 'locked'>
+    Pick<
+      CanvasColumn,
+      'backgroundColor' | 'backgroundClassName' | 'padding' | 'margin' | 'className' | 'width' | 'align' | 'locked'
+    >
   >,
 ): CanvasDocument {
   const next = cloneCanvasDocument(document);

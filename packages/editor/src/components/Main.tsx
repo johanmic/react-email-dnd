@@ -10,6 +10,7 @@ export interface MainProps {
   sections: CanvasSection[];
   daisyui?: boolean;
   unlockable?: boolean;
+  showHidden?: boolean;
   // Using `any` by design to allow heterogeneous custom block props across definitions.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customBlockRegistry?: Record<string, CustomBlockDefinition<any>>;
@@ -19,6 +20,7 @@ export function Main({
   sections,
   daisyui = false,
   unlockable = true,
+  showHidden = false,
   customBlockRegistry = {},
 }: MainProps) {
   const canvasStore = useContext(CanvasStoreContext);
@@ -67,6 +69,7 @@ export function Main({
           sections={normalizedSections}
           daisyui={daisyui}
           unlockable={unlockable}
+          showHidden={showHidden}
           customBlockRegistry={customBlockRegistry}
         />
       </div>

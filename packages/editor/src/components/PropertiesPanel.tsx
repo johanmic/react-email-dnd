@@ -1,7 +1,15 @@
 // packages/editor/src/components/PropertiesPanel.tsx
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { X, TrashIcon, LockIcon, LockOpenIcon, CaretDownIcon } from '@phosphor-icons/react';
+import {
+  X,
+  TrashIcon,
+  LockIcon,
+  LockOpenIcon,
+  CaretDownIcon,
+  Eye,
+  EyeSlash,
+} from '@phosphor-icons/react';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import { ConfirmModal } from './ConfirmModal';
 import { removeBlock } from '../utils/drag-drop';
@@ -14,12 +22,16 @@ import type {
   CanvasContentBlock,
   CustomBlockProps,
   Padding,
+  CustomBlockPropEditor,
+  CustomBlockDefinition,
 } from '@react-email-dnd/shared';
 export type { ColorOption } from '@react-email-dnd/shared';
 import {
   getDefaultPaddingOptionEntries,
   isPaddingEqual,
   paddingToDisplay,
+  formatPaddingForInput,
+  parsePaddingInput,
   type PaddingOptionEntry,
 } from '../utils/padding';
 // Container types are inferred at usage; no direct type imports needed here
@@ -32,26 +44,7 @@ import {
 //       label?: string;
 //     };
 
-export interface CustomBlockPropEditorProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-> {
-  value: Props;
-  block: CanvasContentBlock & { type: 'custom' };
-  onChange: (patch: Partial<Props>) => void;
-  onReplace: (value: Props) => void;
-  daisyui?: boolean;
-  colors?: ColorOption[];
-  textColors?: ColorOption[];
-  bgColors?: ColorOption[];
-  disabled?: boolean;
-  paddingOptions?: PaddingOptionEntry[];
-}
-
-export type CustomBlockPropEditor<Props extends Record<string, unknown> = Record<string, unknown>> =
-  React.ComponentType<CustomBlockPropEditorProps<Props>>;
-
-// Using `any` by design to allow heterogeneous prop editors keyed by component name.
-// Each editor component retains its own strict props type.
+// Legacy type - now imported from shared schema
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CustomBlockPropEditors = Record<string, CustomBlockPropEditor<any>>;
 
@@ -63,7 +56,7 @@ interface PropertiesPanelProps {
   colors?: ColorOption[];
   textColors?: ColorOption[];
   bgColors?: ColorOption[];
-  customBlockPropEditors?: CustomBlockPropEditors;
+  customBlockRegistry?: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
   paddingOptions?: PaddingOptionEntry[];
 }
 
@@ -78,6 +71,12 @@ interface TextPropsFormProps {
 
 interface LockedToggleProps {
   locked: boolean;
+  onToggle: () => void;
+  daisyui?: boolean;
+}
+
+interface HiddenToggleProps {
+  hidden: boolean;
   onToggle: () => void;
   daisyui?: boolean;
 }
@@ -104,7 +103,6 @@ interface ImagePropsFormProps {
   block: CanvasContentBlock & { type: 'image' };
   onUpdate: (props: Partial<ImageBlockProps>) => void;
   daisyui?: boolean;
-  colors?: ColorOption[];
   paddingOptions: PaddingOptionEntry[];
 }
 
@@ -245,7 +243,7 @@ function ColorPicker({
           'w-16 h-14 rounded-xl border-2 transition-all duration-200 flex items-center justify-center',
           {
             'border-gray-300 hover:border-gray-400': !daisyui && !disabled,
-            'border-base-300 hover:border-primary/50': daisyui && !disabled,
+            'border-base-100 hover:border-primary/50': daisyui && !disabled,
             'border-gray-200 opacity-50 cursor-not-allowed': disabled,
             'border-blue-500 ring-2 ring-blue-500/20': isOpen && !disabled,
           },
@@ -470,6 +468,79 @@ function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
             {
               'bg-gray-300 peer-checked:bg-amber-500 peer-focus:ring-amber-500/20': !daisyui,
               'bg-base-300 peer-checked:bg-warning peer-focus:ring-warning/20': daisyui,
+            },
+          )}
+        />
+      </label>
+    </div>
+  );
+}
+
+function HiddenToggle({ hidden, onToggle, daisyui }: HiddenToggleProps) {
+  return (
+    <div
+      className={clsx('flex items-center justify-between p-4 rounded-lg border mb-6', {
+        'bg-blue-50/50 border-blue-200': !daisyui && hidden,
+        'bg-gray-50 border-gray-200': !daisyui && !hidden,
+        'bg-info/10 border-info/20': daisyui && hidden,
+        'bg-base-200 border-base-300': daisyui && !hidden,
+      })}
+    >
+      <div className="flex items-center gap-3">
+        {hidden ? (
+          <EyeSlash
+            size={20}
+            weight="bold"
+            className={clsx({
+              'text-blue-600': !daisyui,
+              'text-info': daisyui,
+            })}
+          />
+        ) : (
+          <Eye
+            size={20}
+            weight="bold"
+            className={clsx({
+              'text-gray-500': !daisyui,
+              'text-base-content/60': daisyui,
+            })}
+          />
+        )}
+        <div>
+          <div
+            className={clsx('text-sm font-medium', {
+              'text-gray-900': !daisyui,
+              'text-base-content': daisyui,
+            })}
+          >
+            {hidden ? 'Hidden' : 'Visible'}
+          </div>
+          <div
+            className={clsx('text-xs', {
+              'text-gray-600': !daisyui,
+              'text-base-content/70': daisyui,
+            })}
+          >
+            {hidden
+              ? 'Not shown in editor or rendered output'
+              : 'Shown in editor and rendered output'}
+          </div>
+        </div>
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          checked={hidden}
+          onChange={onToggle}
+          className="sr-only peer"
+          aria-label={hidden ? 'Show block' : 'Hide block'}
+        />
+        <div
+          className={clsx(
+            "w-11 h-6 rounded-full peer transition-colors peer-focus:ring-2 peer-focus:ring-offset-1 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full",
+            {
+              'bg-gray-300 peer-checked:bg-blue-500 peer-focus:ring-blue-500/20': !daisyui,
+              'bg-base-300 peer-checked:bg-info peer-focus:ring-info/20': daisyui,
             },
           )}
         />
@@ -1338,7 +1409,6 @@ function ImagePropsForm({
   block,
   onUpdate,
   daisyui,
-  colors,
   paddingOptions,
   disabled = false,
 }: ImagePropsFormProps & { disabled?: boolean }) {
@@ -1632,7 +1702,7 @@ export function PropertiesPanel({
   colors,
   textColors,
   bgColors,
-  customBlockPropEditors,
+  customBlockRegistry,
   paddingOptions,
 }: PropertiesPanelProps) {
   const {
@@ -1647,6 +1717,7 @@ export function PropertiesPanel({
     updateContainerProps,
   } = useCanvasStore();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const resolvedPaddingOptions = useMemo(() => {
     if (paddingOptions && paddingOptions.length > 0) {
       return paddingOptions.map((entry) => ({ ...entry }));
@@ -1717,6 +1788,11 @@ export function PropertiesPanel({
     updateBlockProps(selectedBlockId, { locked: !selectedBlock.locked });
   }, [selectedBlockId, selectedBlock, updateBlockProps]);
 
+  const handleToggleHidden = useCallback(() => {
+    if (!selectedBlockId || !selectedBlock) return;
+    updateBlockProps(selectedBlockId, { hidden: !selectedBlock.hidden });
+  }, [selectedBlockId, selectedBlock, updateBlockProps]);
+
   const handleDeleteConfirm = useCallback(() => {
     if (!selectedBlockId) return;
     const nextSections = removeBlock(document.sections, selectedBlockId);
@@ -1762,7 +1838,6 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'image' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
-            colors={bgColors ?? colors}
             paddingOptions={resolvedPaddingOptions}
             disabled={isLocked}
           />
@@ -1783,7 +1858,8 @@ export function PropertiesPanel({
         const customBlock = selectedBlock as CanvasContentBlock & { type: 'custom' };
         const customProps = customBlock.props as CustomBlockProps;
         const componentName = customProps.componentName;
-        const Editor = customBlockPropEditors?.[componentName];
+        const blockDefinition = customBlockRegistry?.[componentName];
+        const Editor = blockDefinition?.propEditor;
 
         if (!Editor) {
           return (
@@ -1793,7 +1869,9 @@ export function PropertiesPanel({
                 'text-base-content/60': daisyui,
               })}
             >
-              Add a custom properties form for <code>{componentName}</code> to edit its props.
+              {blockDefinition
+                ? `No property editor defined for ${componentName}. The block is read-only.`
+                : `Add a custom block definition for ${componentName} to edit its props.`}
             </div>
           );
         }
@@ -1920,11 +1998,13 @@ export function PropertiesPanel({
       'border border-base-300 bg-base-100 text-base-content hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/10':
         daisyui,
     });
+    const selectCls = clsx(fieldCls, 'cursor-pointer pr-10');
 
     if (selectedContainer.kind === 'section') {
       const section = document.sections.find((s) => s.id === selectedContainer.id);
       if (!section) return null;
       const locked = !!section.locked;
+      const hidden = !!section.hidden;
       return (
         <fieldset className="space-y-6" disabled={locked}>
           {unlockable && (
@@ -1940,22 +2020,35 @@ export function PropertiesPanel({
               }
             />
           )}
+          <HiddenToggle
+            hidden={hidden}
+            daisyui={daisyui}
+            onToggle={() =>
+              updateContainerProps({
+                kind: 'section',
+                id: section.id,
+                props: { hidden: !hidden },
+              })
+            }
+          />
           <div>
             <label className={labelCls}>Background</label>
             <div className="flex items-center gap-3">
               <ColorPicker
                 value={section.backgroundColor}
                 valueClassName={section.backgroundClassName}
-                onChange={(color, meta) =>
+                onChange={(color, meta) => {
+                  const nextBackgroundColor =
+                    meta?.className != null ? undefined : (meta?.hex ?? color ?? undefined);
                   updateContainerProps({
                     kind: 'section',
                     id: section.id,
                     props: {
-                      backgroundColor: meta?.hex ?? color ?? undefined,
+                      backgroundColor: nextBackgroundColor,
                       backgroundClassName: meta?.className,
                     },
-                  })
-                }
+                  });
+                }}
                 colors={bgColors ?? colors}
                 daisyui={daisyui}
                 disabled={locked}
@@ -1979,23 +2072,24 @@ export function PropertiesPanel({
             </div>
           </div>
           <div>
-            <label className={labelCls}>Background Class</label>
-            <input
-              type="text"
-              value={section.backgroundClassName ?? ''}
+            <label className={labelCls}>Alignment</label>
+            <select
+              value={section.align ?? 'left'}
               onChange={(e) =>
                 updateContainerProps({
                   kind: 'section',
                   id: section.id,
-                  props: {
-                    backgroundClassName: e.target.value || undefined,
-                  },
+                  props: { align: e.target.value as 'left' | 'center' | 'right' | 'justify' },
                 })
               }
-              className={fieldCls}
-              placeholder="e.g. bg-base-200"
-            />
-            <span className={helpCls}>Tailwind or CSS class applied to section background.</span>
+              className={selectCls}
+              disabled={locked}
+            >
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+              <option value="justify">Justify</option>
+            </select>
           </div>
           <div>
             <label className={labelCls}>Padding</label>
@@ -2016,20 +2110,102 @@ export function PropertiesPanel({
             <span className={helpCls}>Choose a preset padding or clear to inherit defaults.</span>
           </div>
           <div>
-            <label className={labelCls}>Class Name</label>
-            <input
-              type="text"
-              value={section.className ?? ''}
-              onChange={(e) =>
+            <label className={labelCls}>Margin</label>
+            <PaddingButtonGroup
+              value={section.margin}
+              options={resolvedPaddingOptions}
+              onChange={(next) =>
                 updateContainerProps({
                   kind: 'section',
                   id: section.id,
-                  props: { className: e.target.value },
+                  props: { margin: next },
                 })
               }
-              className={fieldCls}
-              placeholder="Tailwind classes"
+              disabled={locked}
+              daisyui={daisyui}
+              allowClear
             />
+            <span className={helpCls}>
+              Space around the section. Use presets or expand Advanced for custom values.
+            </span>
+          </div>
+
+          {/* Advanced Section */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={clsx('text-sm font-medium mb-3 flex items-center gap-2', {
+                'text-gray-700 hover:text-gray-900': !daisyui,
+                'text-base-content/80 hover:text-base-content': daisyui,
+              })}
+            >
+              <CaretDownIcon
+                size={16}
+                className={clsx('transition-transform', { 'rotate-180': showAdvanced })}
+              />
+              Advanced Settings
+            </button>
+            {showAdvanced && (
+              <div className="space-y-4 pl-6">
+                <div>
+                  <label className={labelCls}>Custom Margin</label>
+                  <input
+                    type="text"
+                    value={formatPaddingForInput(section.margin)}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'section',
+                        id: section.id,
+                        props: { margin: parsePaddingInput(e.target.value) },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="e.g. 0 or 0 auto"
+                    disabled={locked}
+                  />
+                  <span className={helpCls}>CSS margin value or Tailwind token.</span>
+                </div>
+                <div>
+                  <label className={labelCls}>Background Class</label>
+                  <input
+                    type="text"
+                    value={section.backgroundClassName ?? ''}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'section',
+                        id: section.id,
+                        props: {
+                          backgroundClassName: e.target.value || undefined,
+                        },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="e.g. bg-base-200"
+                  />
+                  <span className={helpCls}>
+                    Tailwind background class (overrides color picker).
+                  </span>
+                </div>
+                <div>
+                  <label className={labelCls}>Class Name</label>
+                  <input
+                    type="text"
+                    value={section.className ?? ''}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'section',
+                        id: section.id,
+                        props: { className: e.target.value },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="Custom Tailwind classes"
+                  />
+                  <span className={helpCls}>Additional CSS classes for advanced styling.</span>
+                </div>
+              </div>
+            )}
           </div>
         </fieldset>
       );
@@ -2040,6 +2216,8 @@ export function PropertiesPanel({
       if (!match) return null;
       const { row, section } = match;
       const locked = !!(row.locked || section.locked);
+      const hidden = !!row.hidden;
+      const hasMultipleColumns = row.columns.length > 1;
       return (
         <fieldset className="space-y-6" disabled={locked}>
           {unlockable && (
@@ -2051,22 +2229,31 @@ export function PropertiesPanel({
               }
             />
           )}
+          <HiddenToggle
+            hidden={hidden}
+            daisyui={daisyui}
+            onToggle={() =>
+              updateContainerProps({ kind: 'row', id: row.id, props: { hidden: !hidden } })
+            }
+          />
           <div>
             <label className={labelCls}>Background</label>
             <div className="flex items-center gap-3">
               <ColorPicker
                 value={row.backgroundColor}
                 valueClassName={row.backgroundClassName}
-                onChange={(color, meta) =>
+                onChange={(color, meta) => {
+                  const nextBackgroundColor =
+                    meta?.className != null ? undefined : (meta?.hex ?? color ?? undefined);
                   updateContainerProps({
                     kind: 'row',
                     id: row.id,
                     props: {
-                      backgroundColor: meta?.hex ?? color ?? undefined,
+                      backgroundColor: nextBackgroundColor,
                       backgroundClassName: meta?.className,
                     },
-                  })
-                }
+                  });
+                }}
                 colors={bgColors ?? colors}
                 daisyui={daisyui}
                 disabled={locked}
@@ -2090,23 +2277,24 @@ export function PropertiesPanel({
             </div>
           </div>
           <div>
-            <label className={labelCls}>Background Class</label>
-            <input
-              type="text"
-              value={row.backgroundClassName ?? ''}
+            <label className={labelCls}>Alignment</label>
+            <select
+              value={row.align ?? 'left'}
               onChange={(e) =>
                 updateContainerProps({
                   kind: 'row',
                   id: row.id,
-                  props: {
-                    backgroundClassName: e.target.value || undefined,
-                  },
+                  props: { align: e.target.value as 'left' | 'center' | 'right' | 'justify' },
                 })
               }
-              className={fieldCls}
-              placeholder="e.g. bg-muted"
-            />
-            <span className={helpCls}>Tailwind or CSS class applied to row background.</span>
+              className={selectCls}
+              disabled={locked}
+            >
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+              <option value="justify">Justify</option>
+            </select>
           </div>
           <div>
             <label className={labelCls}>Padding</label>
@@ -2127,36 +2315,122 @@ export function PropertiesPanel({
             <span className={helpCls}>Choose a preset padding or clear to inherit defaults.</span>
           </div>
           <div>
-            <label className={labelCls}>Gutter (px)</label>
-            <input
-              type="number"
-              value={row.gutter ?? 0}
-              onChange={(e) =>
+            <label className={labelCls}>Margin</label>
+            <PaddingButtonGroup
+              value={row.margin}
+              options={resolvedPaddingOptions}
+              onChange={(next) =>
                 updateContainerProps({
                   kind: 'row',
                   id: row.id,
-                  props: { gutter: Number(e.target.value) },
+                  props: { margin: next },
                 })
               }
-              className={fieldCls}
-              min="0"
+              disabled={locked}
+              daisyui={daisyui}
+              allowClear
             />
+            <span className={helpCls}>
+              Space around the row. Use presets or expand Advanced for custom values.
+            </span>
           </div>
-          <div>
-            <label className={labelCls}>Class Name</label>
-            <input
-              type="text"
-              value={row.className ?? ''}
-              onChange={(e) =>
-                updateContainerProps({
-                  kind: 'row',
-                  id: row.id,
-                  props: { className: e.target.value },
-                })
-              }
-              className={fieldCls}
-              placeholder="Tailwind classes"
-            />
+
+          {hasMultipleColumns && (
+            <div>
+              <label className={labelCls}>Column Gap (px)</label>
+              <input
+                type="number"
+                value={row.gutter ?? 16}
+                onChange={(e) =>
+                  updateContainerProps({
+                    kind: 'row',
+                    id: row.id,
+                    props: { gutter: Number(e.target.value) },
+                  })
+                }
+                className={fieldCls}
+                min="0"
+              />
+              <span className={helpCls}>Space between columns in this row.</span>
+            </div>
+          )}
+
+          {/* Advanced Section */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={clsx('text-sm font-medium mb-3 flex items-center gap-2', {
+                'text-gray-700 hover:text-gray-900': !daisyui,
+                'text-base-content/80 hover:text-base-content': daisyui,
+              })}
+            >
+              <CaretDownIcon
+                size={16}
+                className={clsx('transition-transform', { 'rotate-180': showAdvanced })}
+              />
+              Advanced Settings
+            </button>
+            {showAdvanced && (
+              <div className="space-y-4 pl-6">
+                <div>
+                  <label className={labelCls}>Custom Margin</label>
+                  <input
+                    type="text"
+                    value={formatPaddingForInput(row.margin)}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'row',
+                        id: row.id,
+                        props: { margin: parsePaddingInput(e.target.value) },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="e.g. 0"
+                    disabled={locked}
+                  />
+                  <span className={helpCls}>CSS margin value or Tailwind token.</span>
+                </div>
+                <div>
+                  <label className={labelCls}>Background Class</label>
+                  <input
+                    type="text"
+                    value={row.backgroundClassName ?? ''}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'row',
+                        id: row.id,
+                        props: {
+                          backgroundClassName: e.target.value || undefined,
+                        },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="e.g. bg-muted"
+                  />
+                  <span className={helpCls}>
+                    Tailwind background class (overrides color picker).
+                  </span>
+                </div>
+                <div>
+                  <label className={labelCls}>Class Name</label>
+                  <input
+                    type="text"
+                    value={row.className ?? ''}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'row',
+                        id: row.id,
+                        props: { className: e.target.value },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="Custom Tailwind classes"
+                  />
+                  <span className={helpCls}>Additional CSS classes for advanced styling.</span>
+                </div>
+              </div>
+            )}
           </div>
         </fieldset>
       );
@@ -2167,6 +2441,8 @@ export function PropertiesPanel({
       if (!match) return null;
       const { column, row, section } = match;
       const locked = !!(column.locked || row.locked || section.locked);
+      const hidden = !!column.hidden;
+      const hasMultipleColumns = row.columns.length > 1;
       return (
         <fieldset className="space-y-6" disabled={locked}>
           {unlockable && (
@@ -2182,22 +2458,35 @@ export function PropertiesPanel({
               }
             />
           )}
+          <HiddenToggle
+            hidden={hidden}
+            daisyui={daisyui}
+            onToggle={() =>
+              updateContainerProps({
+                kind: 'column',
+                id: column.id,
+                props: { hidden: !hidden },
+              })
+            }
+          />
           <div>
             <label className={labelCls}>Background</label>
             <div className="flex items-center gap-3">
               <ColorPicker
                 value={column.backgroundColor}
                 valueClassName={column.backgroundClassName}
-                onChange={(color, meta) =>
+                onChange={(color, meta) => {
+                  const nextBackgroundColor =
+                    meta?.className != null ? undefined : (meta?.hex ?? color ?? undefined);
                   updateContainerProps({
                     kind: 'column',
                     id: column.id,
                     props: {
-                      backgroundColor: meta?.hex ?? color ?? undefined,
+                      backgroundColor: nextBackgroundColor,
                       backgroundClassName: meta?.className,
                     },
-                  })
-                }
+                  });
+                }}
                 colors={bgColors ?? colors}
                 daisyui={daisyui}
                 disabled={locked}
@@ -2221,23 +2510,24 @@ export function PropertiesPanel({
             </div>
           </div>
           <div>
-            <label className={labelCls}>Background Class</label>
-            <input
-              type="text"
-              value={column.backgroundClassName ?? ''}
+            <label className={labelCls}>Alignment</label>
+            <select
+              value={column.align ?? 'left'}
               onChange={(e) =>
                 updateContainerProps({
                   kind: 'column',
                   id: column.id,
-                  props: {
-                    backgroundClassName: e.target.value || undefined,
-                  },
+                  props: { align: e.target.value as 'left' | 'center' | 'right' | 'justify' },
                 })
               }
-              className={fieldCls}
-              placeholder="e.g. bg-primary"
-            />
-            <span className={helpCls}>Tailwind or CSS class applied to column background.</span>
+              className={selectCls}
+              disabled={locked}
+            >
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+              <option value="justify">Justify</option>
+            </select>
           </div>
           <div>
             <label className={labelCls}>Padding</label>
@@ -2258,36 +2548,124 @@ export function PropertiesPanel({
             <span className={helpCls}>Choose a preset padding or clear to inherit defaults.</span>
           </div>
           <div>
-            <label className={labelCls}>Width (flex basis)</label>
-            <input
-              type="number"
-              value={column.width ?? 1}
-              onChange={(e) =>
+            <label className={labelCls}>Margin</label>
+            <PaddingButtonGroup
+              value={column.margin}
+              options={resolvedPaddingOptions}
+              onChange={(next) =>
                 updateContainerProps({
                   kind: 'column',
                   id: column.id,
-                  props: { width: Number(e.target.value) },
+                  props: { margin: next },
                 })
               }
-              className={fieldCls}
-              min="0"
+              disabled={locked}
+              daisyui={daisyui}
+              allowClear
             />
+            <span className={helpCls}>
+              Space around the column. Use presets or expand Advanced for custom values.
+            </span>
           </div>
-          <div>
-            <label className={labelCls}>Class Name</label>
-            <input
-              type="text"
-              value={column.className ?? ''}
-              onChange={(e) =>
-                updateContainerProps({
-                  kind: 'column',
-                  id: column.id,
-                  props: { className: e.target.value },
-                })
-              }
-              className={fieldCls}
-              placeholder="Tailwind classes"
-            />
+
+          {hasMultipleColumns && (
+            <div>
+              <label className={labelCls}>Width (flex basis)</label>
+              <input
+                type="number"
+                value={column.width ?? 1}
+                onChange={(e) =>
+                  updateContainerProps({
+                    kind: 'column',
+                    id: column.id,
+                    props: { width: Number(e.target.value) },
+                  })
+                }
+                className={fieldCls}
+                min="0"
+              />
+              <span className={helpCls}>
+                Relative width compared to other columns. Equal values = equal widths.
+              </span>
+            </div>
+          )}
+
+          {/* Advanced Section */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={clsx('text-sm font-medium mb-3 flex items-center gap-2', {
+                'text-gray-700 hover:text-gray-900': !daisyui,
+                'text-base-content/80 hover:text-base-content': daisyui,
+              })}
+            >
+              <CaretDownIcon
+                size={16}
+                className={clsx('transition-transform', { 'rotate-180': showAdvanced })}
+              />
+              Advanced Settings
+            </button>
+            {showAdvanced && (
+              <div className="space-y-4 pl-6">
+                <div>
+                  <label className={labelCls}>Custom Margin</label>
+                  <input
+                    type="text"
+                    value={formatPaddingForInput(column.margin)}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'column',
+                        id: column.id,
+                        props: { margin: parsePaddingInput(e.target.value) },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="e.g. 0"
+                    disabled={locked}
+                  />
+                  <span className={helpCls}>CSS margin value or Tailwind token.</span>
+                </div>
+                <div>
+                  <label className={labelCls}>Background Class</label>
+                  <input
+                    type="text"
+                    value={column.backgroundClassName ?? ''}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'column',
+                        id: column.id,
+                        props: {
+                          backgroundClassName: e.target.value || undefined,
+                        },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="e.g. bg-primary"
+                  />
+                  <span className={helpCls}>
+                    Tailwind background class (overrides color picker).
+                  </span>
+                </div>
+                <div>
+                  <label className={labelCls}>Class Name</label>
+                  <input
+                    type="text"
+                    value={column.className ?? ''}
+                    onChange={(e) =>
+                      updateContainerProps({
+                        kind: 'column',
+                        id: column.id,
+                        props: { className: e.target.value },
+                      })
+                    }
+                    className={fieldCls}
+                    placeholder="Custom Tailwind classes"
+                  />
+                  <span className={helpCls}>Additional CSS classes for advanced styling.</span>
+                </div>
+              </div>
+            )}
           </div>
         </fieldset>
       );
@@ -2365,13 +2743,18 @@ export function PropertiesPanel({
         <div className="p-6 pb-8 overflow-y-auto flex-1">
           {selectedBlock ? (
             <>
-              {unlockable && !isLocked && (
+              {unlockable && (
                 <LockedToggle
                   locked={!!selectedBlock.locked}
                   onToggle={handleToggleLocked}
                   daisyui={daisyui}
                 />
               )}
+              <HiddenToggle
+                hidden={!!selectedBlock.hidden}
+                onToggle={handleToggleHidden}
+                daisyui={daisyui}
+              />
               {isLocked && (
                 <div
                   className={clsx('mb-6 p-4 rounded-lg border-l-4 text-sm', {

@@ -45,7 +45,7 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
 
   const resolvedFontWeight = fontWeight === 'medium' ? 500 : fontWeight;
   const defaultColor = '#1f2937';
-  const inlineColor = colorClassName ? undefined : color ?? defaultColor;
+  const inlineColor = color ?? (colorClassName ? undefined : defaultColor);
 
   const style: CSSProperties = {
     textAlign: align,

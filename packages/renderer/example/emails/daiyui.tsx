@@ -6,7 +6,8 @@ interface CustomProps {
 }
 
 import themes from "../themes.json"
-import email from "../email.json"
+import email from "../../emails/daiyui.json"
+
 const forest = themes.forest
 const colors = [
   forest.primary,

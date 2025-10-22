@@ -1,0 +1,71 @@
+{
+    "version": 1,
+    "meta": {
+        "title": "Untitled email"
+    },
+    "variables": {},
+    "sections": [
+        {
+            "id": "section-874a48ba-bdfd-47bf-991e-7c6abbb67399",
+            "type": "section",
+            "rows": [
+                {
+                    "id": "row-f004b74c-9489-4ac0-97c7-c407fd00064f",
+                    "type": "row",
+                    "gutter": 16,
+                    "columns": [
+                        {
+                            "id": "column-09c40003-ed38-4c63-a02d-f3fe58b150ed",
+                            "type": "column",
+                            "blocks": [
+                                {
+                                    "id": "text-7c0d5d75-0c18-4e04-a4d9-24ad98a0d926",
+                                    "type": "text",
+                                    "props": {
+                                        "content": "Start typing your message here.",
+                                        "align": "left",
+                                        "fontSize": 16,
+                                        "color": "#1f2937",
+                                        "lineHeight": "1.6",
+                                        "fontWeight": "normal",
+                                        "margin": "0 0 16px",
+                                        "padding": "0",
+                                        "className": "p-0"
+                                    }
+                                },
+                                {
+                                    "id": "image-41df5b5e-0972-4b7e-bfcb-a4e7ba183f32",
+                                    "type": "image",
+                                    "props": {
+                                        "src": "https://images.unsplash.com/photo-1745730556671-e05fab3df4f1?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw4fHx8ZW58MHx8fHx8",
+                                        "alt": "Placeholder image",
+                                        "width": 600,
+                                        "height": 200,
+                                        "align": "center",
+                                        "borderRadius": 0,
+                                        "margin": "12px 0",
+                                        "padding": "0",
+                                        "className": "p-0"
+                                    }
+                                }
+                            ],
+                            "padding": "4",
+                            "margin": "0",
+                            "align": "left",
+                            "className": "p-4 m-0 text-left"
+                        }
+                    ],
+                    "padding": "4",
+                    "margin": "0",
+                    "align": "left",
+                    "backgroundClassName": "bg-base-200",
+                    "className": "bg-base-200 p-4 m-0 text-left"
+                }
+            ],
+            "padding": "8",
+            "margin": "0",
+            "align": "left",
+            "className": "p-8 m-0 text-left"
+        }
+    ]
+}
