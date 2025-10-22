@@ -146,7 +146,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={clsx('border-l p-2.5 sticky top-0 h-screen overflow-y-scroll', {
+      className={clsx('border-l p-2.5 sticky top-0', {
         'w-52': columns === 1,
         'w-80': columns === 2,
         'w-96': columns === 3,

@@ -36,6 +36,7 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
     colorClassName,
     lineHeight = '1.3',
     fontWeight = 'bold',
+    fontFamily,
     margin = '0 0 16px',
     padding = '0',
     daisyui = false,
@@ -56,6 +57,7 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
     fontWeight: resolvedFontWeight,
     margin,
     fontFamily:
+      fontFamily ||
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     wordBreak: 'break-word',
     maxWidth: '100%',
@@ -134,8 +136,7 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
         getAlignmentClass(),
         getFontSizeClass(),
         getFontWeightClass(),
-        !colorClassName &&
-          (daisyui ? getDaisyUIHeadingClass() : 'text-gray-900'),
+        !colorClassName && (daisyui ? getDaisyUIHeadingClass() : 'text-gray-900'),
         colorClassName,
         customClassName,
         paddingClasses,

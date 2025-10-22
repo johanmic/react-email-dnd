@@ -85,4 +85,16 @@ declare module "@react-email/components" {
     children?: ReactNode
   }
   export function Link(props: LinkProps): JSX.Element
+
+  export interface FontProps {
+    fontFamily: string
+    fallbackFontFamily?: string
+    webFont?: {
+      url: string
+      format: string
+    }
+    fontWeight?: number
+    fontStyle?: "normal" | "italic" | "oblique"
+  }
+  export function Font(props: FontProps): JSX.Element
 }

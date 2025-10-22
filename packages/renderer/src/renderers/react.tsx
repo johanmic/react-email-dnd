@@ -23,6 +23,7 @@ const {
   Button: REButton,
   Img: REImg,
   Hr: REHr,
+  Font: REFont,
   Tailwind,
   pixelBasedPreset,
 } = ReactEmail as any
@@ -61,6 +62,19 @@ const tableAlignValue = (
   return align
 }
 
+const getFontFamily = (
+  blockFontFamily?: string,
+  documentFonts?: Array<{ fontFamily: string }>
+): string => {
+  if (blockFontFamily) {
+    return blockFontFamily
+  }
+  if (documentFonts && documentFonts.length === 1) {
+    return documentFonts[0].fontFamily
+  }
+  return '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+}
+
 export function renderReact(
   document: CanvasDocument,
   context: RenderContext,
@@ -89,6 +103,16 @@ export function renderReact(
               dangerouslySetInnerHTML={{ __html: baseStyles }}
             />
           ) : null}
+          {document.theme?.fonts?.map((font) => (
+            <REFont
+              key={font.id}
+              fontFamily={font.fontFamily}
+              fallbackFontFamily={font.fallbackFontFamily}
+              webFont={font.webFont}
+              fontWeight={font.fontWeight}
+              fontStyle={font.fontStyle}
+            />
+          ))}
         </Head>
         {previewText ? (
           <Preview>{substitute(previewText, context)}</Preview>
@@ -237,8 +261,10 @@ export function renderReact(
                                                 "0 0 16px",
                                               padding:
                                                 block.props.padding ?? "0",
-                                              fontFamily:
-                                                '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                              fontFamily: getFontFamily(
+                                                block.props.fontFamily,
+                                                document.theme?.fonts
+                                              ),
                                               wordBreak: "break-word",
                                               maxWidth: "100%",
                                             }
@@ -379,8 +405,10 @@ export function renderReact(
                                                 "0 0 16px",
                                               padding:
                                                 block.props.padding ?? "0",
-                                              fontFamily:
-                                                '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                              fontFamily: getFontFamily(
+                                                block.props.fontFamily,
+                                                document.theme?.fonts
+                                              ),
                                               wordBreak: "break-word",
                                               maxWidth: "100%",
                                             }
@@ -527,8 +555,10 @@ export function renderReact(
                                               lineHeight: "1.5",
                                               border: "none",
                                               outline: "none",
-                                              fontFamily:
-                                                '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                              fontFamily: getFontFamily(
+                                                block.props.fontFamily,
+                                                document.theme?.fonts
+                                              ),
                                               minWidth: "120px",
                                               maxWidth: "100%",
                                             }

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { DotsSixVerticalIcon, Trash, Lock, LockOpen, Eye, EyeSlash } from '@phosphor-icons/react';
 import {
@@ -1364,10 +1364,46 @@ export function Canvas({
   showHidden = false,
   customBlockRegistry = {},
 }: CanvasProps) {
-  const { selectBlock, selectContainer } = useCanvasStore();
+  const { selectBlock, selectContainer, document } = useCanvasStore();
   const { isOver, setNodeRef } = useDroppable({
     id: 'canvas',
   });
+
+  // Load fonts dynamically for canvas preview
+  useEffect(() => {
+    if (!document.theme?.fonts) return;
+
+    // Create style element with @font-face rules
+    const styleId = 'email-editor-fonts';
+    let styleEl = globalThis.document.getElementById(styleId) as HTMLStyleElement;
+
+    if (!styleEl) {
+      styleEl = globalThis.document.createElement('style');
+      styleEl.id = styleId;
+      globalThis.document.head.appendChild(styleEl);
+    }
+
+    const fontFaceRules = document.theme.fonts
+      .filter((font) => font.webFont)
+      .map(
+        (font) => `
+        @font-face {
+          font-family: "${font.fontFamily}";
+          src: url("${font.webFont!.url}") format("${font.webFont!.format}");
+          font-weight: ${font.fontWeight ?? 400};
+          font-style: ${font.fontStyle ?? 'normal'};
+        }
+      `,
+      )
+      .join('\n');
+
+    styleEl.textContent = fontFaceRules;
+
+    return () => {
+      // Cleanup on unmount
+      styleEl.remove();
+    };
+  }, [document.theme?.fonts]);
 
   const canvasStyles: CSSProperties = {
     minHeight: 400,

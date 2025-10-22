@@ -40,6 +40,7 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
     padding = '12px 24px',
     fontSize = 14,
     fontWeight = 'bold',
+    fontFamily,
     margin = '12px 0',
     daisyui = false,
     editorMode = false,
@@ -61,8 +62,8 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
   const hasTextClass = Boolean(colorClassName);
 
   const inlineBackgroundColor =
-    hasBackgroundClass || daisyui ? undefined : backgroundColor ?? defaultBackground;
-  const inlineTextColor = hasTextClass || daisyui ? undefined : color ?? defaultTextColor;
+    hasBackgroundClass || daisyui ? undefined : (backgroundColor ?? defaultBackground);
+  const inlineTextColor = hasTextClass || daisyui ? undefined : (color ?? defaultTextColor);
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (editorMode) {
@@ -183,13 +184,16 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
           backgroundColor: inlineBackgroundColor,
           color: inlineTextColor,
           borderRadius: daisyui ? undefined : `${borderRadius}px`,
-          padding: daisyui ? undefined : paddingStyle ?? (typeof padding === 'string' ? padding : undefined),
+          padding: daisyui
+            ? undefined
+            : (paddingStyle ?? (typeof padding === 'string' ? padding : undefined)),
           fontSize: `${fontSize}px`,
           fontWeight: resolvedFontWeight,
           margin,
           textDecoration: 'none',
           cursor: editorMode ? 'pointer' : undefined,
           fontFamily:
+            fontFamily ||
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           border: 'none',
           outline: 'none',

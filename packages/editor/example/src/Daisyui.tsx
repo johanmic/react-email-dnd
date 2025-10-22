@@ -1,5 +1,20 @@
+/**
+ * DaisyUI Email Editor Example with Font Support
+ *
+ * This example demonstrates how to use custom fonts in the email editor:
+ *
+ * 1. Define fonts as FontDefinition objects with webFont URLs
+ * 2. Pass fonts to EmailEditor via the fonts prop
+ * 3. Fonts will appear in dropdowns for text, heading, and button blocks
+ * 4. Fonts are dynamically loaded in the canvas preview
+ * 5. Fonts are rendered in the final email using React Email's <Font> component
+ *
+ * You can also add fonts directly to the document's theme.fonts array
+ * for programmatic font management.
+ */
+
 import { EmailEditor, CanvasProvider } from '@react-email-dnd';
-import type { CanvasDocument } from '@react-email-dnd/shared';
+import type { CanvasDocument, FontDefinition } from '@react-email-dnd/shared';
 import '@react-email-dnd/styles.css';
 import { useState, useCallback } from 'react';
 import { createSampleCanvasDocument, bb } from './sample-document';
@@ -45,8 +60,9 @@ const textColors = baseColorNames.slice(0, 3).map((name) => ({
   labelClass: `bg-${name}`,
   label: name,
 }));
+import { advancedFonts as fonts } from './font-examples';
 
-console.log({ textColors, bgColors });
+console.log({ textColors, bgColors, fonts });
 
 function App() {
   const [document, setDocument] = useState<CanvasDocument | undefined>(
@@ -91,6 +107,21 @@ function App() {
     setDocument(undefined);
   };
 
+  const addFontsToDocument = () => {
+    if (!document) return;
+
+    const updatedDocument = {
+      ...document,
+      theme: {
+        ...document.theme,
+        fonts: fonts,
+      },
+    };
+
+    setDocument(updatedDocument);
+    console.log('✅ Added fonts to document:', updatedDocument.theme?.fonts);
+  };
+
   return (
     <div data-theme="lofi">
       <div className="h-full flex flex-col">
@@ -122,6 +153,12 @@ function App() {
             >
               Log Document
             </button>
+            <button
+              onClick={addFontsToDocument}
+              className="px-4 py-2 btn btn-warning btn-soft transition-colors"
+            >
+              Add Fonts to Document
+            </button>
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
@@ -139,6 +176,7 @@ function App() {
               unlockable={true}
               customBlocks={customBlocks}
               padding={padding}
+              fonts={fonts}
             />
           </CanvasProvider>
         </div>

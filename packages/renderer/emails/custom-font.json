@@ -1,0 +1,53 @@
+{
+    "version": 1,
+    "meta": {
+        "title": "Untitled email"
+    },
+    "variables": {},
+    "sections": [
+        {
+            "id": "section-acf79b5f-611c-429a-abb3-36efc5f12e95",
+            "type": "section",
+            "rows": [
+                {
+                    "id": "row-9c94d581-efb8-4ca2-99d0-f88af66ccc31",
+                    "type": "row",
+                    "gutter": 16,
+                    "padding": "6",
+                    "margin": "0",
+                    "align": "left",
+                    "columns": [
+                        {
+                            "id": "column-6c55cdce-3d97-4a18-8125-323c54c3d76b",
+                            "type": "column",
+                            "padding": "4",
+                            "margin": "0",
+                            "align": "left",
+                            "blocks": [
+                                {
+                                    "id": "heading-07f8487e-db8f-425f-b3fb-890c4c58797c",
+                                    "type": "heading",
+                                    "props": {
+                                        "content": "Geist font",
+                                        "as": "h2",
+                                        "align": "left",
+                                        "fontSize": 24,
+                                        "color": "#111827",
+                                        "lineHeight": "1.3",
+                                        "fontWeight": "bold",
+                                        "margin": "0 0 16px",
+                                        "padding": "0",
+                                        "fontFamily": "Geist"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "padding": "8",
+            "margin": "0",
+            "align": "left"
+        }
+    ]
+}

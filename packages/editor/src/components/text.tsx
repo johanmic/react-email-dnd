@@ -34,6 +34,7 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
     colorClassName,
     lineHeight = '1.6',
     fontWeight = 'normal',
+    fontFamily,
     margin = '0 0 16px',
     padding = '0',
     daisyui = false,
@@ -55,6 +56,7 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
     margin,
     ...(paddingStyle ? { padding: paddingStyle } : {}),
     fontFamily:
+      fontFamily ||
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     wordBreak: 'break-word',
     maxWidth: '100%',

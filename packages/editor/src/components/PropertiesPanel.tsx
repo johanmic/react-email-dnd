@@ -24,6 +24,7 @@ import type {
   Padding,
   CustomBlockPropEditor,
   CustomBlockDefinition,
+  FontDefinition,
 } from '@react-email-dnd/shared';
 export type { ColorOption } from '@react-email-dnd/shared';
 import {
@@ -58,6 +59,7 @@ interface PropertiesPanelProps {
   bgColors?: ColorOption[];
   customBlockRegistry?: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
   paddingOptions?: PaddingOptionEntry[];
+  fonts?: FontDefinition[];
 }
 
 interface TextPropsFormProps {
@@ -67,6 +69,7 @@ interface TextPropsFormProps {
   colors?: ColorOption[];
   textColors?: ColorOption[];
   paddingOptions: PaddingOptionEntry[];
+  fonts?: FontDefinition[];
 }
 
 interface LockedToggleProps {
@@ -88,6 +91,7 @@ interface HeadingPropsFormProps {
   colors?: ColorOption[];
   textColors?: ColorOption[];
   paddingOptions: PaddingOptionEntry[];
+  fonts?: FontDefinition[];
 }
 
 interface ButtonPropsFormProps {
@@ -97,6 +101,7 @@ interface ButtonPropsFormProps {
   colors?: ColorOption[];
   textColors?: ColorOption[];
   paddingOptions: PaddingOptionEntry[];
+  fonts?: FontDefinition[];
 }
 
 interface ImagePropsFormProps {
@@ -556,6 +561,7 @@ function HeadingPropsForm({
   colors,
   textColors,
   paddingOptions,
+  fonts,
   disabled = false,
 }: HeadingPropsFormProps & { disabled?: boolean }) {
   const props = block.props as HeadingBlockProps;
@@ -775,6 +781,37 @@ function HeadingPropsForm({
       </div>
 
       <div>
+        <label className={labelCls}>Font Family</label>
+        {fonts && fonts.length > 0 ? (
+          <select
+            value={props.fontFamily ?? ''}
+            onChange={(e) => onUpdate({ fontFamily: e.target.value || undefined })}
+            className={selectCls}
+            disabled={disabled || block.locked}
+          >
+            <option value="">Default</option>
+            {fonts.map((font) => (
+              <option key={font.id} value={font.fontFamily}>
+                {font.fontFamily}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={props.fontFamily ?? ''}
+            onChange={(e) => onUpdate({ fontFamily: e.target.value || undefined })}
+            className={fieldCls}
+            placeholder="Arial, sans-serif"
+            disabled={disabled || block.locked}
+          />
+        )}
+        <span className={helpCls}>
+          {fonts && fonts.length > 0 ? 'Select from available fonts' : 'Enter custom font family'}
+        </span>
+      </div>
+
+      <div>
         <label className={labelCls}>Line Height</label>
         <input
           type="text"
@@ -834,6 +871,7 @@ function TextPropsForm({
   colors,
   textColors,
   paddingOptions,
+  fonts,
   disabled = false,
 }: TextPropsFormProps & { disabled?: boolean }) {
   const props = block.props as TextBlockProps;
@@ -1036,6 +1074,37 @@ function TextPropsForm({
       </div>
 
       <div>
+        <label className={labelCls}>Font Family</label>
+        {fonts && fonts.length > 0 ? (
+          <select
+            value={props.fontFamily ?? ''}
+            onChange={(e) => onUpdate({ fontFamily: e.target.value || undefined })}
+            className={selectCls}
+            disabled={disabled || block.locked}
+          >
+            <option value="">Default</option>
+            {fonts.map((font) => (
+              <option key={font.id} value={font.fontFamily}>
+                {font.fontFamily}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={props.fontFamily ?? ''}
+            onChange={(e) => onUpdate({ fontFamily: e.target.value || undefined })}
+            className={fieldCls}
+            placeholder="Arial, sans-serif"
+            disabled={disabled || block.locked}
+          />
+        )}
+        <span className={helpCls}>
+          {fonts && fonts.length > 0 ? 'Select from available fonts' : 'Enter custom font family'}
+        </span>
+      </div>
+
+      <div>
         <label className={labelCls}>Line Height</label>
         <input
           type="text"
@@ -1095,6 +1164,7 @@ function ButtonPropsForm({
   colors,
   textColors,
   paddingOptions,
+  fonts,
   disabled = false,
 }: ButtonPropsFormProps & { disabled?: boolean }) {
   const props = block.props as ButtonBlockProps;
@@ -1375,6 +1445,37 @@ function ButtonPropsForm({
           <option value="medium">Medium</option>
           <option value="bold">Bold</option>
         </select>
+      </div>
+
+      <div>
+        <label className={labelCls}>Font Family</label>
+        {fonts && fonts.length > 0 ? (
+          <select
+            value={props.fontFamily ?? ''}
+            onChange={(e) => onUpdate({ fontFamily: e.target.value || undefined })}
+            className={selectCls}
+            disabled={disabled || block.locked}
+          >
+            <option value="">Default</option>
+            {fonts.map((font) => (
+              <option key={font.id} value={font.fontFamily}>
+                {font.fontFamily}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={props.fontFamily ?? ''}
+            onChange={(e) => onUpdate({ fontFamily: e.target.value || undefined })}
+            className={fieldCls}
+            placeholder="Arial, sans-serif"
+            disabled={disabled || block.locked}
+          />
+        )}
+        <span className={helpCls}>
+          {fonts && fonts.length > 0 ? 'Select from available fonts' : 'Enter custom font family'}
+        </span>
       </div>
 
       <div>
@@ -1704,6 +1805,7 @@ export function PropertiesPanel({
   bgColors,
   customBlockRegistry,
   paddingOptions,
+  fonts,
 }: PropertiesPanelProps) {
   const {
     document,
@@ -1817,6 +1919,7 @@ export function PropertiesPanel({
             colors={colors}
             textColors={textColors}
             paddingOptions={resolvedPaddingOptions}
+            fonts={fonts}
             disabled={isLocked}
           />
         );
@@ -1829,6 +1932,7 @@ export function PropertiesPanel({
             colors={bgColors ?? colors}
             textColors={textColors}
             paddingOptions={resolvedPaddingOptions}
+            fonts={fonts}
             disabled={isLocked}
           />
         );
@@ -1851,6 +1955,7 @@ export function PropertiesPanel({
             colors={bgColors ?? colors}
             textColors={textColors}
             paddingOptions={resolvedPaddingOptions}
+            fonts={fonts}
             disabled={isLocked}
           />
         );

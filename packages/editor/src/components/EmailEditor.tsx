@@ -38,6 +38,7 @@ import type {
   CanvasContentBlock,
   BlockDefinition,
   CustomBlockDefinition,
+  FontDefinition,
 } from '@react-email-dnd/shared';
 import clsx from 'clsx';
 import { buildBlockDefinitionMap, buildCustomBlockRegistry } from '../utils/block-library';
@@ -69,6 +70,8 @@ export interface EmailEditorProps {
   customBlocks?: CustomBlockDefinition<any>[];
   /** Preset padding options displayed as quick-select buttons */
   padding?: Record<string, Padding>;
+  /** Available fonts for selection in text, heading, and button blocks */
+  fonts?: FontDefinition[];
 }
 
 export function EmailEditor({
@@ -84,6 +87,7 @@ export function EmailEditor({
   bgColors,
   customBlocks = [],
   padding,
+  fonts,
 }: EmailEditorProps) {
   const { document, setDocument } = useCanvasStore();
   const sections = document.sections;
@@ -719,6 +723,7 @@ export function EmailEditor({
           unlockable={unlockable}
           customBlockRegistry={customBlockRegistry}
           paddingOptions={paddingOptionEntries}
+          fonts={fonts || document.theme?.fonts}
         />
       </div>
       <DragOverlay>

@@ -25,6 +25,29 @@ export interface PaddingOptionEntry {
   value: Padding
 }
 
+// Font definition schema
+export const fontDefinitionSchema = z.object({
+  id: z.string(),
+  fontFamily: z.string(),
+  fallbackFontFamily: z.string().optional(),
+  webFont: z
+    .object({
+      url: z.string(),
+      format: z.enum([
+        "woff",
+        "woff2",
+        "truetype",
+        "opentype",
+        "embedded-opentype",
+        "svg",
+      ]),
+    })
+    .optional(),
+  fontWeight: z.number().optional(),
+  fontStyle: z.enum(["normal", "italic", "oblique"]).optional(),
+})
+export type FontDefinition = z.infer<typeof fontDefinitionSchema>
+
 export const colorOptionSchema = z.union([
   z.string(),
   z.object({
@@ -47,6 +70,7 @@ export const buttonBlockPropsSchema = z.object({
   padding: paddingSchema.optional(),
   fontSize: z.number().optional(),
   fontWeight: fontWeightSchema.optional(),
+  fontFamily: z.string().optional(),
   margin: z.string().optional(),
   className: z.string().optional(),
 })
@@ -60,6 +84,7 @@ export const textBlockPropsSchema = z.object({
   colorClassName: z.string().optional(),
   lineHeight: z.string().optional(),
   fontWeight: fontWeightSchema.optional(),
+  fontFamily: z.string().optional(),
   margin: z.string().optional(),
   padding: paddingSchema.optional(),
   className: z.string().optional(),
@@ -76,6 +101,7 @@ export const headingBlockPropsSchema = z.object({
   colorClassName: z.string().optional(),
   lineHeight: z.string().optional(),
   fontWeight: fontWeightSchema.optional(),
+  fontFamily: z.string().optional(),
   margin: z.string().optional(),
   padding: paddingSchema.optional(),
   className: z.string().optional(),
@@ -217,6 +243,11 @@ export const canvasDocumentSchema = z.object({
   version: z.number(),
   meta: documentMetaSchema,
   variables: z.record(z.string(), z.string()).optional(),
+  theme: z
+    .object({
+      fonts: z.array(fontDefinitionSchema).optional(),
+    })
+    .optional(),
   sections: z.array(canvasSectionSchema),
 })
 export type CanvasDocument = z.infer<typeof canvasDocumentSchema>

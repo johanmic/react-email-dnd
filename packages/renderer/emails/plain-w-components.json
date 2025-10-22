@@ -12,6 +12,9 @@
                 {
                     "id": "row-ca8724a6-6af5-438a-9ddb-35c46b3c05d8",
                     "type": "row",
+                    "gutter": 16,
+                    "padding": "6",
+                    "margin": "0",
                     "align": "left",
                     "columns": [
                         {
@@ -52,6 +55,9 @@
                 {
                     "id": "row-009de565-521e-4392-ae60-ab5099b01f86",
                     "type": "row",
+                    "gutter": 16,
+                    "padding": "6",
+                    "margin": "0",
                     "align": "left",
                     "columns": [
                         {
