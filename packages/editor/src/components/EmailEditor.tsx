@@ -30,6 +30,9 @@ import {
   createBlockFromSidebar,
   addBlockToColumnAtIndex,
   addRowToSection,
+  addRowToSectionAtIndex,
+  getColumnCountFromStructureId,
+  type StructureDropId,
 } from '../utils/drag-drop';
 import { createEmptySection, documentsAreEqual } from '../utils/document';
 import type {
@@ -254,6 +257,19 @@ export function EmailEditor({
 
     // Handle sidebar item drops (structure and content blocks)
     if (activeId.startsWith('structure-')) {
+      if (overData?.type === 'canvas-row-dropzone' && activeId !== 'structure-section') {
+        if (isSectionDisabled(overData.sectionId)) {
+          console.log('🚫 Cannot add row to disabled section');
+          return;
+        }
+
+        const columnCount = getColumnCountFromStructureId(activeId as StructureDropId);
+        commitSections((previous) =>
+          addRowToSectionAtIndex(previous, overData.sectionId, columnCount, overData.index),
+        );
+        return;
+      }
+
       const overRect = event.over?.rect;
       const pointer = getPointerCenter(event, overRect);
       const result = handleSidebarDrop(activeId, overId, sections, blockDefinitionMap, {
@@ -272,6 +288,18 @@ export function EmailEditor({
       const block = createBlockFromSidebar(activeId, blockDefinitionMap);
       if (!block) {
         console.warn('Unsupported block dragged from sidebar:', activeId);
+        return;
+      }
+
+      if (overData?.type === 'canvas-block-dropzone') {
+        if (isColumnDisabled(overData.columnId)) {
+          console.log('🚫 Cannot drop into disabled column');
+          return;
+        }
+
+        commitSections((previous) =>
+          addBlockToColumnAtIndex(previous, overData.columnId, block, overData.index),
+        );
         return;
       }
 
@@ -386,6 +414,24 @@ export function EmailEditor({
       const sourcePosition = findRowPosition(sections, activeData.rowId);
 
       if (!sourcePosition) {
+        return;
+      }
+
+      if (overData?.type === 'canvas-row-dropzone') {
+        if (isSectionDisabled(overData.sectionId)) {
+          console.log('🚫 Cannot move row to disabled section');
+          return;
+        }
+
+        commitSections((previous) =>
+          moveRowToSection(
+            previous,
+            sourcePosition.sectionId,
+            overData.sectionId,
+            sourcePosition.rowIndex,
+            overData.index,
+          ),
+        );
         return;
       }
 
@@ -542,6 +588,18 @@ export function EmailEditor({
       }
 
       const { columnId: sourceColumnId, blockIndex } = sourcePosition;
+
+      if (overData?.type === 'canvas-block-dropzone') {
+        if (isColumnDisabled(overData.columnId)) {
+          console.log('🚫 Cannot move block to disabled column');
+          return;
+        }
+
+        commitSections((previous) =>
+          moveBlockToColumn(previous, sourceColumnId, overData.columnId, blockIndex, overData.index),
+        );
+        return;
+      }
 
       if (overData?.type === 'canvas-block') {
         const targetPosition = findBlockPosition(sections, overData.blockId);

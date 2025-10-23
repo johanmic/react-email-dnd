@@ -4,6 +4,7 @@ import { HandPointingIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, ButtonBlock, ButtonBlockProps } from '@react-email-dnd/shared';
 import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
+import { useCanvasStore } from '../hooks/useCanvasStore';
 
 export const buttonDefaults: ButtonBlockProps = {
   label: 'Call to action',
@@ -27,7 +28,9 @@ export const buttonDefinition: BlockDefinition<ButtonBlock> = {
 
 export const ButtonIcon = HandPointingIcon;
 
-export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode?: boolean }) {
+export function Button(
+  props: ButtonBlockProps & { daisyui?: boolean; editorMode?: boolean; blockId?: string },
+) {
   const {
     label,
     href,
@@ -44,8 +47,11 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
     margin = '12px 0',
     daisyui = false,
     editorMode = false,
+    blockId,
     className: customClassName,
   } = props;
+
+  const { selectBlock } = useCanvasStore();
 
   const resolvedFontWeight = fontWeight === 'medium' ? 500 : fontWeight;
   const paddingStyle = resolvePaddingStyle(padding);
@@ -65,10 +71,13 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
     hasBackgroundClass || daisyui ? undefined : (backgroundColor ?? defaultBackground);
   const inlineTextColor = hasTextClass || daisyui ? undefined : (color ?? defaultTextColor);
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
     if (editorMode) {
       e.preventDefault();
       e.stopPropagation();
+      if (blockId) {
+        selectBlock(blockId);
+      }
     }
   };
 
@@ -137,10 +146,13 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
     return 'py-5';
   };
 
+  // Use button element for better semantics and DaisyUI compatibility
+  const ButtonElement = editorMode ? 'button' : EmailButton;
+
   return (
     <div style={wrapperStyle} className={clsx('w-full', getAlignmentClass())}>
-      <EmailButton
-        href={href}
+      <ButtonElement
+        {...(editorMode ? {} : { href })}
         className={clsx(
           // Base responsive classes
           'inline-block no-underline cursor-pointer transition-all duration-200',
@@ -172,7 +184,7 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
                 '#d97706',
                 '#dc2626',
                 '#0891b2',
-              ].includes(backgroundColor),
+              ].includes(backgroundColor || ''),
           },
           backgroundClassName,
           colorClassName,
@@ -199,11 +211,18 @@ export function Button(props: ButtonBlockProps & { daisyui?: boolean; editorMode
           outline: 'none',
           minWidth: '120px',
           maxWidth: '100%',
+          // Fix DaisyUI vertical alignment
+          ...(daisyui && {
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            verticalAlign: 'middle',
+          }),
         }}
         onClick={handleClick}
       >
         {label}
-      </EmailButton>
+      </ButtonElement>
     </div>
   );
 }

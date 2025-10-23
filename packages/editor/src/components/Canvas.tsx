@@ -1,5 +1,5 @@
-import { useState, useEffect, type CSSProperties } from 'react';
-import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { useState, useEffect, type CSSProperties, Fragment } from 'react';
+import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
 import { DotsSixVerticalIcon, Trash, Lock, LockOpen, Eye, EyeSlash } from '@phosphor-icons/react';
 import {
   SortableContext,
@@ -26,7 +26,7 @@ import { Image } from './image';
 import { Text } from './text';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import { ConfirmModal } from './ConfirmModal';
-import { removeColumn, removeRow, removeSection } from '../utils/drag-drop';
+import { removeColumn, removeRow, removeSection, type ActiveDragData } from '../utils/drag-drop';
 import {
   resolvePaddingClasses,
   resolvePaddingStyle,
@@ -126,7 +126,7 @@ function renderBlock(
   const { daisyui, customBlocks } = options;
   switch (block.type) {
     case 'button':
-      return <Button {...block.props} daisyui={daisyui} editorMode />;
+      return <Button {...block.props} daisyui={daisyui} editorMode blockId={block.id} />;
     case 'text':
       return <Text {...block.props} daisyui={daisyui} />;
     case 'heading':
@@ -158,17 +158,141 @@ function renderBlock(
   }
 }
 
+function BlockDropZone({
+  columnId,
+  index,
+  isDisabled,
+  daisyui,
+}: {
+  columnId: string;
+  index: number;
+  isDisabled: boolean;
+  daisyui?: boolean;
+}) {
+  const { active } = useDndContext();
+  const activeId = active ? String(active.id) : '';
+  const activeData = active?.data?.current as ActiveDragData | undefined;
+  const isSidebarBlock = activeId.startsWith('block-');
+  const isCanvasBlock = activeData?.type === 'canvas-block';
+  const isDraggingBlock = isSidebarBlock || isCanvasBlock;
+  const canAcceptDrop = isDraggingBlock && !isDisabled;
+
+  const { isOver, setNodeRef } = useDroppable({
+    id: `column-${columnId}-slot-${index}`,
+    data: {
+      type: 'canvas-block-dropzone',
+      columnId,
+      index,
+    },
+    disabled: !isDraggingBlock || isDisabled,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={clsx(
+        'relative transition-all duration-150 ease-in-out',
+        canAcceptDrop ? 'h-3 my-1' : 'h-0 my-0',
+      )}
+      style={{ pointerEvents: canAcceptDrop ? 'auto' : 'none' }}
+      aria-hidden={!canAcceptDrop}
+    >
+      <div
+        className={clsx(
+          'absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-150 ease-in-out',
+          canAcceptDrop ? (isOver ? 'opacity-100' : 'opacity-80') : 'opacity-0',
+        )}
+      >
+        <div
+          className={clsx(
+            'w-full h-1 rounded-full border border-dashed',
+            {
+              'border-blue-500 bg-blue-500/80': isOver && !daisyui,
+              'border-primary bg-primary/80': isOver && daisyui,
+              'border-blue-300 bg-blue-200/60': !isOver && !daisyui,
+              'border-base-300 bg-base-200/70': !isOver && daisyui,
+            },
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+function RowDropZone({
+  sectionId,
+  index,
+  isDisabled,
+  daisyui,
+}: {
+  sectionId: string;
+  index: number;
+  isDisabled: boolean;
+  daisyui?: boolean;
+}) {
+  const { active } = useDndContext();
+  const activeId = active ? String(active.id) : '';
+  const activeData = active?.data?.current as ActiveDragData | undefined;
+  const isRowDrag = activeData?.type === 'canvas-row-item';
+  const isStructureRow =
+    activeId === 'structure-row' || activeId.startsWith('structure-columns-');
+  const canAcceptDrop = !isDisabled && (isRowDrag || isStructureRow);
+
+  const { isOver, setNodeRef } = useDroppable({
+    id: `section-${sectionId}-row-slot-${index}`,
+    data: {
+      type: 'canvas-row-dropzone',
+      sectionId,
+      index,
+    },
+    disabled: !canAcceptDrop,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={clsx(
+        'relative transition-all duration-150 ease-in-out',
+        canAcceptDrop ? 'my-2 h-6' : 'my-0 h-0',
+      )}
+      style={{ pointerEvents: canAcceptDrop ? 'auto' : 'none' }}
+      aria-hidden={!canAcceptDrop}
+    >
+      <div
+        className={clsx(
+          'absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-150 ease-in-out',
+          canAcceptDrop ? (isOver ? 'opacity-100' : 'opacity-80') : 'opacity-0',
+        )}
+      >
+        <div
+          className={clsx(
+            'w-full h-1.5 rounded-full border border-dashed',
+            {
+              'border-green-500 bg-green-500/80': isOver && !daisyui,
+              'border-secondary bg-secondary/80': isOver && daisyui,
+              'border-green-300 bg-green-200/60': !isOver && !daisyui,
+              'border-base-300 bg-base-200/70': !isOver && daisyui,
+            },
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
 // Lock and Delete button components
 function ColumnLockButton({
   columnId,
   locked,
   daisyui,
   unlockable,
+  compact = false,
 }: {
   columnId: string;
   locked: boolean;
   daisyui?: boolean;
   unlockable?: boolean;
+  compact?: boolean;
 }) {
   const { document, setDocument } = useCanvasStore();
 
@@ -208,7 +332,8 @@ function ColumnLockButton({
       type="button"
       aria-label={locked ? 'Unlock column' : 'Lock column'}
       className={clsx(
-        'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+        'inline-flex items-center justify-center rounded-lg transition',
+        compact ? 'w-5 h-5' : 'w-6 h-6 mt-0.5',
         {
           'bg-amber-50 text-amber-600 hover:bg-amber-100': !daisyui && locked,
           'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !locked,
@@ -218,12 +343,24 @@ function ColumnLockButton({
       )}
       onClick={toggleLock}
     >
-      {locked ? <Lock size={16} weight="bold" /> : <LockOpen size={16} weight="bold" />}
+      {locked ? (
+        <Lock size={compact ? 14 : 16} weight="bold" />
+      ) : (
+        <LockOpen size={compact ? 14 : 16} weight="bold" />
+      )}
     </button>
   );
 }
 
-function ColumnDeleteButton({ columnId, daisyui }: { columnId: string; daisyui?: boolean }) {
+function ColumnDeleteButton({
+  columnId,
+  daisyui,
+  compact = false,
+}: {
+  columnId: string;
+  daisyui?: boolean;
+  compact?: boolean;
+}) {
   const { document, setDocument } = useCanvasStore();
   const [open, setOpen] = useState(false);
 
@@ -239,7 +376,8 @@ function ColumnDeleteButton({ columnId, daisyui }: { columnId: string; daisyui?:
         type="button"
         aria-label="Delete column"
         className={clsx(
-          'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+          'inline-flex items-center justify-center rounded-lg transition',
+          compact ? 'w-5 h-5' : 'w-6 h-6 mt-0.5',
           {
             'bg-red-50 text-red-600 hover:bg-red-100': !daisyui,
             'bg-error/10 text-error hover:bg-error/20': daisyui,
@@ -250,7 +388,7 @@ function ColumnDeleteButton({ columnId, daisyui }: { columnId: string; daisyui?:
           setOpen(true);
         }}
       >
-        <Trash size={16} weight="bold" />
+        <Trash size={compact ? 14 : 16} weight="bold" />
       </button>
       <ConfirmModal
         open={open}
@@ -485,10 +623,12 @@ function ColumnHiddenButton({
   columnId,
   hidden,
   daisyui,
+  compact = false,
 }: {
   columnId: string;
   hidden: boolean;
   daisyui?: boolean;
+  compact?: boolean;
 }) {
   const { document, setDocument } = useCanvasStore();
 
@@ -523,7 +663,8 @@ function ColumnHiddenButton({
       type="button"
       aria-label={hidden ? 'Show column' : 'Hide column'}
       className={clsx(
-        'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition',
+        'inline-flex items-center justify-center rounded-lg transition',
+        compact ? 'w-5 h-5' : 'w-6 h-6 mt-0.5',
         {
           'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && hidden,
           'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !hidden,
@@ -533,7 +674,11 @@ function ColumnHiddenButton({
       )}
       onClick={toggleHidden}
     >
-      {hidden ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
+      {hidden ? (
+        <EyeSlash size={compact ? 14 : 16} weight="bold" />
+      ) : (
+        <Eye size={compact ? 14 : 16} weight="bold" />
+      )}
     </button>
   );
 }
@@ -662,6 +807,7 @@ function CanvasBlockView({
   isParentLocked = false,
   showHidden = false,
   customBlockRegistry,
+  isCompactLayout = false,
 }: {
   block: CanvasContentBlock;
   columnId: string;
@@ -669,6 +815,7 @@ function CanvasBlockView({
   isParentLocked?: boolean;
   showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  isCompactLayout?: boolean;
 }) {
   const { selectBlock, selectedBlockId } = useCanvasStore();
   const { document, setDocument } = useCanvasStore();
@@ -703,7 +850,7 @@ function CanvasBlockView({
   });
 
   // Make each block a droppable target to support block-to-block reordering
-  const { setNodeRef: setBlockDroppableRef } = useDroppable({
+  const { isOver: isBlockOver, setNodeRef: setBlockDroppableRef } = useDroppable({
     id: `canvas-block-${block.id}`,
     data: {
       type: 'canvas-block',
@@ -733,7 +880,8 @@ function CanvasBlockView({
       }}
       style={style}
       className={clsx(
-        'relative flex items-start gap-3 border rounded-lg p-3 mb-3 shadow-sm transition',
+        'relative border rounded-lg shadow-sm transition',
+        isCompactLayout ? 'flex flex-col p-2 mb-2' : 'flex items-start gap-3 p-3 mb-3',
         {
           'border-slate-300/20 bg-white/80': !daisyui,
           'border-primary/10 bg-base-200/50': daisyui,
@@ -742,51 +890,108 @@ function CanvasBlockView({
           'outline outline-base-200/60 outline-offset-2': isSelected && !daisyui,
           'outline outline-primary/60 outline-offset-2': isSelected && daisyui,
           'opacity-70': isDisabled,
+          'ring-2 ring-blue-400/80': isBlockOver && !daisyui && !isDisabled,
+          'ring-2 ring-primary/70': isBlockOver && daisyui && !isDisabled,
         },
       )}
       onClick={handleBlockClick}
     >
-      <div className="flex gap-1">
-        {showHidden && (
-          <button
-            type="button"
-            aria-label={block.hidden ? 'Show block' : 'Hide block'}
-            className={clsx(
-              'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition cursor-pointer',
-              {
-                'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && block.hidden,
-                'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !block.hidden,
-                'bg-info/10 text-info hover:bg-info/20': daisyui && block.hidden,
-                'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !block.hidden,
-              },
+      {isCompactLayout ? (
+        // Compact layout: controls on top
+        <div className="flex justify-between items-center gap-1 mb-2">
+          <div className="flex gap-1">
+            {showHidden && (
+              <button
+                type="button"
+                aria-label={block.hidden ? 'Show block' : 'Hide block'}
+                className={clsx(
+                  'inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer transition',
+                  {
+                    'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && block.hidden,
+                    'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !block.hidden,
+                    'bg-info/10 text-info hover:bg-info/20': daisyui && block.hidden,
+                    'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !block.hidden,
+                  },
+                )}
+                onClick={handleToggleHidden}
+              >
+                {block.hidden ? (
+                  <EyeSlash size={14} weight="bold" />
+                ) : (
+                  <Eye size={14} weight="bold" />
+                )}
+              </button>
             )}
-            onClick={handleToggleHidden}
-          >
-            {block.hidden ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
-          </button>
-        )}
-        {!isDisabled && (
-          <button
-            type="button"
-            className={clsx(
-              'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-              {
-                'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-                  !daisyui,
-                'bg-base-200 border text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-                  daisyui,
-              },
-            )}
-            aria-label="Drag to reorder"
-            {...listeners}
-            {...attributes}
-            onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
-          >
-            <DotsSixVerticalIcon size={16} weight="bold" />
-          </button>
-        )}
-      </div>
-      <div className="flex-1">
+          </div>
+          {!isDisabled && (
+            <button
+              type="button"
+              className={clsx(
+                'inline-flex items-center justify-center w-5 h-5 border-0 rounded cursor-grab transition',
+                {
+                  'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                    !daisyui,
+                  'bg-base-200 border text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                    daisyui,
+                },
+              )}
+              aria-label="Drag to reorder"
+              {...listeners}
+              {...attributes}
+              onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
+            >
+              <DotsSixVerticalIcon size={14} weight="bold" />
+            </button>
+          )}
+        </div>
+      ) : (
+        // Regular layout: controls on the side
+        <div className="flex gap-1">
+          {showHidden && (
+            <button
+              type="button"
+              aria-label={block.hidden ? 'Show block' : 'Hide block'}
+              className={clsx(
+                'inline-flex items-center justify-center w-6 h-6 mt-0.5 rounded-lg transition cursor-pointer',
+                {
+                  'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && block.hidden,
+                  'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !block.hidden,
+                  'bg-info/10 text-info hover:bg-info/20': daisyui && block.hidden,
+                  'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !block.hidden,
+                },
+              )}
+              onClick={handleToggleHidden}
+            >
+              {block.hidden ? (
+                <EyeSlash size={16} weight="bold" />
+              ) : (
+                <Eye size={16} weight="bold" />
+              )}
+            </button>
+          )}
+          {!isDisabled && (
+            <button
+              type="button"
+              className={clsx(
+                'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+                {
+                  'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                    !daisyui,
+                  'bg-base-200 border text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                    daisyui,
+                },
+              )}
+              aria-label="Drag to reorder"
+              {...listeners}
+              {...attributes}
+              onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
+            >
+              <DotsSixVerticalIcon size={16} weight="bold" />
+            </button>
+          )}
+        </div>
+      )}
+      <div className={isCompactLayout ? 'w-full' : 'flex-1'}>
         {renderBlock(block, { daisyui, customBlocks: customBlockRegistry })}
       </div>
     </div>
@@ -814,6 +1019,8 @@ function CanvasColumnView({
   showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }) {
+  // Determine if we should use compact layout (controls on top)
+  const isCompactLayout = row.columns.length >= 3;
   // Column is disabled if it's locked, or if its parent row or section is locked
   const isDisabled = !!(column.locked || row.locked || section.locked);
 
@@ -866,6 +1073,15 @@ function CanvasColumnView({
     ...(columnAlignmentStyle ?? {}),
   };
 
+  const visibleBlocks = column.blocks
+    .map((block, index) => ({ block, index }))
+    .filter(({ block }) => showHidden || !block.hidden);
+
+  const shouldRenderTerminalDropZone =
+    column.blocks.length > 0 &&
+    visibleBlocks.length > 0 &&
+    visibleBlocks[visibleBlocks.length - 1].index !== column.blocks.length - 1;
+
   const { selectContainer } = useCanvasStore();
 
   const onContainerClick = (e: React.MouseEvent) => {
@@ -878,7 +1094,7 @@ function CanvasColumnView({
       ref={setNodeRef}
       style={sortableStyle}
       className={clsx(
-        'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition cursor-pointer',
+        'relative flex flex-col gap-1 p-1 rounded-[0.85rem] border border-dashed transition cursor-pointer',
         {
           'border-purple-300/30 bg-purple-50/40': !daisyui,
           'border-accent/50 bg-accent/10': daisyui,
@@ -892,45 +1108,112 @@ function CanvasColumnView({
       onClick={onContainerClick}
     >
       <ElementTab type="Column" daisyui={daisyui} />
-      <div className="flex justify-end gap-2">
-        {showHidden && (
-          <ColumnHiddenButton columnId={column.id} hidden={!!column.hidden} daisyui={daisyui} />
-        )}
-        {!showHidden && (
-          <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
-            <Eye size={16} weight="bold" />
+
+      {isCompactLayout ? (
+        // Compact layout: controls on top in a horizontal row
+        <div className="flex justify-end items-center gap-1 mb-1">
+          <div className="flex gap-1">
+            {showHidden && (
+              <ColumnHiddenButton
+                columnId={column.id}
+                hidden={!!column.hidden}
+                daisyui={daisyui}
+                compact={isCompactLayout}
+              />
+            )}
+            {!showHidden && (
+              <div className="w-5 h-5 flex items-center justify-center text-xs text-gray-400">
+                <Eye size={14} weight="bold" />
+              </div>
+            )}
+            <ColumnLockButton
+              columnId={column.id}
+              locked={!!column.locked}
+              daisyui={daisyui}
+              unlockable={unlockable}
+              compact={isCompactLayout}
+            />
           </div>
-        )}
-        <ColumnLockButton
-          columnId={column.id}
-          locked={!!column.locked}
-          daisyui={daisyui}
-          unlockable={unlockable}
-        />
-        {!isDisabled && (
-          <>
-            <button
-              type="button"
-              className={clsx(
-                'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-                {
-                  'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-                    !daisyui,
-                  'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-                    daisyui,
-                },
-              )}
-              aria-label="Drag column"
-              onMouseDown={() => console.log('🟪 Column drag handle clicked:', column.id)}
-              {...attributes}
-              {...listeners}
-            >
-              <DotsSixVerticalIcon size={16} weight="bold" />
-            </button>
-            <ColumnDeleteButton columnId={column.id} daisyui={daisyui} />
-          </>
-        )}
-      </div>
+          {!isDisabled && (
+            <div className="flex gap-1">
+              <button
+                type="button"
+                className={clsx(
+                  'inline-flex items-center justify-center w-5 h-5 border-0 rounded cursor-grab transition',
+                  {
+                    'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                      !daisyui,
+                    'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                      daisyui,
+                  },
+                )}
+                aria-label="Drag column"
+                onMouseDown={() => console.log('🟪 Column drag handle clicked:', column.id)}
+                {...attributes}
+                {...listeners}
+              >
+                <DotsSixVerticalIcon size={14} weight="bold" />
+              </button>
+              <ColumnDeleteButton
+                columnId={column.id}
+                daisyui={daisyui}
+                compact={isCompactLayout}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        // Regular layout: controls on the right side
+        <div className="flex justify-end gap-2">
+          {showHidden && (
+            <ColumnHiddenButton
+              columnId={column.id}
+              hidden={!!column.hidden}
+              daisyui={daisyui}
+              compact={isCompactLayout}
+            />
+          )}
+          {!showHidden && (
+            <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
+              <Eye size={16} weight="bold" />
+            </div>
+          )}
+          <ColumnLockButton
+            columnId={column.id}
+            locked={!!column.locked}
+            daisyui={daisyui}
+            unlockable={unlockable}
+            compact={isCompactLayout}
+          />
+          {!isDisabled && (
+            <>
+              <button
+                type="button"
+                className={clsx(
+                  'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+                  {
+                    'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                      !daisyui,
+                    'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                      daisyui,
+                  },
+                )}
+                aria-label="Drag column"
+                onMouseDown={() => console.log('🟪 Column drag handle clicked:', column.id)}
+                {...attributes}
+                {...listeners}
+              >
+                <DotsSixVerticalIcon size={16} weight="bold" />
+              </button>
+              <ColumnDeleteButton
+                columnId={column.id}
+                daisyui={daisyui}
+                compact={isCompactLayout}
+              />
+            </>
+          )}
+        </div>
+      )}
       <SortableContext
         id={`column-${column.id}`}
         items={sortableItems}
@@ -956,7 +1239,7 @@ function CanvasColumnView({
           )}
           style={columnInlineStyle}
         >
-          {column.blocks.length === 0 ? (
+          {column.blocks.length === 0 && (
             <div
               className={clsx('flex items-center justify-center min-h-[88px] text-sm', {
                 'text-slate-400': !daisyui,
@@ -965,20 +1248,42 @@ function CanvasColumnView({
             >
               Drop content blocks here
             </div>
-          ) : (
-            column.blocks
-              .filter((block) => showHidden || !block.hidden)
-              .map((block) => (
-                <CanvasBlockView
-                  key={block.id}
-                  block={block}
-                  columnId={column.id}
-                  daisyui={daisyui}
-                  isParentLocked={isDisabled}
-                  showHidden={showHidden}
-                  customBlockRegistry={customBlockRegistry}
-                />
-              ))
+          )}
+
+          <BlockDropZone
+            columnId={column.id}
+            index={0}
+            isDisabled={isDisabled}
+            daisyui={daisyui}
+          />
+
+          {visibleBlocks.map(({ block, index }) => (
+            <Fragment key={block.id}>
+              <CanvasBlockView
+                block={block}
+                columnId={column.id}
+                daisyui={daisyui}
+                isParentLocked={isDisabled}
+                showHidden={showHidden}
+                customBlockRegistry={customBlockRegistry}
+                isCompactLayout={isCompactLayout}
+              />
+              <BlockDropZone
+                columnId={column.id}
+                index={index + 1}
+                isDisabled={isDisabled}
+                daisyui={daisyui}
+              />
+            </Fragment>
+          ))}
+
+          {shouldRenderTerminalDropZone && (
+            <BlockDropZone
+              columnId={column.id}
+              index={column.blocks.length}
+              isDisabled={isDisabled}
+              daisyui={daisyui}
+            />
           )}
         </div>
       </SortableContext>
@@ -1044,7 +1349,7 @@ function CanvasRowView({
   const rowHasBackgroundClass = Boolean(row.backgroundClassName);
 
   const gridStyle: CSSProperties = {
-    gap: row.gutter ?? 24,
+    gap: row.gutter ?? 8,
     gridTemplateColumns: isMobile
       ? 'repeat(1, minmax(0, 1fr))'
       : `repeat(${Math.max(row.columns.length, 1)}, minmax(0, 1fr))`,
@@ -1068,7 +1373,7 @@ function CanvasRowView({
       ref={setNodeRef}
       style={style}
       className={clsx(
-        'relative flex flex-col gap-3 p-3 rounded-[0.85rem] border border-dashed transition',
+        'relative flex flex-col gap-1 p-1 rounded-[0.85rem] border border-dashed transition',
         {
           'border-green-300/30 bg-green-50/40': !daisyui,
           'border-secondary/30 bg-secondary/10': daisyui,
@@ -1219,6 +1524,15 @@ function CanvasSectionView({
 
   const sortableRowItems = section.rows.map((row) => `canvas-row-${row.id}`);
 
+  const visibleRows = section.rows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => showHidden || !row.hidden);
+
+  const shouldRenderTerminalRowDropZone =
+    section.rows.length > 0 &&
+    (visibleRows.length === 0 ||
+      visibleRows[visibleRows.length - 1].index !== section.rows.length - 1);
+
   const sectionPaddingStyle = resolvePaddingStyle(section.padding);
   const sectionPaddingClasses = resolvePaddingClasses(section.padding);
   const hasSectionPadding = sectionPaddingClasses.length > 0 || sectionPaddingStyle != null;
@@ -1294,9 +1608,9 @@ function CanvasSectionView({
       <section
         ref={setDroppableNodeRef}
         className={clsx(
-          'flex flex-col gap-4 rounded-[0.9rem] border transition w-full max-w-full box-border',
+          'flex flex-col gap-2 rounded-[0.9rem] border transition w-full max-w-full box-border',
           // Only apply default padding class when no explicit padding is provided
-          { 'p-5': !hasSectionPadding },
+          { 'p-2': !hasSectionPadding },
           // Border is always themed, but background classes should not conflict with JSON background
           {
             'border-blue-300/30 bg-white': !daisyui,
@@ -1323,6 +1637,13 @@ function CanvasSectionView({
           items={sortableRowItems}
           strategy={verticalListSortingStrategy}
         >
+          <RowDropZone
+            sectionId={section.id}
+            index={0}
+            isDisabled={!!section.locked}
+            daisyui={daisyui}
+          />
+
           {section.rows.length === 0 ? (
             <div
               className={clsx(
@@ -1336,11 +1657,9 @@ function CanvasSectionView({
               Drop rows or column layouts here
             </div>
           ) : (
-            section.rows
-              .filter((row) => showHidden || !row.hidden)
-              .map((row) => (
+            visibleRows.map(({ row, index }) => (
+              <Fragment key={row.id}>
                 <CanvasRowView
-                  key={row.id}
                   row={row}
                   sectionId={section.id}
                   daisyui={daisyui}
@@ -1349,7 +1668,23 @@ function CanvasSectionView({
                   showHidden={showHidden}
                   customBlockRegistry={customBlockRegistry}
                 />
-              ))
+                <RowDropZone
+                  sectionId={section.id}
+                  index={index + 1}
+                  isDisabled={!!section.locked}
+                  daisyui={daisyui}
+                />
+              </Fragment>
+            ))
+          )}
+
+          {shouldRenderTerminalRowDropZone && (
+            <RowDropZone
+              sectionId={section.id}
+              index={section.rows.length}
+              isDisabled={!!section.locked}
+              daisyui={daisyui}
+            />
           )}
         </SortableContext>
       </section>
@@ -1407,7 +1742,7 @@ export function Canvas({
 
   const canvasStyles: CSSProperties = {
     minHeight: 400,
-    padding: '0.625rem',
+    padding: '0.25rem',
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -1427,7 +1762,7 @@ export function Canvas({
     <div
       ref={setNodeRef}
       style={canvasStyles}
-      className={clsx('w-full transition flex flex-col gap-5 rounded-xl', {
+      className={clsx('w-full transition flex flex-col gap-2 rounded-xl', {
         // 'bg-slate-50': !daisyui,
         // 'bg-base-200': daisyui,
         'border-dashed border-2': isOver,

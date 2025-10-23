@@ -30,6 +30,18 @@ export interface CanvasBlockContainerData {
   blockCount: number;
 }
 
+export interface CanvasBlockDropZoneData {
+  type: 'canvas-block-dropzone';
+  columnId: string;
+  index: number;
+}
+
+export interface CanvasRowDropZoneData {
+  type: 'canvas-row-dropzone';
+  sectionId: string;
+  index: number;
+}
+
 export interface CanvasColumnDragData {
   type: 'canvas-column-item';
   columnId: string;
@@ -70,6 +82,8 @@ export type ActiveDragData =
 export type OverDragData =
   | CanvasBlockDragData
   | CanvasBlockContainerData
+  | CanvasBlockDropZoneData
+  | CanvasRowDropZoneData
   | CanvasColumnDragData
   | CanvasRowContainerDropData
   | CanvasRowDragData
@@ -114,6 +128,28 @@ export function addRowToSection(
     return {
       ...section,
       rows: [...section.rows, createEmptyRow(columnCount)],
+    };
+  });
+}
+
+export function addRowToSectionAtIndex(
+  sections: CanvasSection[],
+  sectionId: string,
+  columnCount: number,
+  index: number,
+): CanvasSection[] {
+  return sections.map((section) => {
+    if (section.id !== sectionId) {
+      return section;
+    }
+
+    const nextRows = [...section.rows];
+    const insertionIndex = Math.max(0, Math.min(index, nextRows.length));
+    nextRows.splice(insertionIndex, 0, createEmptyRow(columnCount));
+
+    return {
+      ...section,
+      rows: nextRows,
     };
   });
 }

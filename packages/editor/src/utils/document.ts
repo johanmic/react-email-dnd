@@ -7,10 +7,10 @@ import type {
 } from '@react-email-dnd/shared';
 
 const DEFAULT_TITLE = 'Untitled email';
-const DEFAULT_SECTION_PADDING: CanvasSection['padding'] = '8';
+const DEFAULT_SECTION_PADDING: CanvasSection['padding'] = '6';
 const DEFAULT_SECTION_MARGIN: CanvasSection['margin'] = '0';
 const DEFAULT_SECTION_ALIGN: CanvasSection['align'] = 'left';
-const DEFAULT_ROW_PADDING: CanvasRow['padding'] = '6';
+const DEFAULT_ROW_PADDING: CanvasRow['padding'] = '2';
 const DEFAULT_ROW_MARGIN: CanvasRow['margin'] = '0';
 const DEFAULT_ROW_ALIGN: CanvasRow['align'] = 'left';
 const DEFAULT_COLUMN_PADDING: CanvasColumn['padding'] = '4';
@@ -98,7 +98,7 @@ export function createEmptyRow(columnCount: number = 1) {
   return {
     id: generateId('row'),
     type: 'row' as const,
-    gutter: 16,
+    gutter: 8,
     padding: DEFAULT_ROW_PADDING,
     margin: DEFAULT_ROW_MARGIN,
     align: DEFAULT_ROW_ALIGN,
@@ -172,7 +172,13 @@ export function updateSectionProps(
   updatedProps: Partial<
     Pick<
       CanvasSection,
-      'backgroundColor' | 'backgroundClassName' | 'padding' | 'margin' | 'className' | 'align' | 'locked'
+      | 'backgroundColor'
+      | 'backgroundClassName'
+      | 'padding'
+      | 'margin'
+      | 'className'
+      | 'align'
+      | 'locked'
     >
   >,
 ): CanvasDocument {
@@ -189,7 +195,14 @@ export function updateRowProps(
   updatedProps: Partial<
     Pick<
       CanvasRow,
-      'backgroundColor' | 'backgroundClassName' | 'padding' | 'margin' | 'className' | 'gutter' | 'align' | 'locked'
+      | 'backgroundColor'
+      | 'backgroundClassName'
+      | 'padding'
+      | 'margin'
+      | 'className'
+      | 'gutter'
+      | 'align'
+      | 'locked'
     >
   >,
 ): CanvasDocument {
@@ -207,7 +220,14 @@ export function updateColumnProps(
   updatedProps: Partial<
     Pick<
       CanvasColumn,
-      'backgroundColor' | 'backgroundClassName' | 'padding' | 'margin' | 'className' | 'width' | 'align' | 'locked'
+      | 'backgroundColor'
+      | 'backgroundClassName'
+      | 'padding'
+      | 'margin'
+      | 'className'
+      | 'width'
+      | 'align'
+      | 'locked'
     >
   >,
 ): CanvasDocument {

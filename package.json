@@ -3,13 +3,18 @@
   "name": "@react-email-dnd",
   "packageManager": "pnpm@9",
   "workspaces": [
+    "docs",
     "packages/*"
   ],
   "scripts": {
+    "dev": "pnpm --filter react-email-dnd-docs dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
-    "release": "changeset version && pnpm -r build && changeset publish"
+    "release": "changeset version && pnpm -r build && changeset publish",
+    "docs": "pnpm --filter react-email-dnd-docs start",
+    "docs:build": "pnpm --filter react-email-dnd-docs build",
+    "docs:serve": "pnpm --filter react-email-dnd-docs serve"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
