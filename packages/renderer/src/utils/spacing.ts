@@ -44,7 +44,10 @@ function trimTrailingZeros(value: number): string {
   if (Number.isInteger(value)) {
     return `${value}`
   }
-  return value.toString().replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1")
+  return value
+    .toString()
+    .replace(/\.0+$/, "")
+    .replace(/(\.\d*?)0+$/, "$1")
 }
 
 function numberToPx(value: number): string {
@@ -69,12 +72,19 @@ function parseNumericString(value: string): number | undefined {
 }
 
 function sanitizeArbitraryValue(value: string): string {
-  return value.trim().replace(/\s+/g, "_").replace(/\]/g, "\\]").replace(/\[/g, "\\[")
+  return value
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/\]/g, "\\]")
+    .replace(/\[/g, "\\[")
 }
 
 type SpacingShorthand = "p" | "m"
 
-function toTailwindSpacingClass(value: string | number, shorthand: SpacingShorthand) {
+function toTailwindSpacingClass(
+  value: string | number,
+  shorthand: SpacingShorthand
+) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return `${shorthand}-${trimTrailingZeros(value)}`
   }
@@ -96,21 +106,30 @@ function toTailwindSpacingClass(value: string | number, shorthand: SpacingShorth
   return `${shorthand}-[${sanitizeArbitraryValue(trimmed)}]`
 }
 
-function normalizeArbitraryToCss(value: string, shorthand: SpacingShorthand): string {
+function normalizeArbitraryToCss(
+  value: string,
+  shorthand: SpacingShorthand
+): string {
   const arbitraryMatch = value.match(new RegExp(`^${shorthand}-\\[(.*)]$`))
   if (!arbitraryMatch) {
     return value
   }
 
-  return arbitraryMatch[1].replace(/\\\]/g, "]").replace(/\\\[/g, "[").replace(/_/g, " ")
+  return arbitraryMatch[1]
+    .replace(/\\\]/g, "]")
+    .replace(/\\\[/g, "[")
+    .replace(/_/g, " ")
 }
 
-function toCssSpacingValue(value: string | number, shorthand: SpacingShorthand): string {
+function toCssSpacingValue(
+  value: string | number,
+  shorthand: SpacingShorthand
+): string {
   if (typeof value === "number" && Number.isFinite(value)) {
     return numberToPx(value)
   }
 
-  const trimmed = value.trim()
+  const trimmed = typeof value === "string" ? value.trim() : ""
   if (!trimmed) {
     return ""
   }
@@ -134,7 +153,9 @@ function toCssSpacingValue(value: string | number, shorthand: SpacingShorthand):
   return trimmed
 }
 
-function pickBasePaddingValue(padding: PaddingRecord): string | number | undefined {
+function pickBasePaddingValue(
+  padding: PaddingRecord
+): string | number | undefined {
   for (const key of ORDER) {
     if (key in padding) {
       return padding[key]
@@ -145,7 +166,10 @@ function pickBasePaddingValue(padding: PaddingRecord): string | number | undefin
   return firstEntry
 }
 
-function resolveSpacingClasses(value: Padding | undefined, shorthand: SpacingShorthand): string[] {
+function resolveSpacingClasses(
+  value: Padding | undefined,
+  shorthand: SpacingShorthand
+): string[] {
   if (!value) {
     return []
   }
@@ -184,7 +208,10 @@ function resolveSpacingClasses(value: Padding | undefined, shorthand: SpacingSho
   return resolved
 }
 
-function resolveSpacingStyle(value: Padding | undefined, shorthand: SpacingShorthand): string | undefined {
+function resolveSpacingStyle(
+  value: Padding | undefined,
+  shorthand: SpacingShorthand
+): string | undefined {
   if (!value) {
     return undefined
   }
@@ -215,7 +242,9 @@ export function resolvePaddingClasses(padding: Padding | undefined): string[] {
   return resolveSpacingClasses(padding, "p")
 }
 
-export function resolvePaddingStyle(padding: Padding | undefined): string | undefined {
+export function resolvePaddingStyle(
+  padding: Padding | undefined
+): string | undefined {
   return resolveSpacingStyle(padding, "p")
 }
 
@@ -223,6 +252,8 @@ export function resolveMarginClasses(margin: Padding | undefined): string[] {
   return resolveSpacingClasses(margin, "m")
 }
 
-export function resolveMarginStyle(margin: Padding | undefined): string | undefined {
+export function resolveMarginStyle(
+  margin: Padding | undefined
+): string | undefined {
   return resolveSpacingStyle(margin, "m")
 }

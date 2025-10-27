@@ -2,14 +2,14 @@
   "name": "@react-email-dnd/shared",
   "version": "0.1.0",
   "description": "Shared schema types and validation utilities for react-email-dnd.",
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.js"
     }
   },
   "files": [
@@ -26,7 +26,7 @@
   },
   "peerDependencies": {
     "@phosphor-icons/react": "^2.1.10",
-    "react": "^18.2.0"
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

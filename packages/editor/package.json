@@ -35,9 +35,9 @@
     "test": "vitest"
   },
   "peerDependencies": {
-    "@react-email/components": "0.5.5",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "@react-email/components": "0.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
@@ -67,8 +67,8 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@react-email-dnd/renderer": "workspace:*",
-    "@react-email-dnd/shared": "workspace:*",
+    "@react-email-dnd/renderer": "file:../renderer",
+    "@react-email-dnd/shared": "file:../shared",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

@@ -9,7 +9,7 @@ import {
   closestCorners,
 } from '@dnd-kit/core';
 import { useState, useEffect, useMemo } from 'react';
-import { Sidebar, DEFAULT_CONTENT_ITEMS } from './Sidebar';
+import { Sidebar, DEFAULT_CONTENT_ITEMS, DEFAULT_STRUCTURE_ITEMS } from './Sidebar';
 import { Main } from './Main';
 import { Header } from './Header';
 import type { ColorOption, Padding } from '@react-email-dnd/shared';
@@ -75,6 +75,10 @@ export interface EmailEditorProps {
   padding?: Record<string, Padding>;
   /** Available fonts for selection in text, heading, and button blocks */
   fonts?: FontDefinition[];
+  /** Filter which blocks to show in sidebar. Only blocks matching these IDs will be visible. Empty array shows all blocks. */
+  blocks?: string[];
+  /** When true, variables cannot be edited and only existing variables are displayed. If no variables exist, the variables section is hidden. */
+  variablesLocked?: boolean;
 }
 
 export function EmailEditor({
@@ -91,14 +95,45 @@ export function EmailEditor({
   customBlocks = [],
   padding,
   fonts,
+  blocks,
+  variablesLocked = false,
 }: EmailEditorProps) {
   const { document, setDocument } = useCanvasStore();
   const sections = document.sections;
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const contentBlocks = useMemo(() => {
-    return [...DEFAULT_CONTENT_ITEMS, ...customBlocks] as BlockDefinition<CanvasContentBlock>[];
-  }, [customBlocks]);
+    const allBlocks = [
+      ...DEFAULT_CONTENT_ITEMS,
+      ...customBlocks,
+    ] as BlockDefinition<CanvasContentBlock>[];
+
+    // If blocks prop is undefined or empty, show all blocks
+    if (!blocks || blocks.length === 0) {
+      return allBlocks;
+    }
+
+    // Filter blocks to only include those in the blocks array
+    const blocksSet = new Set(blocks);
+    const filteredBlocks = allBlocks.filter((block) => blocksSet.has(block.type));
+    console.log('[EmailEditor] Filtering blocks:', {
+      requested: blocks,
+      allBlockTypes: allBlocks.map((b) => b.type),
+      filteredTypes: filteredBlocks.map((b) => b.type),
+    });
+    return filteredBlocks;
+  }, [customBlocks, blocks]);
+
+  const filteredStructureItems = useMemo(() => {
+    // If blocks prop is undefined or empty, show all structure items
+    if (!blocks || blocks.length === 0) {
+      return DEFAULT_STRUCTURE_ITEMS;
+    }
+
+    // Filter structure items based on block IDs
+    const blocksSet = new Set(blocks);
+    return DEFAULT_STRUCTURE_ITEMS.filter((item) => blocksSet.has(item.id));
+  }, [blocks]);
 
   const blockDefinitionMap = useMemo(() => buildBlockDefinitionMap(contentBlocks), [contentBlocks]);
 
@@ -596,7 +631,13 @@ export function EmailEditor({
         }
 
         commitSections((previous) =>
-          moveBlockToColumn(previous, sourceColumnId, overData.columnId, blockIndex, overData.index),
+          moveBlockToColumn(
+            previous,
+            sourceColumnId,
+            overData.columnId,
+            blockIndex,
+            overData.index,
+          ),
         );
         return;
       }
@@ -762,7 +803,12 @@ export function EmailEditor({
       <div className={clsx('w-full h-screen flex flex-col', className)}>
         {showHeader && <Header daisyui={daisyui} />}
         <div className="flex h-full overflow-hidden">
-          <Sidebar daisyui={daisyui} blocks={contentBlocks} />
+          <Sidebar
+            daisyui={daisyui}
+            blocks={contentBlocks}
+            structureItems={filteredStructureItems}
+            variablesLocked={variablesLocked}
+          />
           <div className="flex-1 h-full overflow-auto">
             <Main
               sections={sections}

@@ -63,7 +63,7 @@ export function Main({
       : 'mx-auto w-[720px] max-w-full';
 
   return (
-    <div className="flex-1 p-2.5">
+    <div className="flex-1 p-2">
       <div className={wrapperClasses} aria-label={`Preview area (${previewMode})`}>
         <Canvas
           sections={normalizedSections}

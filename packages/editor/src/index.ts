@@ -71,12 +71,7 @@ export * from './components/Header';
 export * from './components/EmailEditor';
 export * from './components/PropertiesPanel';
 
-export type {
-  CustomBlockPropEditorProps,
-  CustomBlockPropEditor,
-  CustomBlockPropEditors,
-  ColorOption,
-} from './components/PropertiesPanel';
+export type { CustomBlockPropEditors, ColorOption } from './components/PropertiesPanel';
 
 export type { PaddingOptionEntry } from './utils/padding';
 export { normalizePaddingOptions, getDefaultPaddingOptionEntries } from './utils/padding';

@@ -204,15 +204,12 @@ function BlockDropZone({
         )}
       >
         <div
-          className={clsx(
-            'w-full h-1 rounded-full border border-dashed',
-            {
-              'border-blue-500 bg-blue-500/80': isOver && !daisyui,
-              'border-primary bg-primary/80': isOver && daisyui,
-              'border-blue-300 bg-blue-200/60': !isOver && !daisyui,
-              'border-base-300 bg-base-200/70': !isOver && daisyui,
-            },
-          )}
+          className={clsx('w-full h-1 rounded-full border border-dashed', {
+            'border-blue-500 bg-blue-500/80': isOver && !daisyui,
+            'border-primary bg-primary/80': isOver && daisyui,
+            'border-blue-300 bg-blue-200/60': !isOver && !daisyui,
+            'border-base-300 bg-base-200/70': !isOver && daisyui,
+          })}
         />
       </div>
     </div>
@@ -234,8 +231,7 @@ function RowDropZone({
   const activeId = active ? String(active.id) : '';
   const activeData = active?.data?.current as ActiveDragData | undefined;
   const isRowDrag = activeData?.type === 'canvas-row-item';
-  const isStructureRow =
-    activeId === 'structure-row' || activeId.startsWith('structure-columns-');
+  const isStructureRow = activeId === 'structure-row' || activeId.startsWith('structure-columns-');
   const canAcceptDrop = !isDisabled && (isRowDrag || isStructureRow);
 
   const { isOver, setNodeRef } = useDroppable({
@@ -265,15 +261,12 @@ function RowDropZone({
         )}
       >
         <div
-          className={clsx(
-            'w-full h-1.5 rounded-full border border-dashed',
-            {
-              'border-green-500 bg-green-500/80': isOver && !daisyui,
-              'border-secondary bg-secondary/80': isOver && daisyui,
-              'border-green-300 bg-green-200/60': !isOver && !daisyui,
-              'border-base-300 bg-base-200/70': !isOver && daisyui,
-            },
-          )}
+          className={clsx('w-full h-1.5 rounded-full border border-dashed', {
+            'border-green-500 bg-green-500/80': isOver && !daisyui,
+            'border-secondary bg-secondary/80': isOver && daisyui,
+            'border-green-300 bg-green-200/60': !isOver && !daisyui,
+            'border-base-300 bg-base-200/70': !isOver && daisyui,
+          })}
         />
       </div>
     </div>
@@ -1250,12 +1243,7 @@ function CanvasColumnView({
             </div>
           )}
 
-          <BlockDropZone
-            columnId={column.id}
-            index={0}
-            isDisabled={isDisabled}
-            daisyui={daisyui}
-          />
+          <BlockDropZone columnId={column.id} index={0} isDisabled={isDisabled} daisyui={daisyui} />
 
           {visibleBlocks.map(({ block, index }) => (
             <Fragment key={block.id}>
@@ -1647,7 +1635,7 @@ function CanvasSectionView({
           {section.rows.length === 0 ? (
             <div
               className={clsx(
-                'flex items-center justify-center min-h-40 rounded-lg border border-dashed text-[0.85rem]',
+                'flex items-center justify-center min-h-40 rounded-lg text-sm border border-dashed text-[0.85rem]',
                 {
                   'border-slate-300/40 bg-slate-100/40 text-slate-500': !daisyui,
                   'border-base-300/40 bg-base-200/40 text-base-content/70': daisyui,

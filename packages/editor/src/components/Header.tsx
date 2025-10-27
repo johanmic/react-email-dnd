@@ -55,7 +55,7 @@ export function Header({ daisyui = false }: { daisyui?: boolean }) {
         !daisyui &&
           'flex items-center justify-between gap-4 p-3 border-b border-slate-900/10 bg-white',
         // DaisyUI variant
-        daisyui && 'flex items-center justify-between gap-4 p-3 border-b bg-base-200',
+        daisyui && 'flex items-center justify-between gap-4 p-2 m-2 border-b border-primary/10',
       )}
       aria-label="Email editor header"
     >

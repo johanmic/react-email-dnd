@@ -174,6 +174,7 @@ function App() {
               bgColors={bgColors}
               daisyui={true}
               unlockable={true}
+              showHidden={true}
               customBlocks={customBlocks}
               padding={padding}
               fonts={fonts}

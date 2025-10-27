@@ -11,6 +11,7 @@ export default defineConfig({
     dts({
       insertTypesEntry: true,
       exclude: ['**/*.test.*', '**/*.spec.*'],
+      bundleDeclaration: true,
     }),
   ],
   server: {
@@ -31,7 +32,18 @@ export default defineConfig({
       fileName: (format) => (format === 'es' ? 'index.mjs' : 'index.cjs'),
     },
     rollupOptions: {
-      external: ['react', 'react-dom', '@react-email-dnd/shared', '@react-email-dnd/renderer'],
+      external: [
+        'react',
+        'react-dom',
+        '@react-email-dnd/renderer',
+        '@react-email-dnd/shared',
+        '@dnd-kit/core',
+        '@dnd-kit/sortable',
+        '@dnd-kit/utilities',
+        '@phosphor-icons/react',
+        'clsx',
+        '@react-email/components',
+      ],
       output: {
         globals: {
           react: 'React',

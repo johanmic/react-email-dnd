@@ -2,14 +2,14 @@
   "name": "@react-email-dnd/renderer",
   "version": "0.1.0",
   "description": "Rendering utilities for react-email-dnd documents.",
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.js"
     }
   },
   "files": [
@@ -22,14 +22,15 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@react-email-dnd/shared": "workspace:*"
+    "@react-email-dnd/shared": "file:../shared"
   },
   "peerDependencies": {
-    "react-email": "^4.2.12",
-    "@react-email/components": "0.5.6"
+    "react-email": "^4.2.8",
+    "@react-email/components": "0.5.0"
   },
   "devDependencies": {
     "@react-email/components": "0.5.6",
+    "@types/react": "^19.1.16",
     "react-email": "^4.2.12",
     "tsup": "^8.0.0",
     "typescript": "^5.6.0",

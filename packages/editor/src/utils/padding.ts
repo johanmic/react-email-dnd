@@ -41,9 +41,7 @@ export interface PaddingOptionEntry {
   value: Padding;
 }
 
-type PaddingOptionSource =
-  | Record<string, Padding>
-  | PaddingOptionEntry[];
+type PaddingOptionSource = Record<string, Padding> | PaddingOptionEntry[];
 
 const DEFAULT_PADDING_OPTION_MAP: Record<string, Padding> = {
   none: '0',
@@ -72,9 +70,7 @@ function humanizeKey(value: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export function normalizePaddingOptions(
-  source?: PaddingOptionSource,
-): PaddingOptionEntry[] {
+export function normalizePaddingOptions(source?: PaddingOptionSource): PaddingOptionEntry[] {
   if (!source) {
     return getDefaultPaddingOptionEntries();
   }
@@ -106,7 +102,10 @@ function trimTrailingZeros(value: number): string {
   if (Number.isInteger(value)) {
     return `${value}`;
   }
-  return value.toString().replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+  return value
+    .toString()
+    .replace(/\.0+$/, '')
+    .replace(/(\.\d*?)0+$/, '$1');
 }
 
 function numberToPx(value: number): string {
@@ -136,7 +135,10 @@ function sanitizeArbitraryValue(value: string): string {
 
 type SpacingShorthand = 'p' | 'm';
 
-function toTailwindSpacingClass(value: string | number, shorthand: SpacingShorthand): string | undefined {
+function toTailwindSpacingClass(
+  value: string | number,
+  shorthand: SpacingShorthand,
+): string | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return `${shorthand}-${trimTrailingZeros(value)}`;
   }
@@ -172,7 +174,7 @@ function toCssSpacingValue(value: string | number, shorthand: SpacingShorthand):
     return numberToPx(value);
   }
 
-  const trimmed = value.trim();
+  const trimmed = typeof value === 'string' ? value.trim() : '';
   if (!trimmed) {
     return '';
   }
@@ -246,7 +248,10 @@ function resolveSpacingClasses(value: Padding | undefined, shorthand: SpacingSho
   return resolved;
 }
 
-function resolveSpacingStyle(value: Padding | undefined, shorthand: SpacingShorthand): string | undefined {
+function resolveSpacingStyle(
+  value: Padding | undefined,
+  shorthand: SpacingShorthand,
+): string | undefined {
   if (!value) {
     return undefined;
   }

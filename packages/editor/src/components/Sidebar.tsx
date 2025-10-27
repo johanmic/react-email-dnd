@@ -37,6 +37,7 @@ export interface SidebarProps {
   blocks?: BlockDefinition<CanvasContentBlock>[];
   daisyui?: boolean;
   columns?: 1 | 2 | 3;
+  variablesLocked?: boolean;
 }
 
 interface VariableDraft {
@@ -50,7 +51,12 @@ export function Sidebar({
   blocks = DEFAULT_CONTENT_ITEMS,
   daisyui = false,
   columns = 2,
+  variablesLocked = false,
 }: SidebarProps) {
+  console.log(
+    '[Sidebar] Received blocks prop:',
+    blocks.map((b) => b.type),
+  );
   const { variables, upsertVariable, deleteVariable } = useCanvasStore();
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
@@ -146,284 +152,182 @@ export function Sidebar({
 
   return (
     <aside
-      className={clsx('border-l p-2.5 sticky top-0', {
+      className={clsx('p-2 sticky top-0', {
         'w-52': columns === 1,
         'w-80': columns === 2,
         'w-96': columns === 3,
         'flex flex-col gap-5 bg-slate-50': !daisyui,
         'border-black': !daisyui,
-        'flex flex-col gap-5 border-primary items-center border-l-primary-content': daisyui,
+        'flex flex-col gap-5 border-primary': daisyui,
       })}
     >
-      <div className="flex flex-col gap-3 items-center">
-        <p
-          className={clsx({
-            'mb-y text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
-            'text-sm font-bold uppercase mb-4 leading-none text-base-content/60': daisyui,
-          })}
-        >
-          Structure
-        </p>
-        <div className={gridListClasses}>
-          {structureItems.map((item) => (
-            <SidebarItem
-              id={item.id}
-              key={item.id}
-              className={clsx({ group: !daisyui })}
-              daisyui={daisyui}
-              data={{
-                category: 'structure',
-                label: item.label,
-              }}
-            >
-              <div
-                className={clsx('flex items-center gap-4', {
-                  'p-3 rounded-xl border border-dashed border-slate-900/10 bg-white text-slate-900 text-sm font-medium leading-5 transition transform group-hover:border-green-500/40 group-hover:shadow-lg group-hover:-translate-y-0.5 group-focus-within:border-green-500/40 group-focus-within:shadow-lg active:scale-95':
-                    !daisyui,
-                })}
-              >
-                <item.icon size={18} weight="duotone" />
-                <span>{item.label}</span>
-              </div>
-            </SidebarItem>
-          ))}
-        </div>
-      </div>
-      <div className="flex flex-col gap-3 items-center">
-        <div
-          className={clsx('my-2', {
-            'text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
-            'text-sm font-bold uppercase flex items-center justify-center leading-none text-base-content/60':
-              daisyui,
-          })}
-        >
-          Content
-        </div>
-        <div className={gridListClasses}>
-          {blocks.map((block) => {
-            const paletteId = getSidebarBlockId(block);
-            return (
+      {structureItems.length > 0 && (
+        <div className="flex flex-col gap-3 items-center">
+          <p
+            className={clsx({
+              'mb-y text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
+              'text-sm font-bold uppercase mb-4 leading-none text-base-content/60': daisyui,
+            })}
+          >
+            Structure
+          </p>
+          <div className={gridListClasses}>
+            {structureItems.map((item) => (
               <SidebarItem
-                id={paletteId}
-                key={paletteId}
+                id={item.id}
+                key={item.id}
                 className={clsx({ group: !daisyui })}
                 daisyui={daisyui}
                 data={{
-                  category: 'content',
-                  blockType: block.type,
-                  label: block.label,
-                  defaults: block.defaults,
+                  category: 'structure',
+                  label: item.label,
                 }}
               >
                 <div
-                  className={clsx('flex items-center gap-2', {
+                  className={clsx('flex items-center gap-4', {
                     'p-3 rounded-xl border border-dashed border-slate-900/10 bg-white text-slate-900 text-sm font-medium leading-5 transition transform group-hover:border-green-500/40 group-hover:shadow-lg group-hover:-translate-y-0.5 group-focus-within:border-green-500/40 group-focus-within:shadow-lg active:scale-95':
                       !daisyui,
                   })}
                 >
-                  <block.icon size={18} weight="duotone" />
-                  <span>{block.label}</span>
+                  <item.icon size={18} weight="duotone" />
+                  <span>{item.label}</span>
                 </div>
               </SidebarItem>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col gap-3 w-full items-center">
-        <div
-          className={clsx('my-2 w-full flex items-center justify-between', {
-            'text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
-            'text-sm font-bold uppercase leading-none text-base-content/60': daisyui,
-          })}
-        >
-          <span>Variables</span>
-          <button
-            type="button"
-            onClick={openVariablesModal}
-            className={clsx('inline-flex items-center gap-1 text-[11px] font-medium', {
-              'text-slate-700 hover:text-slate-900 transition-colors': !daisyui,
-              'btn btn-ghost btn-xs': daisyui,
-            })}
-          >
-            <PencilSimpleIcon size={14} />
-            Edit
-          </button>
-        </div>
-        <div
-          className={clsx('w-full flex flex-col gap-3', {
-            'px-2': !daisyui,
-            'px-3': daisyui,
-          })}
-        >
+      )}
+      {blocks.length > 0 && (
+        <div className="flex flex-col gap-3 items-center">
           <div
-            className={clsx('flex flex-col gap-3 rounded-lg border p-3', {
-              'bg-white border-slate-200 shadow-sm': !daisyui,
-              'bg-base-200 border-base-300': daisyui,
+            className={clsx('my-2', {
+              'text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
+              'text-sm font-bold uppercase flex items-center justify-center leading-none text-base-content/60':
+                daisyui,
             })}
           >
-            {variableEntries.length === 0 ? (
-              <div
-                className={clsx('text-xs rounded-md border p-2', {
-                  'text-slate-500 bg-slate-50 border-slate-200': !daisyui,
-                  'text-base-content/60 bg-base-100 border-base-300': daisyui,
-                })}
-              >
-                No variables yet. Add one below.
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {variableEntries.map(([key, value]) => (
-                  <li
-                    key={key}
-                    className={clsx(
-                      'flex items-center justify-between gap-2 rounded-md px-2 py-1',
-                      {
-                        'bg-slate-100 text-slate-800': !daisyui,
-                        'bg-base-100 text-base-content': daisyui,
-                      },
-                    )}
-                    title={`Use as {{${key}}}`}
+            Content
+          </div>
+          <div className={gridListClasses}>
+            {blocks.map((block) => {
+              const paletteId = getSidebarBlockId(block);
+              return (
+                <SidebarItem
+                  id={paletteId}
+                  key={paletteId}
+                  className={clsx({ group: !daisyui })}
+                  daisyui={daisyui}
+                  data={{
+                    category: 'content',
+                    blockType: block.type,
+                    label: block.label,
+                    defaults: block.defaults,
+                  }}
+                >
+                  <div
+                    className={clsx('flex items-center gap-4 w-full', {
+                      'p-3 rounded-xl border border-dashed border-slate-900/10 bg-white text-slate-900 text-sm font-medium leading-5 transition transform group-hover:border-green-500/40 group-hover:shadow-lg group-hover:-translate-y-0.5 group-focus-within:border-green-500/40 group-focus-within:shadow-lg active:scale-95':
+                        !daisyui,
+                    })}
                   >
-                    <span className="text-[11px] font-mono font-semibold tracking-tight">
-                      {key}
-                    </span>
-                    <span
-                      className={clsx('text-[11px] truncate max-w-[120px]', {
-                        'text-slate-600': !daisyui,
-                        'text-base-content/70': daisyui,
-                      })}
-                    >
-                      {value || '—'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div
-              className={clsx('flex items-center gap-2 rounded-md border border-dashed p-2', {
-                'bg-white border-slate-300/70': !daisyui,
-                'bg-base-100 border-base-300': daisyui,
-              })}
-            >
-              <input
-                type="text"
-                value={newKey}
-                onChange={(e) => setNewKey(e.target.value)}
-                onKeyDown={handleNewFieldKeyDown}
-                placeholder="key"
-                className={clsx('w-24 text-xs px-2 py-1 rounded', {
-                  'border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/60':
-                    !daisyui,
-                  'input input-bordered input-xs rounded': daisyui,
-                })}
-              />
-              <input
-                type="text"
-                value={newValue}
-                onChange={(e) => setNewValue(e.target.value)}
-                onKeyDown={handleNewFieldKeyDown}
-                placeholder="value"
-                className={clsx('flex-1 text-xs px-2 py-1 rounded', {
-                  'border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/60':
-                    !daisyui,
-                  'input input-bordered input-xs rounded': daisyui,
-                })}
-              />
+                    <block.icon size={18} weight="duotone" />
+                    <span>{block.label}</span>
+                  </div>
+                </SidebarItem>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {/* Only show variables section if not locked, or if locked and variables exist */}
+      {(!variablesLocked || variableEntries.length > 0) && (
+        <div className="flex flex-col gap-3 w-full items-center">
+          <div
+            className={clsx('my-2 w-full flex items-center justify-between', {
+              'text-xs font-semibold tracking-wider uppercase text-slate-900': !daisyui,
+              'text-sm font-bold uppercase leading-none text-base-content/60': daisyui,
+            })}
+          >
+            <span>Variables</span>
+            {!variablesLocked && (
               <button
                 type="button"
-                onClick={handleAddVariable}
-                className={clsx(
-                  'inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded',
-                  {
-                    'bg-green-600 text-white hover:bg-green-700 transition-colors': !daisyui,
-                    'btn btn-primary btn-xs': daisyui,
-                  },
-                )}
+                onClick={openVariablesModal}
+                className={clsx('inline-flex items-center gap-1 text-[11px] font-medium', {
+                  'text-slate-700 hover:text-slate-900 transition-colors': !daisyui,
+                  'btn btn-ghost btn-xs': daisyui,
+                })}
               >
-                <PlusIcon size={12} />
-                Add
+                <PencilSimpleIcon size={14} />
+                Edit
               </button>
-            </div>
+            )}
+          </div>
+          <div
+            className={clsx('w-full flex flex-col gap-3', {
+              'px-2': !daisyui,
+              'px-3': daisyui,
+            })}
+          >
             <div
-              className={clsx('text-[10px] px-1 text-slate-500', {
-                'text-base-content/60': daisyui,
+              className={clsx('flex flex-col gap-3 rounded-lg border p-3', {
+                'bg-white border-slate-200 shadow-sm': !daisyui,
+                'bg-base-200 border-base-300': daisyui,
               })}
             >
-              Use variables like {'{{order_id}}'} in text fields.
-            </div>
-          </div>
-        </div>
-      </div>
-      <Modal
-        open={isVariablesModalOpen}
-        onClose={closeVariablesModal}
-        daisyui={daisyui}
-        labelledBy="sidebar-variables-modal-title"
-      >
-        <div
-          className={clsx('rounded-xl border p-5 shadow-2xl', {
-            'bg-white text-slate-900 border-slate-200': !daisyui,
-            'bg-base-100 text-base-content border-base-300': daisyui,
-          })}
-        >
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div>
-              <h3
-                id="sidebar-variables-modal-title"
-                className={clsx('text-base font-semibold', {
-                  'text-slate-900': !daisyui,
-                  'text-base-content': daisyui,
-                })}
-              >
-                Edit variables
-              </h3>
-              <p
-                className={clsx('text-xs mt-1', {
-                  'text-slate-500': !daisyui,
-                  'text-base-content/70': daisyui,
-                })}
-              >
-                Update keys or values. Empty keys will be removed on save.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={closeVariablesModal}
-              className={clsx('inline-flex rounded p-1', {
-                'text-slate-500 hover:text-slate-700': !daisyui,
-                'btn btn-ghost btn-sm': daisyui,
-              })}
-              aria-label="Close"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="flex flex-col gap-3 max-h-[50vh] overflow-y-auto pr-1">
-            {variableDrafts.length === 0 ? (
-              <div
-                className={clsx('text-sm rounded-md border p-3 text-center', {
-                  'bg-slate-50 text-slate-500 border-slate-200': !daisyui,
-                  'bg-base-100 text-base-content/70 border-base-300': daisyui,
-                })}
-              >
-                No variables yet. Add a new one below.
-              </div>
-            ) : (
-              variableDrafts.map((draft) => (
+              {variableEntries.length === 0 && !variablesLocked ? (
                 <div
-                  key={draft.id}
-                  className={clsx('flex items-start gap-2 rounded-md border p-2', {
-                    'bg-slate-50 border-slate-200': !daisyui,
-                    'bg-base-100 border-base-300': daisyui,
+                  className={clsx('text-xs rounded-md border p-2', {
+                    'text-slate-500 bg-slate-50 border-slate-200': !daisyui,
+                    'text-base-content/60 bg-base-100 border-base-300': daisyui,
                   })}
                 >
-                  <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+                  No variables yet. Add one below.
+                </div>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {variableEntries.map(([key, value]) => (
+                    <li
+                      key={key}
+                      className={clsx(
+                        'flex items-center justify-between gap-2 rounded-md px-2 py-1',
+                        {
+                          'bg-slate-100 text-slate-800': !daisyui,
+                          'bg-base-100 text-base-content': daisyui,
+                        },
+                      )}
+                      title={`Use as {{${key}}}`}
+                    >
+                      <span className="text-[11px] font-mono font-semibold tracking-tight">
+                        {key}
+                      </span>
+                      <span
+                        className={clsx('text-[11px] truncate max-w-[120px]', {
+                          'text-slate-600': !daisyui,
+                          'text-base-content/70': daisyui,
+                        })}
+                      >
+                        {value || '—'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!variablesLocked && (
+                <>
+                  <div
+                    className={clsx('flex items-center gap-2 rounded-md border border-dashed p-2', {
+                      'bg-white border-slate-300/70': !daisyui,
+                      'bg-base-100 border-base-300': daisyui,
+                    })}
+                  >
                     <input
                       type="text"
-                      value={draft.key}
-                      onChange={(event) => handleDraftChange(draft.id, 'key', event.target.value)}
+                      value={newKey}
+                      onChange={(e) => setNewKey(e.target.value)}
+                      onKeyDown={handleNewFieldKeyDown}
                       placeholder="key"
-                      className={clsx('flex-1 text-xs px-2 py-1 rounded', {
+                      className={clsx('w-24 text-xs px-2 py-1 rounded', {
                         'border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/60':
                           !daisyui,
                         'input input-bordered input-xs rounded': daisyui,
@@ -431,8 +335,9 @@ export function Sidebar({
                     />
                     <input
                       type="text"
-                      value={draft.value}
-                      onChange={(event) => handleDraftChange(draft.id, 'value', event.target.value)}
+                      value={newValue}
+                      onChange={(e) => setNewValue(e.target.value)}
+                      onKeyDown={handleNewFieldKeyDown}
                       placeholder="value"
                       className={clsx('flex-1 text-xs px-2 py-1 rounded', {
                         'border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/60':
@@ -440,62 +345,180 @@ export function Sidebar({
                         'input input-bordered input-xs rounded': daisyui,
                       })}
                     />
+                    <button
+                      type="button"
+                      onClick={handleAddVariable}
+                      className={clsx(
+                        'inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded',
+                        {
+                          'bg-green-600 text-white hover:bg-green-700 transition-colors': !daisyui,
+                          'btn btn-primary btn-xs': daisyui,
+                        },
+                      )}
+                    >
+                      <PlusIcon size={12} />
+                      Add
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDraftRemove(draft.id)}
-                    className={clsx('inline-flex items-center justify-center rounded p-1', {
-                      'text-red-600 hover:bg-red-50': !daisyui,
-                      'btn btn-ghost btn-xs text-error': daisyui,
+                  <div
+                    className={clsx('text-[10px] px-1 text-slate-500', {
+                      'text-base-content/60': daisyui,
                     })}
-                    aria-label="Remove variable"
                   >
-                    <TrashIcon size={14} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="mt-3 flex justify-between gap-3">
-            <button
-              type="button"
-              onClick={handleDraftAdd}
-              className={clsx(
-                'inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded',
-                {
-                  'bg-slate-900 text-white hover:bg-slate-700 transition-colors': !daisyui,
-                  'btn btn-primary btn-xs': daisyui,
-                },
+                    Use variables like {'{{order_id}}'} in text fields.
+                  </div>
+                </>
               )}
-            >
-              <PlusIcon size={12} />
-              Add variable
-            </button>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={closeVariablesModal}
-                className={clsx('px-3 py-1.5 rounded-md text-xs font-medium', {
-                  'bg-slate-200 text-slate-700 hover:bg-slate-300': !daisyui,
-                  'btn btn-ghost btn-xs': daisyui,
-                })}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveDrafts}
-                className={clsx('px-3 py-1.5 rounded-md text-xs font-semibold', {
-                  'bg-green-600 text-white hover:bg-green-700': !daisyui,
-                  'btn btn-success btn-xs': daisyui,
-                })}
-              >
-                Save changes
-              </button>
             </div>
           </div>
         </div>
-      </Modal>
+      )}
+      {!variablesLocked && (
+        <Modal
+          open={isVariablesModalOpen}
+          onClose={closeVariablesModal}
+          daisyui={daisyui}
+          labelledBy="sidebar-variables-modal-title"
+        >
+          <div
+            className={clsx('rounded-xl border p-5 shadow-2xl', {
+              'bg-white text-slate-900 border-slate-200': !daisyui,
+              'bg-base-100 text-base-content border-base-300': daisyui,
+            })}
+          >
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h3
+                  id="sidebar-variables-modal-title"
+                  className={clsx('text-base font-semibold', {
+                    'text-slate-900': !daisyui,
+                    'text-base-content': daisyui,
+                  })}
+                >
+                  Edit variables
+                </h3>
+                <p
+                  className={clsx('text-xs mt-1', {
+                    'text-slate-500': !daisyui,
+                    'text-base-content/70': daisyui,
+                  })}
+                >
+                  Update keys or values. Empty keys will be removed on save.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeVariablesModal}
+                className={clsx('inline-flex rounded p-1', {
+                  'text-slate-500 hover:text-slate-700': !daisyui,
+                  'btn btn-ghost btn-sm': daisyui,
+                })}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 max-h-[50vh] overflow-y-auto pr-1">
+              {variableDrafts.length === 0 ? (
+                <div
+                  className={clsx('text-sm rounded-md border p-3 text-center', {
+                    'bg-slate-50 text-slate-500 border-slate-200': !daisyui,
+                    'bg-base-100 text-base-content/70 border-base-300': daisyui,
+                  })}
+                >
+                  No variables yet. Add a new one below.
+                </div>
+              ) : (
+                variableDrafts.map((draft) => (
+                  <div
+                    key={draft.id}
+                    className={clsx('flex items-start gap-2 rounded-md border p-2', {
+                      'bg-slate-50 border-slate-200': !daisyui,
+                      'bg-base-100 border-base-300': daisyui,
+                    })}
+                  >
+                    <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        value={draft.key}
+                        onChange={(event) => handleDraftChange(draft.id, 'key', event.target.value)}
+                        placeholder="key"
+                        className={clsx('flex-1 text-xs px-2 py-1 rounded', {
+                          'border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/60':
+                            !daisyui,
+                          'input input-bordered input-xs rounded': daisyui,
+                        })}
+                      />
+                      <input
+                        type="text"
+                        value={draft.value}
+                        onChange={(event) =>
+                          handleDraftChange(draft.id, 'value', event.target.value)
+                        }
+                        placeholder="value"
+                        className={clsx('flex-1 text-xs px-2 py-1 rounded', {
+                          'border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/60':
+                            !daisyui,
+                          'input input-bordered input-xs rounded': daisyui,
+                        })}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDraftRemove(draft.id)}
+                      className={clsx('inline-flex items-center justify-center rounded p-1', {
+                        'text-red-600 hover:bg-red-50': !daisyui,
+                        'btn btn-ghost btn-xs text-error': daisyui,
+                      })}
+                      aria-label="Remove variable"
+                    >
+                      <TrashIcon size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="mt-3 flex justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleDraftAdd}
+                className={clsx(
+                  'inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded',
+                  {
+                    'bg-slate-900 text-white hover:bg-slate-700 transition-colors': !daisyui,
+                    'btn btn-primary btn-xs': daisyui,
+                  },
+                )}
+              >
+                <PlusIcon size={12} />
+                Add variable
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={closeVariablesModal}
+                  className={clsx('px-3 py-1.5 rounded-md text-xs font-medium', {
+                    'bg-slate-200 text-slate-700 hover:bg-slate-300': !daisyui,
+                    'btn btn-ghost btn-xs': daisyui,
+                  })}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDrafts}
+                  className={clsx('px-3 py-1.5 rounded-md text-xs font-semibold', {
+                    'bg-green-600 text-white hover:bg-green-700': !daisyui,
+                    'btn btn-success btn-xs': daisyui,
+                  })}
+                >
+                  Save changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </aside>
   );
 }

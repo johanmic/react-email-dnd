@@ -106,7 +106,7 @@ function mergeBlockClassName(block: CanvasContentBlock): CanvasContentBlock {
       ...props,
       className: combined,
     },
-  };
+  } as CanvasContentBlock;
 }
 
 function mergeColumnClassName(column: CanvasColumn): CanvasColumn {
