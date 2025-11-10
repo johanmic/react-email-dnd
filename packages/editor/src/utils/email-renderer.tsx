@@ -1,19 +1,6 @@
 import * as ReactEmailComponents from '@react-email/components';
 import type { RowProps, ColumnProps, SectionProps } from '@react-email/components';
 import { resolvePaddingClasses, resolvePaddingStyle } from './padding';
-
-const ReactEmailModule = ReactEmailComponents as {
-  Row: React.ComponentType<RowProps>;
-  Column: React.ComponentType<ColumnProps>;
-  Section: React.ComponentType<SectionProps>;
-};
-
-const { Row, Column, Section } = ReactEmailModule;
-
-function combineClasses(...values: Array<string | null | undefined>): string | undefined {
-  const merged = values.filter((value) => Boolean(value && value.trim())).join(' ');
-  return merged.length > 0 ? merged : undefined;
-}
 import type {
   CanvasDocument,
   CanvasSection,
@@ -32,6 +19,32 @@ import { Divider } from '../components/divider';
 import { Heading } from '../components/heading';
 import { Image } from '../components/image';
 import { Text } from '../components/text';
+
+const ReactEmailModule = ReactEmailComponents as {
+  Row: React.ComponentType<RowProps>;
+  Column: React.ComponentType<ColumnProps>;
+  Section: React.ComponentType<SectionProps>;
+};
+
+const { Row, Column, Section } = ReactEmailModule;
+
+function combineClasses(...values: Array<string | null | undefined>): string | undefined {
+  const merged = values.filter((value) => Boolean(value && value.trim())).join(' ');
+  return merged.length > 0 ? merged : undefined;
+}
+
+function extractStringVariables(
+  values?: Record<string, unknown>,
+): Record<string, string> | undefined {
+  if (!values) return undefined;
+  const entries = Object.entries(values).reduce<Record<string, string>>((acc, [key, value]) => {
+    if (typeof value === 'string') {
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
+  return Object.keys(entries).length > 0 ? entries : undefined;
+}
 
 /**
  * Renders a content block using the appropriate component
@@ -231,17 +244,22 @@ export function renderEmailDocument(
   runtimeVariables?: Record<string, string>,
   options: RenderEmailDocumentOptions = {},
 ) {
-  const merged = { ...(document.variables ?? {}), ...(runtimeVariables ?? {}) };
+  const documentVariables = extractStringVariables(document.variables);
+  const merged =
+    documentVariables || runtimeVariables
+      ? { ...(documentVariables ?? {}), ...(runtimeVariables ?? {}) }
+      : undefined;
   // Using `any` by design at the registry boundary; each entry keeps its own prop type.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const registry: Record<string, CustomBlockDefinition<any>> = options.customBlockRegistry ??
-  (options.customBlocks
-    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      options.customBlocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
-        acc[block.defaults.componentName] = block;
-        return acc;
-      }, {})
-    : {});
+  const registry: Record<string, CustomBlockDefinition<any>> =
+    options.customBlockRegistry ??
+    (options.customBlocks
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        options.customBlocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
+          acc[block.defaults.componentName] = block;
+          return acc;
+        }, {})
+      : {});
 
   return <>{document.sections.map((section) => renderEmailSection(section, merged, registry))}</>;
 }

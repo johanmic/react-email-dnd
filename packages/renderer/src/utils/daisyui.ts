@@ -1,4 +1,4 @@
-const DAISYUI_COLOR_KEYS = new Set([
+export const DAISYUI_COLOR_KEYS = new Set([
   "base-100",
   "base-200",
   "base-300",

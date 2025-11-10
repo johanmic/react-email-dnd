@@ -1,3 +1,4 @@
+
 /**
  * Any CSS included here will be global. The classic template
  * bundles Infima by default. Infima is a CSS framework designed to
@@ -5,6 +6,27 @@
  */
 
 /* You can override the default Infima variables here. */
+
+@import "tailwindcss/theme.css" layer(theme);
+
+@layer base {
+  #tw-scope {
+    @import "tailwindcss/preflight.css" layer(base);
+  }
+}
+
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@custom-variant dark (&:is([data-theme="dark"] *));
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, synthwave, retro;
+}
+
+@source "./**/*.{ts,tsx}";
+@source "../../../packages/editor/src/**/*.{ts,tsx}";
+@source "../../../packages/shared/src/**/*.{ts,tsx}";
+@source "../../../packages/renderer/src/**/*.{ts,tsx}"; 
+
 :root {
   --ifm-color-primary: #2e8555;
   --ifm-color-primary-dark: #29784c;
@@ -28,3 +50,5 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+

@@ -3,6 +3,7 @@ import type {
   CanvasRow,
   CanvasColumn,
   CanvasContentBlock,
+  ColorOption,
 } from '@react-email-dnd/shared';
 import { createEmptySection, createEmptyRow, createContentBlock } from './document';
 import type { BlockDefinitionMap } from './block-library';
@@ -90,20 +91,55 @@ export type OverDragData =
   | CanvasSectionDropData
   | CanvasSectionDragData;
 
+// Helper function to extract color from ColorOption
+function getColorFromOption(option: ColorOption): { color?: string; colorClassName?: string } {
+  if (typeof option === 'string') {
+    return { color: option };
+  }
+  return {
+    color: option.hex,
+    colorClassName: option.class,
+  };
+}
+
 // Helper functions
 export function createBlockFromSidebar(
   id: string,
   definitions: BlockDefinitionMap,
+  textColors?: ColorOption[],
 ): CanvasContentBlock | null {
   const definition = definitions[id];
   if (!definition) {
     return null;
   }
 
-  return createContentBlock(
-    definition.type,
-    definition.defaults as Record<string, unknown>,
-  ) as CanvasContentBlock;
+  const defaults = { ...definition.defaults } as Record<string, unknown>;
+
+  // Set default color from first ColorOption for text and heading blocks
+  // Override any existing default color when ColorOption array is provided
+  if (
+    (definition.type === 'text' || definition.type === 'heading') &&
+    textColors &&
+    textColors.length > 0
+  ) {
+    const firstColor = getColorFromOption(textColors[0]);
+    // Always override the color when ColorOption array is provided
+    // If ColorOption has a hex, use it; otherwise explicitly clear color and use className only
+    if (firstColor.color) {
+      defaults.color = firstColor.color;
+      defaults.colorClassName = firstColor.colorClassName ?? undefined;
+    } else if (firstColor.colorClassName) {
+      // If only className is provided, explicitly delete the color property to avoid default color
+      delete defaults.color;
+      defaults.colorClassName = firstColor.colorClassName;
+    } else {
+      // If ColorOption has neither hex nor class, clear both
+      delete defaults.color;
+      defaults.colorClassName = undefined;
+    }
+  }
+
+  return createContentBlock(definition.type, defaults) as CanvasContentBlock;
 }
 
 export function getColumnCountFromStructureId(id: StructureDropId): number {
@@ -784,6 +820,7 @@ export function handleSidebarDrop(
   sections: CanvasSection[],
   blockDefinitions: BlockDefinitionMap,
   pointerInfo?: { pointerY: number; overRect?: { top: number; height: number } | null },
+  textColors?: ColorOption[],
 ): CanvasSection[] | null {
   // Prevent drops back to sidebar - these should be handled as cancellations
   if (overId.startsWith('sidebar-drop-')) {
@@ -873,6 +910,10 @@ export function handleSidebarDrop(
       const rowId = overId.replace('row-', '');
       const pos = findRowPosition(sections, rowId);
       if (pos) {
+        // Check if target row is locked
+        if (isRowLocked(sections, rowId)) {
+          return null;
+        }
         if (pointerInfo?.overRect) {
           const insertAfter =
             pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
@@ -887,6 +928,10 @@ export function handleSidebarDrop(
       const columnId = overId.replace('column-', '');
       const pos = findColumnPosition(sections, columnId);
       if (pos) {
+        // Check if target column is locked (which cascades to row/section)
+        if (isColumnLocked(sections, columnId)) {
+          return null;
+        }
         return insertRowToSectionAt(sections, pos.sectionId, pos.rowIndex, columnCount);
       }
     }
@@ -895,6 +940,10 @@ export function handleSidebarDrop(
       const blockId = overId.replace('canvas-block-', '');
       const pos = findBlockPosition(sections, blockId);
       if (pos) {
+        // Check if target row is locked
+        if (isRowLocked(sections, pos.rowId)) {
+          return null;
+        }
         const rowPos = findRowPosition(sections, pos.rowId);
         if (rowPos) {
           return insertRowToSectionAt(sections, rowPos.sectionId, rowPos.rowIndex, columnCount);
@@ -943,7 +992,7 @@ export function handleSidebarDrop(
     if (isColumnLocked(sections, columnId)) {
       return null;
     }
-    const block = createBlockFromSidebar(activeId, blockDefinitions);
+    const block = createBlockFromSidebar(activeId, blockDefinitions, textColors);
     if (!block) {
       return null;
     }

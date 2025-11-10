@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, type CSSProperties, Fragment } from 'react';
 import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
 import { DotsSixVerticalIcon, Trash, Lock, LockOpen, Eye, EyeSlash } from '@phosphor-icons/react';
@@ -34,17 +36,49 @@ import {
   resolveMarginStyle,
 } from '../utils/padding';
 
+type ColorMode = 'hierarchy' | 'primary' | 'none' | 'output';
+
 export interface CanvasProps {
   sections: CanvasSection[];
   daisyui?: boolean;
+  colorMode?: ColorMode;
+  colorModeDepth?: number | null;
   unlockable?: boolean;
   showHidden?: boolean;
   customBlockRegistry?: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
 }
 
 // Helper component for element type tabs
-function ElementTab({ type, daisyui }: { type: 'Section' | 'Row' | 'Column'; daisyui?: boolean }) {
+function ElementTab({
+  type,
+  daisyui,
+  colorMode = 'hierarchy',
+}: {
+  type: 'Section' | 'Row' | 'Column';
+  daisyui?: boolean;
+  colorMode?: ColorMode;
+}) {
+  // Don't show tab when colorMode is 'none' or 'output'
+  if (colorMode === 'none' || colorMode === 'output') {
+    return null;
+  }
+
   const getTabColors = () => {
+    if (colorMode === 'primary') {
+      const palette = daisyui
+        ? {
+            Section: { bg: 'bg-primary/20', text: 'text-primary', border: 'border-primary/30' },
+            Row: { bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/20' },
+            Column: { bg: 'bg-primary/5', text: 'text-primary', border: 'border-primary/10' },
+          }
+        : {
+            Section: { bg: 'bg-blue-500/20', text: 'text-blue-700', border: 'border-blue-500/30' },
+            Row: { bg: 'bg-blue-500/10', text: 'text-blue-700', border: 'border-blue-500/20' },
+            Column: { bg: 'bg-blue-500/5', text: 'text-blue-700', border: 'border-blue-500/10' },
+          };
+      return palette[type];
+    }
+
     switch (type) {
       case 'Section':
         return {
@@ -121,9 +155,10 @@ function renderBlock(
   options: {
     daisyui?: boolean;
     customBlocks: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+    variables?: Record<string, unknown>;
   },
 ) {
-  const { daisyui, customBlocks } = options;
+  const { daisyui, customBlocks, variables } = options;
   switch (block.type) {
     case 'button':
       return <Button {...block.props} daisyui={daisyui} editorMode blockId={block.id} />;
@@ -140,7 +175,12 @@ function renderBlock(
       const definition = customBlocks[customProps.componentName];
       if (definition) {
         const Component = definition.component;
-        return <Component {...(customProps.props as Record<string, unknown>)} />;
+        // Merge variables into custom block props, with variables taking precedence
+        return (
+          <Component
+            {...{ ...(customProps.props as Record<string, unknown>), ...(variables ?? {}) }}
+          />
+        );
       }
       return (
         <div
@@ -163,11 +203,13 @@ function BlockDropZone({
   index,
   isDisabled,
   daisyui,
+  colorMode = 'hierarchy',
 }: {
   columnId: string;
   index: number;
   isDisabled: boolean;
   daisyui?: boolean;
+  colorMode?: ColorMode;
 }) {
   const { active } = useDndContext();
   const activeId = active ? String(active.id) : '';
@@ -184,8 +226,13 @@ function BlockDropZone({
       columnId,
       index,
     },
-    disabled: !isDraggingBlock || isDisabled,
+    disabled: !isDraggingBlock || isDisabled || colorMode === 'none' || colorMode === 'output',
   });
+
+  // Don't show dropzone when colorMode is 'none' or 'output'
+  if (colorMode === 'none' || colorMode === 'output') {
+    return null;
+  }
 
   return (
     <div
@@ -205,10 +252,19 @@ function BlockDropZone({
       >
         <div
           className={clsx('w-full h-1 rounded-full border border-dashed', {
-            'border-blue-500 bg-blue-500/80': isOver && !daisyui,
-            'border-primary bg-primary/80': isOver && daisyui,
-            'border-blue-300 bg-blue-200/60': !isOver && !daisyui,
-            'border-base-300 bg-base-200/70': !isOver && daisyui,
+            ...(colorMode === 'primary'
+              ? {
+                  'border-blue-500 bg-blue-500/80': isOver && !daisyui,
+                  'border-primary bg-primary/80': isOver && daisyui,
+                  'border-blue-400 bg-blue-200/50': !isOver && !daisyui,
+                  'border-primary/40 bg-primary/10': !isOver && daisyui,
+                }
+              : {
+                  'border-blue-500 bg-blue-500/80': isOver && !daisyui,
+                  'border-primary bg-primary/80': isOver && daisyui,
+                  'border-blue-300 bg-blue-200/60': !isOver && !daisyui,
+                  'border-base-300/50 bg-base-200/20': !isOver && daisyui,
+                }),
           })}
         />
       </div>
@@ -221,11 +277,13 @@ function RowDropZone({
   index,
   isDisabled,
   daisyui,
+  colorMode = 'hierarchy',
 }: {
   sectionId: string;
   index: number;
   isDisabled: boolean;
   daisyui?: boolean;
+  colorMode?: ColorMode;
 }) {
   const { active } = useDndContext();
   const activeId = active ? String(active.id) : '';
@@ -241,8 +299,13 @@ function RowDropZone({
       sectionId,
       index,
     },
-    disabled: !canAcceptDrop,
+    disabled: !canAcceptDrop || colorMode === 'none' || colorMode === 'output',
   });
+
+  // Don't show dropzone when colorMode is 'none' or 'output'
+  if (colorMode === 'none' || colorMode === 'output') {
+    return null;
+  }
 
   return (
     <div
@@ -262,10 +325,19 @@ function RowDropZone({
       >
         <div
           className={clsx('w-full h-1.5 rounded-full border border-dashed', {
-            'border-green-500 bg-green-500/80': isOver && !daisyui,
-            'border-secondary bg-secondary/80': isOver && daisyui,
-            'border-green-300 bg-green-200/60': !isOver && !daisyui,
-            'border-base-300 bg-base-200/70': !isOver && daisyui,
+            ...(colorMode === 'primary'
+              ? {
+                  'border-blue-500 bg-blue-500/80': isOver && !daisyui,
+                  'border-primary bg-primary/80': isOver && daisyui,
+                  'border-blue-400 bg-blue-200/50': !isOver && !daisyui,
+                  'border-primary/40 bg-primary/10': !isOver && daisyui,
+                }
+              : {
+                  'border-green-500 bg-green-500/80': isOver && !daisyui,
+                  'border-secondary bg-secondary/80': isOver && daisyui,
+                  'border-green-300 bg-green-200/60': !isOver && !daisyui,
+                  'border-base-300/50 bg-base-200/20': !isOver && daisyui,
+                }),
           })}
         />
       </div>
@@ -797,6 +869,7 @@ function CanvasBlockView({
   block,
   columnId,
   daisyui,
+  colorMode = 'hierarchy',
   isParentLocked = false,
   showHidden = false,
   customBlockRegistry,
@@ -805,12 +878,13 @@ function CanvasBlockView({
   block: CanvasContentBlock;
   columnId: string;
   daisyui?: boolean;
+  colorMode?: ColorMode;
   isParentLocked?: boolean;
   showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
   isCompactLayout?: boolean;
 }) {
-  const { selectBlock, selectedBlockId } = useCanvasStore();
+  const { selectBlock, selectedBlockId, variables } = useCanvasStore();
   const { document, setDocument } = useCanvasStore();
 
   // Block is disabled if it's locked, or if any parent container is locked
@@ -873,23 +947,40 @@ function CanvasBlockView({
       }}
       style={style}
       className={clsx(
-        'relative border rounded-lg shadow-sm transition',
-        isCompactLayout ? 'flex flex-col p-2 mb-2' : 'flex items-start gap-3 p-3 mb-3',
+        'relative transition',
+        colorMode !== 'none' && colorMode !== 'output' && 'border rounded-xl shadow-sm',
+        isCompactLayout && colorMode !== 'output'
+          ? 'flex flex-col p-2 mb-2'
+          : colorMode === 'output'
+            ? 'flex items-start'
+            : 'flex items-start gap-3 p-3 mb-3',
         {
-          'border-slate-300/20 bg-white/80': !daisyui,
-          'border-primary/10 bg-base-200/50': daisyui,
-          'shadow-xl border-base-200/30': isDragging && !daisyui,
-          'shadow-xl border-primary/30': isDragging && daisyui,
-          'outline outline-base-200/60 outline-offset-2': isSelected && !daisyui,
-          'outline outline-primary/60 outline-offset-2': isSelected && daisyui,
+          'border-slate-300/20 bg-white/80':
+            !daisyui && colorMode !== 'none' && colorMode !== 'output',
+          'border-base-300/50 bg-base-200/20':
+            daisyui && colorMode !== 'none' && colorMode !== 'output',
+          'shadow-xl border-base-200/30':
+            isDragging && !daisyui && colorMode !== 'none' && colorMode !== 'output',
+          'shadow-xl border-primary/30':
+            isDragging && daisyui && colorMode !== 'none' && colorMode !== 'output',
+          'outline outline-base-200/60 outline-offset-2':
+            isSelected && !daisyui && colorMode !== 'none' && colorMode !== 'output',
+          'outline outline-primary/60 outline-offset-2':
+            isSelected && daisyui && colorMode !== 'none' && colorMode !== 'output',
           'opacity-70': isDisabled,
-          'ring-2 ring-blue-400/80': isBlockOver && !daisyui && !isDisabled,
-          'ring-2 ring-primary/70': isBlockOver && daisyui && !isDisabled,
+          'ring-2 ring-blue-400/80':
+            isBlockOver &&
+            !daisyui &&
+            !isDisabled &&
+            colorMode !== 'none' &&
+            colorMode !== 'output',
+          'ring-2 ring-primary/70':
+            isBlockOver && daisyui && !isDisabled && colorMode !== 'none' && colorMode !== 'output',
         },
       )}
       onClick={handleBlockClick}
     >
-      {isCompactLayout ? (
+      {colorMode !== 'output' && isCompactLayout ? (
         // Compact layout: controls on top
         <div className="flex justify-between items-center gap-1 mb-2">
           <div className="flex gap-1">
@@ -937,7 +1028,7 @@ function CanvasBlockView({
             </button>
           )}
         </div>
-      ) : (
+      ) : colorMode !== 'output' ? (
         // Regular layout: controls on the side
         <div className="flex gap-1">
           {showHidden && (
@@ -983,9 +1074,21 @@ function CanvasBlockView({
             </button>
           )}
         </div>
-      )}
-      <div className={isCompactLayout ? 'w-full' : 'flex-1'}>
-        {renderBlock(block, { daisyui, customBlocks: customBlockRegistry })}
+      ) : null}
+      <div
+        className={
+          isCompactLayout && colorMode !== 'output'
+            ? 'w-full'
+            : colorMode === 'output'
+              ? 'w-full'
+              : 'flex-1'
+        }
+      >
+        {renderBlock(block, {
+          daisyui,
+          customBlocks: customBlockRegistry,
+          variables,
+        })}
       </div>
     </div>
   );
@@ -996,6 +1099,8 @@ function CanvasColumnView({
   rowId,
   sectionId,
   daisyui,
+  colorMode = 'hierarchy',
+  colorModeDepth,
   row,
   section,
   unlockable = true,
@@ -1006,6 +1111,8 @@ function CanvasColumnView({
   rowId: string;
   sectionId: string;
   daisyui?: boolean;
+  colorMode?: ColorMode;
+  colorModeDepth?: number | null;
   row: CanvasRow;
   section: CanvasSection;
   unlockable?: boolean;
@@ -1016,6 +1123,12 @@ function CanvasColumnView({
   const isCompactLayout = row.columns.length >= 3;
   // Column is disabled if it's locked, or if its parent row or section is locked
   const isDisabled = !!(column.locked || row.locked || section.locked);
+
+  // Determine if column level highlighting should be shown
+  const showColumnHighlight =
+    colorMode !== 'none' &&
+    colorMode !== 'output' &&
+    (colorModeDepth == null || colorModeDepth >= 3);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-column-${column.id}`,
@@ -1078,31 +1191,73 @@ function CanvasColumnView({
   const { selectContainer } = useCanvasStore();
 
   const onContainerClick = (e: React.MouseEvent) => {
+    // Don't handle clicks during drag operations
+    if ((e.nativeEvent as MouseEvent).buttons !== 0) {
+      return;
+    }
     e.stopPropagation();
     selectContainer({ kind: 'column', id: column.id });
   };
+
+  const columnBaseClasses = !showColumnHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'border-primary/20 bg-primary/5'
+        : 'border-blue-500/20 bg-blue-500/5'
+      : daisyui
+        ? 'border-accent/50 bg-accent/10'
+        : 'border-purple-300/30 bg-purple-50/40';
+
+  const columnDraggingClasses = !showColumnHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'bg-primary/10 shadow-lg'
+        : 'bg-blue-500/20 shadow-lg'
+      : daisyui
+        ? 'bg-base-300/60 shadow-lg'
+        : 'bg-purple-200/60 shadow-lg';
+
+  const columnInnerBaseClasses = !showColumnHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'border-primary/20 bg-base-200/20'
+        : 'border-blue-400/20 bg-blue-500/5'
+      : daisyui
+        ? 'border-base-300/20 bg-base-200/20'
+        : 'border-slate-300/20 bg-white';
+
+  const columnInnerOverClasses = !showColumnHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'border-primary/40 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]'
+        : 'border-blue-500/40 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]'
+      : 'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]';
 
   return (
     <div
       ref={setNodeRef}
       style={sortableStyle}
       className={clsx(
-        'relative flex flex-col gap-1 p-1 rounded-[0.85rem] border border-dashed transition cursor-pointer',
+        'relative flex flex-col gap-1 transition',
+        colorMode !== 'output' && 'rounded-[0.85rem] cursor-pointer',
+        showColumnHighlight && 'p-1 border border-dashed',
+        columnBaseClasses,
         {
-          'border-purple-300/30 bg-purple-50/40': !daisyui,
-          'border-accent/50 bg-accent/10': daisyui,
-          'bg-purple-200/60 shadow-lg': isDragging && !daisyui,
-          'bg-base-300/60 shadow-lg': isDragging && daisyui,
+          [columnDraggingClasses]: isDragging && showColumnHighlight,
           'opacity-70': isDisabled,
           '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
-            isOver && isDisabled,
+            isOver && isDisabled && showColumnHighlight,
         },
       )}
       onClick={onContainerClick}
     >
-      <ElementTab type="Column" daisyui={daisyui} />
+      <ElementTab type="Column" daisyui={daisyui} colorMode={colorMode} />
 
-      {isCompactLayout ? (
+      {colorMode !== 'output' && isCompactLayout ? (
         // Compact layout: controls on top in a horizontal row
         <div className="flex justify-end items-center gap-1 mb-1">
           <div className="flex gap-1">
@@ -1155,9 +1310,9 @@ function CanvasColumnView({
             </div>
           )}
         </div>
-      ) : (
+      ) : colorMode !== 'output' ? (
         // Regular layout: controls on the right side
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 shrink-0 mb-1" style={{ pointerEvents: 'auto' }}>
           {showHidden && (
             <ColumnHiddenButton
               columnId={column.id}
@@ -1167,7 +1322,7 @@ function CanvasColumnView({
             />
           )}
           {!showHidden && (
-            <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
+            <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400 pointer-events-none">
               <Eye size={16} weight="bold" />
             </div>
           )}
@@ -1206,7 +1361,7 @@ function CanvasColumnView({
             </>
           )}
         </div>
-      )}
+      ) : null}
       <SortableContext
         id={`column-${column.id}`}
         items={sortableItems}
@@ -1215,14 +1370,17 @@ function CanvasColumnView({
         <div
           ref={setDroppableNodeRef}
           className={clsx(
-            'min-h-[140px] rounded-lg border border-dashed transition flex flex-col items-stretch',
-            { 'p-4': !hasCustomPadding },
+            'min-h-[140px] w-full transition flex flex-col items-stretch',
+            colorMode !== 'output' && 'rounded-xl',
+            showColumnHighlight && 'border border-dashed',
+            { 'p-4': !hasCustomPadding && colorMode !== 'output' },
+            columnInnerBaseClasses,
             {
-              'border-slate-300/20 bg-white': !daisyui,
-              'border-base-300/20 bg-base-100': daisyui,
-              'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver && !isDisabled,
+              [columnInnerOverClasses]: isOver && !isDisabled && showColumnHighlight,
+              '!border-error/80 !bg-error/10 shadow-[0_0_0_3px_rgba(220,38,38,0.15)]':
+                isOver && isDisabled && showColumnHighlight && daisyui,
               '!border-red-600/80 !bg-red-100/30 shadow-[0_0_0_3px_rgba(220,38,38,0.15)]':
-                isOver && isDisabled,
+                isOver && isDisabled && showColumnHighlight && !daisyui,
             },
             column.backgroundClassName,
             column.className,
@@ -1230,20 +1388,38 @@ function CanvasColumnView({
             columnMarginClasses,
             columnAlignmentClass,
           )}
-          style={columnInlineStyle}
+          style={{ ...columnInlineStyle, pointerEvents: 'auto', width: '100%' }}
+          onClick={(e) => {
+            // Prevent column container click from firing when clicking droppable area
+            e.stopPropagation();
+          }}
         >
-          {column.blocks.length === 0 && (
+          {column.blocks.length === 0 && colorMode !== 'output' && (
             <div
-              className={clsx('flex items-center justify-center min-h-[88px] text-sm', {
-                'text-slate-400': !daisyui,
-                'text-base-content/60': daisyui,
-              })}
+              className={clsx(
+                'flex items-center justify-center min-h-[88px] text-sm rounded-xl',
+                colorMode === 'primary'
+                  ? daisyui
+                    ? 'text-primary/70 bg-base-200/20 border border-dashed border-primary/30'
+                    : 'text-blue-600'
+                  : !daisyui
+                    ? 'text-slate-400'
+                    : 'text-base-content/60 bg-base-200/20 border border-dashed border-base-300/50',
+              )}
             >
               Drop content blocks here
             </div>
           )}
 
-          <BlockDropZone columnId={column.id} index={0} isDisabled={isDisabled} daisyui={daisyui} />
+          {showColumnHighlight && (
+            <BlockDropZone
+              columnId={column.id}
+              index={0}
+              isDisabled={isDisabled}
+              daisyui={daisyui}
+              colorMode={colorMode}
+            />
+          )}
 
           {visibleBlocks.map(({ block, index }) => (
             <Fragment key={block.id}>
@@ -1251,26 +1427,31 @@ function CanvasColumnView({
                 block={block}
                 columnId={column.id}
                 daisyui={daisyui}
+                colorMode={colorMode}
                 isParentLocked={isDisabled}
                 showHidden={showHidden}
                 customBlockRegistry={customBlockRegistry}
                 isCompactLayout={isCompactLayout}
               />
-              <BlockDropZone
-                columnId={column.id}
-                index={index + 1}
-                isDisabled={isDisabled}
-                daisyui={daisyui}
-              />
+              {showColumnHighlight && (
+                <BlockDropZone
+                  columnId={column.id}
+                  index={index + 1}
+                  isDisabled={isDisabled}
+                  daisyui={daisyui}
+                  colorMode={colorMode}
+                />
+              )}
             </Fragment>
           ))}
 
-          {shouldRenderTerminalDropZone && (
+          {shouldRenderTerminalDropZone && showColumnHighlight && (
             <BlockDropZone
               columnId={column.id}
               index={column.blocks.length}
               isDisabled={isDisabled}
               daisyui={daisyui}
+              colorMode={colorMode}
             />
           )}
         </div>
@@ -1283,6 +1464,8 @@ function CanvasRowView({
   row,
   sectionId,
   daisyui,
+  colorMode = 'hierarchy',
+  colorModeDepth,
   section,
   unlockable = true,
   showHidden = false,
@@ -1291,6 +1474,8 @@ function CanvasRowView({
   row: CanvasRow;
   sectionId: string;
   daisyui?: boolean;
+  colorMode?: ColorMode;
+  colorModeDepth?: number | null;
   section: CanvasSection;
   unlockable?: boolean;
   showHidden?: boolean;
@@ -1300,6 +1485,12 @@ function CanvasRowView({
 
   // Row is disabled if it's locked, or if its parent section is locked
   const isDisabled = !!(row.locked || section.locked);
+
+  // Determine if row level highlighting should be shown
+  const showRowHighlight =
+    colorMode !== 'none' &&
+    colorMode !== 'output' &&
+    (colorModeDepth == null || colorModeDepth >= 2);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `canvas-row-${row.id}`,
@@ -1356,62 +1547,92 @@ function CanvasRowView({
     selectContainer({ kind: 'row', id: row.id });
   };
 
+  const rowBaseClasses = !showRowHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'border-primary/30 bg-primary/10'
+        : 'border-blue-500/30 bg-blue-500/10'
+      : daisyui
+        ? 'border-secondary/30 bg-secondary/10'
+        : 'border-green-300/30 bg-green-50/40';
+
+  const rowDraggingClasses = !showRowHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'bg-primary/20 shadow-lg'
+        : 'bg-blue-500/20 shadow-lg'
+      : daisyui
+        ? 'bg-base-200/60 shadow-lg'
+        : 'bg-green-100/60 shadow-lg';
+
+  const rowOverAvailableClasses = !showRowHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'border-primary/50 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]'
+        : 'border-blue-500/50 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]'
+      : 'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]';
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={clsx(
-        'relative flex flex-col gap-1 p-1 rounded-[0.85rem] border border-dashed transition',
+        'relative flex flex-col gap-1 transition',
+        colorMode !== 'output' && 'rounded-[0.85rem]',
+        showRowHighlight && 'p-1 border border-dashed',
+        rowBaseClasses,
         {
-          'border-green-300/30 bg-green-50/40': !daisyui,
-          'border-secondary/30 bg-secondary/10': daisyui,
-          'bg-green-100/60 shadow-lg': isDragging && !daisyui,
-          'bg-base-200/60 shadow-lg': isDragging && daisyui,
-          'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]': isOver && !isDisabled,
+          [rowDraggingClasses]: isDragging && showRowHighlight,
+          [rowOverAvailableClasses]: isOver && !isDisabled && showRowHighlight,
           'opacity-70': isDisabled,
           '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
-            isOver && isDisabled,
+            isOver && isDisabled && showRowHighlight,
         },
       )}
     >
-      <ElementTab type="Row" daisyui={daisyui} />
-      <div className="flex justify-end gap-2">
-        {showHidden && <RowHiddenButton rowId={row.id} hidden={!!row.hidden} daisyui={daisyui} />}
-        {!showHidden && (
-          <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
-            <Eye size={16} weight="bold" />
-          </div>
-        )}
-        <RowLockButton
-          rowId={row.id}
-          locked={!!row.locked}
-          daisyui={daisyui}
-          unlockable={unlockable}
-        />
-        {!isDisabled && (
-          <>
-            <button
-              type="button"
-              className={clsx(
-                'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-                {
-                  'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-                    !daisyui,
-                  'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-                    daisyui,
-                },
-              )}
-              aria-label="Drag row"
-              onMouseDown={() => console.log('🟫 Row drag handle clicked:', row.id)}
-              {...attributes}
-              {...listeners}
-            >
-              <DotsSixVerticalIcon size={16} weight="bold" />
-            </button>
-            <RowDeleteButton rowId={row.id} daisyui={daisyui} />
-          </>
-        )}
-      </div>
+      <ElementTab type="Row" daisyui={daisyui} colorMode={colorMode} />
+      {colorMode !== 'output' && (
+        <div className="flex justify-end gap-2">
+          {showHidden && <RowHiddenButton rowId={row.id} hidden={!!row.hidden} daisyui={daisyui} />}
+          {!showHidden && (
+            <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
+              <Eye size={16} weight="bold" />
+            </div>
+          )}
+          <RowLockButton
+            rowId={row.id}
+            locked={!!row.locked}
+            daisyui={daisyui}
+            unlockable={unlockable}
+          />
+          {!isDisabled && (
+            <>
+              <button
+                type="button"
+                className={clsx(
+                  'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+                  {
+                    'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                      !daisyui,
+                    'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                      daisyui,
+                  },
+                )}
+                aria-label="Drag row"
+                onMouseDown={() => console.log('🟫 Row drag handle clicked:', row.id)}
+                {...attributes}
+                {...listeners}
+              >
+                <DotsSixVerticalIcon size={16} weight="bold" />
+              </button>
+              <RowDeleteButton rowId={row.id} daisyui={daisyui} />
+            </>
+          )}
+        </div>
+      )}
       <SortableContext
         id={`row-${row.id}`}
         items={sortableColumnItems}
@@ -1430,14 +1651,17 @@ function CanvasRowView({
           style={gridStyle}
           onClick={onContainerClick}
         >
-          {row.columns.length === 0 ? (
+          {row.columns.length === 0 && colorMode !== 'output' ? (
             <div
               className={clsx(
-                'flex items-center justify-center min-h-[88px] rounded-lg border border-dashed text-sm',
-                {
-                  'border-slate-300/30 text-slate-400 bg-slate-50/50': !daisyui,
-                  'border-base-300/30 text-base-content/60 bg-base-200/50': daisyui,
-                },
+                'flex items-center justify-center min-h-[88px] rounded-xl border border-dashed text-sm',
+                colorMode === 'primary'
+                  ? daisyui
+                    ? 'border-primary/30 text-primary/70 bg-base-200/20'
+                    : 'border-blue-500/30 text-blue-600 bg-blue-500/10'
+                  : !daisyui
+                    ? 'border-slate-300/30 text-slate-400 bg-slate-50/50'
+                    : 'border-base-300/50 text-base-content/60 bg-base-200/20',
               )}
             >
               Drop columns here
@@ -1452,6 +1676,8 @@ function CanvasRowView({
                   rowId={row.id}
                   sectionId={sectionId}
                   daisyui={daisyui}
+                  colorMode={colorMode}
+                  colorModeDepth={colorModeDepth}
                   row={row}
                   section={section}
                   unlockable={unlockable}
@@ -1469,12 +1695,16 @@ function CanvasRowView({
 function CanvasSectionView({
   section,
   daisyui,
+  colorMode = 'hierarchy',
+  colorModeDepth,
   unlockable = true,
   showHidden = false,
   customBlockRegistry,
 }: {
   section: CanvasSection;
   daisyui?: boolean;
+  colorMode?: ColorMode;
+  colorModeDepth?: number | null;
   unlockable?: boolean;
   showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
@@ -1541,72 +1771,110 @@ function CanvasSectionView({
     ...(sectionAlignmentStyle ?? {}),
   };
 
+  // Determine if section level highlighting should be shown
+  const showSectionHighlight =
+    colorMode !== 'none' &&
+    colorMode !== 'output' &&
+    (colorModeDepth == null || colorModeDepth >= 1);
+
+  const sectionBaseClasses = !showSectionHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'border-primary/40 bg-base-200/20'
+        : 'border-blue-500/40 bg-blue-500/20'
+      : daisyui
+        ? 'border-base-300/50 bg-base-200/20'
+        : 'border-blue-300/30 bg-white';
+
+  const sectionOverAvailableClasses = !showSectionHighlight
+    ? ''
+    : colorMode === 'primary'
+      ? daisyui
+        ? 'border-primary/60 shadow-[0_0_0_3px_rgba(59,130,246,0.25)]'
+        : 'border-blue-500/60 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]'
+      : 'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]';
+
   return (
     <div
       ref={setDraggableNodeRef}
       style={style}
       className={clsx('relative flex flex-col gap-3 mb-4 w-full max-w-full transition', {
-        'shadow-2xl': isDragging,
-        'bg-base-200 bg-opacity-50': daisyui,
-        'opacity-70': section.locked || isDragging,
+        'shadow-2xl': isDragging && showSectionHighlight,
+        'bg-base-100': daisyui && !showSectionHighlight,
+        'opacity-70': section.locked || (isDragging && showSectionHighlight),
       })}
       onMouseDown={() =>
-        !section.locked && console.log('🟦 Section drag handle clicked:', section.id)
+        !section.locked &&
+        colorMode !== 'output' &&
+        console.log('🟦 Section drag handle clicked:', section.id)
       }
     >
-      <ElementTab type="Section" daisyui={daisyui} />
-      <div className="flex justify-end gap-2">
-        {showHidden && (
-          <SectionHiddenButton sectionId={section.id} hidden={!!section.hidden} daisyui={daisyui} />
-        )}
-        {!showHidden && (
-          <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
-            <Eye size={16} weight="bold" />
-          </div>
-        )}
-        <SectionLockButton
-          sectionId={section.id}
-          locked={!!section.locked}
-          daisyui={daisyui}
-          unlockable={unlockable}
-        />
-        {!section.locked && (
-          <>
-            <button
-              type="button"
-              className={clsx(
-                'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
-                {
-                  'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
-                    !daisyui,
-                  'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
-                    daisyui,
-                },
-              )}
-              aria-label="Drag section"
-              {...attributes}
-              {...listeners}
-            >
-              <DotsSixVerticalIcon size={16} weight="bold" />
-            </button>
-            <SectionDeleteButton sectionId={section.id} daisyui={daisyui} />
-          </>
-        )}
-      </div>
+      <ElementTab type="Section" daisyui={daisyui} colorMode={colorMode} />
+      {colorMode !== 'output' && (
+        <div className="flex justify-end gap-2">
+          {showHidden && (
+            <SectionHiddenButton
+              sectionId={section.id}
+              hidden={!!section.hidden}
+              daisyui={daisyui}
+            />
+          )}
+          {!showHidden && (
+            <div className="w-6 h-6 mt-0.5 flex items-center justify-center text-xs text-gray-400">
+              <Eye size={16} weight="bold" />
+            </div>
+          )}
+          <SectionLockButton
+            sectionId={section.id}
+            locked={!!section.locked}
+            daisyui={daisyui}
+            unlockable={unlockable}
+          />
+          {!section.locked && (
+            <>
+              <button
+                type="button"
+                className={clsx(
+                  'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+                  {
+                    'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
+                      !daisyui,
+                    'bg-base-200 text-base-content/60 hover:bg-base-200/90 hover:text-base-content active:cursor-grabbing focus-visible:outline focus-visible:outline-primary/55':
+                      daisyui,
+                  },
+                )}
+                aria-label="Drag section"
+                {...attributes}
+                {...listeners}
+              >
+                <DotsSixVerticalIcon size={16} weight="bold" />
+              </button>
+              <SectionDeleteButton sectionId={section.id} daisyui={daisyui} />
+            </>
+          )}
+        </div>
+      )}
       <section
         ref={setDroppableNodeRef}
         className={clsx(
-          'flex flex-col gap-2 rounded-[0.9rem] border transition w-full max-w-full box-border',
-          // Only apply default padding class when no explicit padding is provided
-          { 'p-2': !hasSectionPadding },
-          // Border is always themed, but background classes should not conflict with JSON background
+          'flex flex-col gap-2 transition w-full max-w-full box-border',
+          colorMode !== 'output' && 'rounded-[0.9rem]',
+          showSectionHighlight && 'border',
+          // Only apply default padding class when no explicit padding is provided and not in output mode
+          { 'p-2': !hasSectionPadding && colorMode !== 'output' },
+          // Add minimal border and padding for output mode, and bg-base-200/20 for daisyui
+          colorMode === 'output' &&
+            (daisyui ? 'border border-base-300/50' : 'border border-gray-300'),
+          colorMode === 'output' && 'p-2',
+          colorMode === 'output' && daisyui && 'bg-base-200/20',
+          sectionBaseClasses,
           {
-            'border-blue-300/30 bg-white': !daisyui,
-            'border-primary/30 bg-base-100': daisyui,
-            'border-green-500/60 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]':
-              isOver && !section.locked,
+            [sectionOverAvailableClasses]: isOver && !section.locked && showSectionHighlight,
+            '!border-error/80 !bg-error/10 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
+              isOver && section.locked && showSectionHighlight && daisyui,
             '!border-red-600 !bg-red-100/40 shadow-[0_0_0_3px_rgba(220,38,38,0.2)]':
-              isOver && section.locked,
+              isOver && section.locked && showSectionHighlight && !daisyui,
           },
           section.backgroundClassName,
           section.className,
@@ -1625,21 +1893,27 @@ function CanvasSectionView({
           items={sortableRowItems}
           strategy={verticalListSortingStrategy}
         >
-          <RowDropZone
-            sectionId={section.id}
-            index={0}
-            isDisabled={!!section.locked}
-            daisyui={daisyui}
-          />
+          {showSectionHighlight && (
+            <RowDropZone
+              sectionId={section.id}
+              index={0}
+              isDisabled={!!section.locked}
+              daisyui={daisyui}
+              colorMode={colorMode}
+            />
+          )}
 
-          {section.rows.length === 0 ? (
+          {section.rows.length === 0 && colorMode !== 'output' ? (
             <div
               className={clsx(
-                'flex items-center justify-center min-h-40 rounded-lg text-sm border border-dashed text-[0.85rem]',
-                {
-                  'border-slate-300/40 bg-slate-100/40 text-slate-500': !daisyui,
-                  'border-base-300/40 bg-base-200/40 text-base-content/70': daisyui,
-                },
+                'flex items-center justify-center min-h-40 rounded-xl text-sm border border-dashed text-[0.85rem]',
+                colorMode === 'primary'
+                  ? daisyui
+                    ? 'border-primary/30 bg-base-200/20 text-primary/70'
+                    : 'border-blue-500/30 bg-blue-500/10 text-blue-600'
+                  : !daisyui
+                    ? 'border-slate-300/40 bg-slate-100/40 text-slate-500'
+                    : 'border-base-300/50 bg-base-200/20 text-base-content/70',
               )}
             >
               Drop rows or column layouts here
@@ -1651,27 +1925,33 @@ function CanvasSectionView({
                   row={row}
                   sectionId={section.id}
                   daisyui={daisyui}
+                  colorMode={colorMode}
+                  colorModeDepth={colorModeDepth}
                   section={section}
                   unlockable={unlockable}
                   showHidden={showHidden}
                   customBlockRegistry={customBlockRegistry}
                 />
-                <RowDropZone
-                  sectionId={section.id}
-                  index={index + 1}
-                  isDisabled={!!section.locked}
-                  daisyui={daisyui}
-                />
+                {showSectionHighlight && (
+                  <RowDropZone
+                    sectionId={section.id}
+                    index={index + 1}
+                    isDisabled={!!section.locked}
+                    daisyui={daisyui}
+                    colorMode={colorMode}
+                  />
+                )}
               </Fragment>
             ))
           )}
 
-          {shouldRenderTerminalRowDropZone && (
+          {shouldRenderTerminalRowDropZone && showSectionHighlight && (
             <RowDropZone
               sectionId={section.id}
               index={section.rows.length}
               isDisabled={!!section.locked}
               daisyui={daisyui}
+              colorMode={colorMode}
             />
           )}
         </SortableContext>
@@ -1683,6 +1963,8 @@ function CanvasSectionView({
 export function Canvas({
   sections,
   daisyui = false,
+  colorMode = 'hierarchy',
+  colorModeDepth = null,
   unlockable = true,
   showHidden = false,
   customBlockRegistry = {},
@@ -1751,21 +2033,19 @@ export function Canvas({
       ref={setNodeRef}
       style={canvasStyles}
       className={clsx('w-full transition flex flex-col gap-2 rounded-xl', {
-        // 'bg-slate-50': !daisyui,
-        // 'bg-base-200': daisyui,
-        'border-dashed border-2': isOver,
-        // '': !isOver && !daisyui,
-        'bg-base-200 bg-opacity-50': !isOver && daisyui,
+        'border-dashed border-2 border-primary/30 bg-primary/5': isOver && daisyui,
+        'border-dashed border-2': isOver && !daisyui,
+        'bg-base-100': !isOver && daisyui,
       })}
       onClick={handleCanvasClick}
     >
       {sections.length === 0 ? (
         <div
           className={clsx(
-            'flex items-center justify-center min-h-[220px] rounded-lg border-2 border-dashed text-sm',
+            'flex items-center justify-center min-h-[220px] rounded-xl border-2 border-dashed text-sm',
             {
               'border-slate-300/40 text-slate-500 bg-slate-100/60': !daisyui,
-              'border-base-300/40 text-base-content/70 bg-base-100/60': daisyui,
+              'border-base-300/50 text-base-content/70 bg-base-200/20': daisyui,
             },
           )}
         >
@@ -1779,6 +2059,8 @@ export function Canvas({
               key={section.id}
               section={section}
               daisyui={daisyui}
+              colorMode={colorMode}
+              colorModeDepth={colorModeDepth}
               unlockable={unlockable}
               showHidden={showHidden}
               customBlockRegistry={customBlockRegistry}

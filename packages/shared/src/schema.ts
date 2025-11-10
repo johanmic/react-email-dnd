@@ -242,7 +242,7 @@ export type DocumentMeta = z.infer<typeof documentMetaSchema>
 export const canvasDocumentSchema = z.object({
   version: z.number(),
   meta: documentMetaSchema,
-  variables: z.record(z.string(), z.string()).optional(),
+  variables: z.record(z.string(), z.unknown()).optional(),
   theme: z
     .object({
       fonts: z.array(fontDefinitionSchema).optional(),
@@ -315,6 +315,48 @@ export interface CustomBlockPropEditorProps<
   bgColors?: ColorOption[]
   disabled?: boolean
   paddingOptions?: PaddingOptionEntry[]
+}
+
+/**
+ * Helper function to create a CustomBlockDefinition with inferred props type from the component.
+ * This eliminates the need to explicitly pass the generic type parameter.
+ *
+ * @example
+ * ```ts
+ * export const footerBlockDefinition = createCustomBlockDefinition({
+ *   id: "footer",
+ *   label: "Footer",
+ *   icon: PlaceholderIcon,
+ *   defaults: {
+ *     componentName: "Footer",
+ *     props: { locale: "en" },
+ *   },
+ *   component: Footer, // TypeScript infers FooterProps from Footer component
+ * })
+ * ```
+ */
+export function createCustomBlockDefinition<
+  Component extends ComponentType<any>,
+  ComponentProps extends Record<
+    string,
+    unknown
+  > = Component extends ComponentType<infer P>
+    ? P extends Record<string, unknown>
+      ? P
+      : Record<string, unknown>
+    : Record<string, unknown>,
+>(
+  definition: Omit<
+    CustomBlockDefinition<ComponentProps>,
+    "type" | "component"
+  > & {
+    component: Component
+  }
+): CustomBlockDefinition<ComponentProps> {
+  return {
+    ...definition,
+    type: "custom",
+  }
 }
 
 export type CustomBlockPropEditor<

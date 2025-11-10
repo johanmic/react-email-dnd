@@ -8,6 +8,7 @@ import {
   resolvePaddingStyle,
 } from "../utils/spacing"
 import type { RenderContext, RendererOptions } from "../types"
+import { DAISYUI_COLOR_KEYS } from "../utils/daisyui"
 import * as ReactEmail from "@react-email/components"
 const {
   Html,
@@ -82,11 +83,36 @@ export function renderReact(
   baseStyles?: string
 ): ReactElement {
   const previewText = document.meta.description ?? document.meta.title
-  const tailwindConfig =
+
+  // For DaisyUI, map color keys to their actual hex values so Tailwind can inline them
+  // Email clients don't support CSS variables, so we must use direct color values
+  const daisyUIColorMap =
     options.daisyui && options.theme
+      ? Object.keys(options.theme).reduce(
+          (acc, key) => {
+            // Skip non-color keys and keys that already start with --
+            if (key.startsWith("--") || key === "color-scheme") {
+              return acc
+            }
+            // Map known DaisyUI color keys to their actual hex values from the theme
+            // This allows Tailwind to inline the colors for email client compatibility
+            if (DAISYUI_COLOR_KEYS.has(key) && options.theme) {
+              const colorValue = options.theme[key]
+              if (colorValue && typeof colorValue === "string") {
+                acc[key] = colorValue
+              }
+            }
+            return acc
+          },
+          {} as Record<string, string>
+        )
+      : undefined
+
+  const tailwindConfig =
+    options.daisyui && daisyUIColorMap
       ? {
           presets: [pixelBasedPreset],
-          theme: { extend: { colors: options.theme } },
+          theme: { extend: { colors: daisyUIColorMap } },
         }
       : { presets: [pixelBasedPreset] }
 
@@ -117,8 +143,29 @@ export function renderReact(
         {previewText ? (
           <Preview>{substitute(previewText, context)}</Preview>
         ) : null}
-        <Body style={{ margin: 0, padding: 0 }}>
-          <Container style={{ padding: 0, margin: "0 auto" }}>
+        <Body
+          style={{
+            margin: 0,
+            padding: 0,
+            ...(options.daisyui && options.theme?.["base-100"]
+              ? {
+                  backgroundColor: options.theme["base-100"],
+                  color: options.theme["base-content"] || "#000000",
+                  fontFamily:
+                    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                }
+              : {}),
+          }}
+          className={
+            options.daisyui
+              ? "bg-base-100 font-sans text-base-content"
+              : undefined
+          }
+        >
+          <Container
+            style={{ padding: 0, margin: "0 auto" }}
+            className={options.daisyui ? "max-w-xl mx-auto p-4" : undefined}
+          >
             {document.sections
               .filter((section) => !section.hidden)
               .map((section) => {
@@ -135,7 +182,13 @@ export function renderReact(
                   section.className,
                   sectionPaddingClasses,
                   sectionMarginClasses,
-                  alignmentClassName(section.align)
+                  alignmentClassName(section.align),
+                  // Add minimal border and padding, and bg-base-200 for daisyui
+                  options.daisyui
+                    ? "border border-primary/5"
+                    : "border border-gray-300",
+                  "p-2",
+                  options.daisyui ? "bg-base-200" : undefined
                 )
                 const sectionStyle: Record<string, unknown> = {}
                 if (section.backgroundColor)
@@ -413,11 +466,15 @@ export function renderReact(
                                               maxWidth: "100%",
                                             }
 
+                                            // When daisyui is enabled and no colorClassName is set, use text-base-content class instead of inline color
+                                            // When daisyui is disabled and no colorClassName is set, use default gray color
+                                            const defaultColor =
+                                              options.daisyui && !block.props.colorClassName
+                                                ? undefined
+                                                : "#1f2937"
                                             const inlineColor =
                                               block.props.color ??
-                                              (block.props.colorClassName
-                                                ? undefined
-                                                : "#1f2937")
+                                              (block.props.colorClassName ? undefined : defaultColor)
                                             if (inlineColor) {
                                               style.color = inlineColor
                                             }

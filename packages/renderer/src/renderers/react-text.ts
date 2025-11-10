@@ -1,6 +1,7 @@
 import type { CanvasDocument } from "@react-email-dnd/shared"
 import { deepSubstitute, substitute } from "../utils"
 import type { RenderContext, RendererOptions } from "../types"
+import { DAISYUI_COLOR_KEYS } from "../utils/daisyui"
 
 type Line = { depth: number; content: string }
 
@@ -103,12 +104,33 @@ export function renderReactText(
   pushLine(lines, 0, `export function ${componentName}() {`)
   pushLine(lines, 1, "return (")
   pushLine(lines, 2, "<Html>")
-  const tailwindConfigAttr =
-    options.daisyui && options.theme
-      ? ` config={{presets:[pixelBasedPreset], theme: { extend: { colors: ${JSON.stringify(
-          options.theme
-        )} } } }}`
-      : " config={{presets:[pixelBasedPreset]}}"
+  
+  // Build Tailwind config with DaisyUI color mapping
+  // Email clients don't support CSS variables, so we use direct hex values
+  let tailwindConfigAttr = " config={{presets:[pixelBasedPreset]}}"
+  if (options.daisyui && options.theme) {
+    const theme = options.theme
+    // Map DaisyUI color keys to their actual hex values for Tailwind
+    const daisyUIColorMap: Record<string, string> = {}
+    Object.keys(theme).forEach((key) => {
+      // Skip non-color keys and keys that already start with --
+      if (!key.startsWith("--") && key !== "color-scheme") {
+        // Map known DaisyUI color keys to their actual hex values
+        if (DAISYUI_COLOR_KEYS.has(key)) {
+          const colorValue = theme[key]
+          if (colorValue && typeof colorValue === "string") {
+            daisyUIColorMap[key] = colorValue
+          }
+        }
+      }
+    })
+    
+    if (Object.keys(daisyUIColorMap).length > 0) {
+      tailwindConfigAttr = ` config={{presets:[pixelBasedPreset], theme: { extend: { colors: ${JSON.stringify(
+        daisyUIColorMap
+      )} } } }}`
+    }
+  }
 
   pushLine(lines, 3, `<Tailwind${tailwindConfigAttr}>`)
   pushLine(lines, 4, "<Head>")
@@ -129,8 +151,24 @@ export function renderReactText(
       `<Preview>${escapeForText(substitute(previewText, context))}</Preview>`
     )
   }
-  pushLine(lines, 4, "<Body>")
-  pushLine(lines, 5, "<Container>")
+  
+  // Add bg-base-100 class to Body when daisyui is enabled
+  const bodyClassAttr = options.daisyui
+    ? buildClassAttr("bg-base-100", "font-sans", "text-base-content")
+    : ""
+  const bodyStyleAttr = options.daisyui
+    ? ' style={{ margin: 0, padding: 0 }}'
+    : ""
+  pushLine(lines, 4, `<Body${bodyClassAttr}${bodyStyleAttr}>`)
+  
+  // Add container classes when daisyui is enabled
+  const containerClassAttr = options.daisyui
+    ? buildClassAttr("max-w-xl", "mx-auto", "p-4")
+    : ""
+  const containerStyleAttr = options.daisyui
+    ? ' style={{ padding: 0, margin: "0 auto" }}'
+    : ""
+  pushLine(lines, 5, `<Container${containerClassAttr}${containerStyleAttr}>`)
 
   document.sections
     .filter((section) => !section.hidden)

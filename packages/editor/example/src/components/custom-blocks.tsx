@@ -3,7 +3,7 @@ import type {
   CustomBlockDefinition,
   CustomBlockPropEditor,
   CustomBlockPropEditorProps,
-} from '@react-email-dnd';
+} from '@react-email-dnd/shared';
 import { SparkleIcon } from '@phosphor-icons/react';
 import { footerBlockDefinition } from './footer';
 import { ComponentType } from 'react';
@@ -171,4 +171,8 @@ export function HeroBlockPropsEditor({
   );
 }
 
-export const customBlocks = [heroBlockDefinition, footerBlockDefinition];
+export const customBlocks = [
+  heroBlockDefinition,
+  footerBlockDefinition,
+  // Embers DnD components
+];

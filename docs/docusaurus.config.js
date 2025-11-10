@@ -1,52 +1,56 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+const path = require("path")
+const webpack = require("webpack")
+const jsxRuntimePath = require.resolve("react/jsx-runtime.js")
+const reactDomServerBrowserPath = require.resolve("react-dom/server.browser.js")
+const lightCodeTheme = require("prism-react-renderer/themes/github")
+const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'React Email DnD',
-  tagline: 'Build drag-and-drop authoring and rendering experiences',
-  favicon: 'img/favicon.ico',
+  title: "React Email DnD",
+  tagline: "Build drag-and-drop authoring and rendering experiences",
+  favicon: "img/favicon.ico",
 
   // Set the production url of your site here
-  url: 'https://react-email-dnd.dev',
+  url: "https://react-email-dnd.dev",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: "/",
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'react-email-dnd', // Usually your GitHub org/user name.
-  projectName: 'docs', // Usually your repo name.
+  organizationName: "react-email-dnd", // Usually your GitHub org/user name.
+  projectName: "docs", // Usually your repo name.
 
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: "throw",
+  onBrokenMarkdownLinks: "warn",
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
   // to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: "en",
+    locales: ["en"],
   },
 
   presets: [
     [
-      'classic',
+      "classic",
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
-          sidebarPath: require.resolve('./sidebars.js'),
+          sidebarPath: require.resolve("./sidebars.js"),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/johanmickelin/react-email-dnd/tree/main/docs',
+            "https://github.com/johanmickelin/react-email-dnd/tree/main/docs",
         },
         blog: false,
         theme: {
-          customCss: require.resolve('./src/css/custom.css'),
+          customCss: require.resolve("./src/css/custom.css"),
         },
       }),
     ],
@@ -56,55 +60,53 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
-      image: 'img/docusaurus-social-card.jpg',
+      image: "img/docusaurus-social-card.jpg",
       navbar: {
-        title: 'React Email DnD',
+        title: "React Email DnD",
         logo: {
-          alt: 'React Email DnD Logo',
-          src: 'img/logo.svg',
+          alt: "React Email DnD Logo",
+          src: "img/logo.svg",
         },
         items: [
           {
-            type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
-            position: 'left',
-            label: 'Docs',
+            type: "docSidebar",
+            sidebarId: "tutorialSidebar",
+            position: "left",
+            label: "Docs",
           },
           {
-            href: 'https://github.com/johanmickelin/react-email-dnd',
-            label: 'GitHub',
-            position: 'right',
+            href: "https://github.com/johanmickelin/react-email-dnd",
+            label: "GitHub",
+            position: "right",
           },
         ],
       },
       footer: {
-        style: 'dark',
+        style: "dark",
         links: [
           {
-            title: 'Docs',
-            items: [
-              {label: 'Overview', to: '/docs/intro'},
-            ],
+            title: "Docs",
+            items: [{ label: "Overview", to: "/docs/intro" }],
           },
           {
-            title: 'Community',
+            title: "Community",
             items: [
               {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+                label: "Stack Overflow",
+                href: "https://stackoverflow.com/questions/tagged/docusaurus",
               },
               {
-                label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
+                label: "Discord",
+                href: "https://discordapp.com/invite/docusaurus",
               },
             ],
           },
           {
-            title: 'More',
+            title: "More",
             items: [
               {
-                label: 'GitHub',
-                href: 'https://github.com/johanmickelin/react-email-dnd',
+                label: "GitHub",
+                href: "https://github.com/johanmickelin/react-email-dnd",
               },
             ],
           },
@@ -116,6 +118,38 @@ const config = {
         darkTheme: darkCodeTheme,
       },
     }),
-};
 
-module.exports = config;
+  plugins: [
+    "./src/config/tailwind-config.js",
+    function editorAliasPlugin() {
+      return {
+        name: "editor-alias",
+        configureWebpack() {
+          return {
+            resolve: {
+              // Disable fully specified imports so packages targeting React 17
+              // can continue referencing `react/jsx-runtime` without the .js suffix.
+              fullySpecified: false,
+              alias: {
+                "@react-email-dnd/editor": path.resolve(
+                  __dirname,
+                  "../packages/editor/src"
+                ),
+                "react/jsx-runtime": jsxRuntimePath,
+                "react-dom/server.browser": reactDomServerBrowserPath,
+              },
+            },
+            plugins: [
+              // Some editor bundles still expect a global React when transpiled.
+              new webpack.ProvidePlugin({
+                React: "react",
+              }),
+            ],
+          }
+        },
+      }
+    },
+  ],
+}
+
+module.exports = config

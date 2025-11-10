@@ -1,3 +1,5 @@
+'use client';
+
 import type { CSSProperties } from 'react';
 import { Button as EmailButton } from '@react-email/components';
 import { HandPointingIcon } from '@phosphor-icons/react';
@@ -10,10 +12,10 @@ export const buttonDefaults: ButtonBlockProps = {
   label: 'Call to action',
   href: 'https://example.com',
   align: 'center',
-  backgroundColor: '#2563eb',
-  color: '#ffffff',
-  borderRadius: 6,
-  padding: '12px 24px',
+  backgroundColor: '#2563eb', // Will be overridden by daisyUI classes when daisyui=true
+  color: '#ffffff', // Will be overridden by daisyUI classes when daisyui=true
+  borderRadius: 12, // rounded-xl equivalent
+  padding: '16px 24px', // py-4 px-6 equivalent
   fontSize: 14,
   fontWeight: 'bold',
   margin: '12px 0',
@@ -160,21 +162,28 @@ export function Button(
           getSizeClass(),
           getFontWeightClass(),
           getFallbackPaddingClass(),
-          // DaisyUI specific classes
+          // DaisyUI specific classes - match eventInviteReminder email styling
           {
             btn: daisyui,
-            'btn-primary': daisyui && !hasBackgroundClass && backgroundColor === '#2563eb',
-            'btn-secondary': daisyui && !hasBackgroundClass && backgroundColor === '#6b7280',
-            'btn-accent': daisyui && !hasBackgroundClass && backgroundColor === '#8b5cf6',
-            'btn-neutral': daisyui && !hasBackgroundClass && backgroundColor === '#374151',
-            'btn-success': daisyui && !hasBackgroundClass && backgroundColor === '#059669',
-            'btn-warning': daisyui && !hasBackgroundClass && backgroundColor === '#d97706',
-            'btn-error': daisyui && !hasBackgroundClass && backgroundColor === '#dc2626',
-            'btn-info': daisyui && !hasBackgroundClass && backgroundColor === '#0891b2',
+            'btn-primary rounded-xl':
+              daisyui && !hasBackgroundClass && (!backgroundColor || backgroundColor === '#2563eb'),
+            'btn-secondary rounded-xl':
+              daisyui && !hasBackgroundClass && backgroundColor === '#6b7280',
+            'btn-accent rounded-xl':
+              daisyui && !hasBackgroundClass && backgroundColor === '#8b5cf6',
+            'btn-neutral rounded-xl':
+              daisyui && !hasBackgroundClass && backgroundColor === '#374151',
+            'btn-success rounded-xl':
+              daisyui && !hasBackgroundClass && backgroundColor === '#059669',
+            'btn-warning rounded-xl':
+              daisyui && !hasBackgroundClass && backgroundColor === '#d97706',
+            'btn-error rounded-xl': daisyui && !hasBackgroundClass && backgroundColor === '#dc2626',
+            'btn-info rounded-xl': daisyui && !hasBackgroundClass && backgroundColor === '#0891b2',
             // Fallback for custom colors
-            'btn-ghost':
+            'btn-ghost rounded-xl':
               daisyui &&
               !hasBackgroundClass &&
+              backgroundColor &&
               ![
                 '#2563eb',
                 '#6b7280',
@@ -184,7 +193,7 @@ export function Button(
                 '#d97706',
                 '#dc2626',
                 '#0891b2',
-              ].includes(backgroundColor || ''),
+              ].includes(backgroundColor),
           },
           backgroundClassName,
           colorClassName,

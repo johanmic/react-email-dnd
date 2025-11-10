@@ -1,3 +1,5 @@
+'use client';
+
 import {
   createContext,
   useCallback,
@@ -80,6 +82,8 @@ interface CanvasProviderProps {
   onDocumentChange?: (document: CanvasDocument) => void;
   /** Optional global upload handler. Should upload a File and resolve to its URL */
   uploadFile?: (file: File) => Promise<string>;
+  /** Dynamic variables that override document variables. These are not saved and are available to custom blocks. */
+  variables?: Record<string, unknown>;
 }
 
 export interface CanvasStoreValue {
@@ -94,9 +98,11 @@ export interface CanvasStoreValue {
     | { kind: 'column'; id: string }
     | null;
   previewMode: 'desktop' | 'mobile';
-  variables: Record<string, string>;
+  variables: Record<string, unknown>;
   /** If provided by provider, components can use this to upload files */
   uploadFile?: (file: File) => Promise<string>;
+  /** Portal root element for modals and overlays */
+  portalRoot: HTMLElement | null;
   updateTitle: (title: string) => void;
   setDocument: (
     document: CanvasDocument,
@@ -331,10 +337,12 @@ export function CanvasProvider({
   onSave,
   onDocumentChange,
   uploadFile,
+  variables: dynamicVariables,
 }: CanvasProviderProps) {
   const [state, dispatch] = useReducer(canvasReducer, initialDocument, createInitialState);
   const lastInitialDocumentRef = useRef<CanvasDocument | null>(null);
   const lastNotifiedDocumentRef = useRef<CanvasDocument | null>(null);
+  const portalRootRef = useRef<HTMLDivElement | null>(null);
 
   const updateTitle = useCallback((title: string) => {
     dispatch({ type: 'updateTitle', title });
@@ -460,6 +468,14 @@ export function CanvasProvider({
     ? findBlockById(document, state.selectedBlockId)
     : null;
 
+  // Merge dynamic variables with document variables, but never save dynamic variables
+  const mergedVariables = useMemo(() => {
+    const documentVars = document.variables ?? {};
+    const dynamicVars = dynamicVariables ?? {};
+    // Dynamic variables override document variables
+    return { ...documentVars, ...dynamicVars };
+  }, [document.variables, dynamicVariables]);
+
   const value = useMemo<CanvasStoreValue>(
     () => ({
       document,
@@ -469,8 +485,9 @@ export function CanvasProvider({
       selectedBlock,
       selectedContainer: state.selectedContainer,
       previewMode: state.previewMode,
-      variables: document.variables ?? {},
+      variables: mergedVariables,
       uploadFile,
+      portalRoot: portalRootRef.current,
       updateTitle,
       setDocument,
       save,
@@ -491,6 +508,7 @@ export function CanvasProvider({
       selectedBlock,
       state.previewMode,
       state.selectedContainer,
+      mergedVariables,
       uploadFile,
       updateTitle,
       setDocument,
@@ -506,7 +524,27 @@ export function CanvasProvider({
     ],
   );
 
-  return <CanvasStoreContext.Provider value={value}>{children}</CanvasStoreContext.Provider>;
+  return (
+    <CanvasStoreContext.Provider value={value}>
+      <div style={{ position: 'relative' }}>
+        <div
+          ref={portalRootRef}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: 0,
+            height: 0,
+            overflow: 'visible',
+            pointerEvents: 'none',
+            zIndex: 99999,
+          }}
+          aria-hidden="true"
+        />
+        {children}
+      </div>
+    </CanvasStoreContext.Provider>
+  );
 }
 
 export { CanvasStoreContext };

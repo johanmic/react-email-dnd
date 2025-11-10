@@ -1,3 +1,5 @@
+'use client';
+
 // packages/editor/src/components/PropertiesPanel.tsx
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
@@ -172,10 +174,15 @@ function ColorPicker({
       const normalized = value.toLowerCase();
       const match = swatches.find((swatch) => swatch.hex?.toLowerCase() === normalized);
       if (match) return match.key;
+      // If colors array is provided, only allow colors from that array
+      // Don't create a fake key for values not in the array
+      if (colors && colors.length > 0) {
+        return undefined;
+      }
       return `hex:${normalized}`;
     }
     return undefined;
-  }, [swatches, value, valueClassName]);
+  }, [swatches, value, valueClassName, colors]);
 
   const selectedSwatch = useMemo(() => {
     if (!selectedKey) return undefined;
@@ -215,6 +222,30 @@ function ColorPicker({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [handleClickOutside, isOpen]);
+
+  // When colors array is provided, ensure the current value matches one of them
+  // If not, clear invalid colors and set to first color from the array
+  React.useEffect(() => {
+    if (!colors || colors.length === 0) return;
+    if (disabled) return;
+    if (swatches.length === 0) return;
+
+    // Check if current value matches any color in the array
+    const hasMatchingValue = valueClassName
+      ? swatches.some((sw) => sw.className === valueClassName)
+      : value
+        ? swatches.some((sw) => sw.hex?.toLowerCase() === value.toLowerCase())
+        : false;
+
+    // If value exists but doesn't match any color, clear it and set to first color
+    if ((value || valueClassName) && !hasMatchingValue) {
+      const firstOption = colors[0];
+      const firstHex = typeof firstOption === 'string' ? firstOption : firstOption.hex;
+      const firstClass = typeof firstOption === 'string' ? undefined : firstOption.class;
+      // Explicitly clear the color if it doesn't match - use undefined to clear
+      onChange(firstHex ?? undefined, { hex: firstHex ?? undefined, className: firstClass });
+    }
+  }, [colors, value, valueClassName, swatches, disabled, onChange]); // Removed onChange from deps to avoid loops
 
   if (swatches.length === 0) {
     const safeValue = value && /^#([0-9a-fA-F]{3}){1,2}$/.test(value) ? value : '#ffffff';
@@ -738,19 +769,30 @@ function HeadingPropsForm({
             daisyui={daisyui}
             disabled={disabled || block.locked}
           />
-          <input
-            type="text"
-            value={props.color ?? ''}
-            onChange={(e) =>
-              onUpdate({
-                color: e.target.value || undefined,
-                colorClassName: undefined,
-              })
-            }
-            className={inlineTextInputCls}
-            placeholder="#1f2937"
-            disabled={disabled || block.locked}
-          />
+          {(textColors ?? colors) && (textColors ?? colors)!.length > 0 ? (
+            <input
+              type="text"
+              value={props.color ?? ''}
+              readOnly
+              className={clsx(inlineTextInputCls, 'cursor-not-allowed opacity-60')}
+              placeholder="Select from picker"
+              disabled={true}
+            />
+          ) : (
+            <input
+              type="text"
+              value={props.color ?? ''}
+              onChange={(e) =>
+                onUpdate({
+                  color: e.target.value || undefined,
+                  colorClassName: undefined,
+                })
+              }
+              className={inlineTextInputCls}
+              placeholder="#1f2937"
+              disabled={disabled || block.locked}
+            />
+          )}
         </div>
       </div>
 
@@ -1031,19 +1073,30 @@ function TextPropsForm({
             daisyui={daisyui}
             disabled={disabled || block.locked}
           />
-          <input
-            type="text"
-            value={props.color ?? ''}
-            onChange={(e) =>
-              onUpdate({
-                color: e.target.value || undefined,
-                colorClassName: undefined,
-              })
-            }
-            className={inlineTextInputCls}
-            placeholder="#1f2937"
-            disabled={disabled || block.locked}
-          />
+          {(textColors ?? colors) && (textColors ?? colors)!.length > 0 ? (
+            <input
+              type="text"
+              value={props.color ?? ''}
+              readOnly
+              className={clsx(inlineTextInputCls, 'cursor-not-allowed opacity-60')}
+              placeholder="Select from picker"
+              disabled={true}
+            />
+          ) : (
+            <input
+              type="text"
+              value={props.color ?? ''}
+              onChange={(e) =>
+                onUpdate({
+                  color: e.target.value || undefined,
+                  colorClassName: undefined,
+                })
+              }
+              className={inlineTextInputCls}
+              placeholder="#1f2937"
+              disabled={disabled || block.locked}
+            />
+          )}
         </div>
       </div>
 
@@ -1366,19 +1419,30 @@ function ButtonPropsForm({
             daisyui={daisyui}
             disabled={disabled || block.locked}
           />
-          <input
-            type="text"
-            value={props.color ?? ''}
-            onChange={(e) =>
-              onUpdate({
-                color: e.target.value || undefined,
-                colorClassName: undefined,
-              })
-            }
-            className={inlineTextInputCls}
-            placeholder="#ffffff"
-            disabled={disabled || block.locked}
-          />
+          {(textColors ?? colors) && (textColors ?? colors)!.length > 0 ? (
+            <input
+              type="text"
+              value={props.color ?? ''}
+              readOnly
+              className={clsx(inlineTextInputCls, 'cursor-not-allowed opacity-60')}
+              placeholder="Select from picker"
+              disabled={true}
+            />
+          ) : (
+            <input
+              type="text"
+              value={props.color ?? ''}
+              onChange={(e) =>
+                onUpdate({
+                  color: e.target.value || undefined,
+                  colorClassName: undefined,
+                })
+              }
+              className={inlineTextInputCls}
+              placeholder="#ffffff"
+              disabled={disabled || block.locked}
+            />
+          )}
         </div>
       </div>
 
@@ -1952,7 +2016,7 @@ export function PropertiesPanel({
             block={selectedBlock as CanvasContentBlock & { type: 'heading' }}
             onUpdate={(props) => handleUpdate(selectedBlock.id, props)}
             daisyui={daisyui}
-            colors={bgColors ?? colors}
+            colors={colors}
             textColors={textColors}
             paddingOptions={resolvedPaddingOptions}
             fonts={fonts}
@@ -2112,30 +2176,6 @@ export function PropertiesPanel({
       const hidden = !!section.hidden;
       return (
         <fieldset className="space-y-6" disabled={locked}>
-          {unlockable && (
-            <LockedToggle
-              locked={locked}
-              daisyui={daisyui}
-              onToggle={() =>
-                updateContainerProps({
-                  kind: 'section',
-                  id: section.id,
-                  props: { locked: !locked },
-                })
-              }
-            />
-          )}
-          <HiddenToggle
-            hidden={hidden}
-            daisyui={daisyui}
-            onToggle={() =>
-              updateContainerProps({
-                kind: 'section',
-                id: section.id,
-                props: { hidden: !hidden },
-              })
-            }
-          />
           <div>
             <label className={labelCls}>Background</label>
             <div className="flex items-center gap-3">
@@ -2312,6 +2352,30 @@ export function PropertiesPanel({
               </div>
             )}
           </div>
+          {unlockable && (
+            <LockedToggle
+              locked={locked}
+              daisyui={daisyui}
+              onToggle={() =>
+                updateContainerProps({
+                  kind: 'section',
+                  id: section.id,
+                  props: { locked: !locked },
+                })
+              }
+            />
+          )}
+          <HiddenToggle
+            hidden={hidden}
+            daisyui={daisyui}
+            onToggle={() =>
+              updateContainerProps({
+                kind: 'section',
+                id: section.id,
+                props: { hidden: !hidden },
+              })
+            }
+          />
         </fieldset>
       );
     }
@@ -2325,22 +2389,6 @@ export function PropertiesPanel({
       const hasMultipleColumns = row.columns.length > 1;
       return (
         <fieldset className="space-y-6" disabled={locked}>
-          {unlockable && (
-            <LockedToggle
-              locked={!!row.locked}
-              daisyui={daisyui}
-              onToggle={() =>
-                updateContainerProps({ kind: 'row', id: row.id, props: { locked: !row.locked } })
-              }
-            />
-          )}
-          <HiddenToggle
-            hidden={hidden}
-            daisyui={daisyui}
-            onToggle={() =>
-              updateContainerProps({ kind: 'row', id: row.id, props: { hidden: !hidden } })
-            }
-          />
           <div>
             <label className={labelCls}>Background</label>
             <div className="flex items-center gap-3">
@@ -2537,6 +2585,22 @@ export function PropertiesPanel({
               </div>
             )}
           </div>
+          {unlockable && (
+            <LockedToggle
+              locked={!!row.locked}
+              daisyui={daisyui}
+              onToggle={() =>
+                updateContainerProps({ kind: 'row', id: row.id, props: { locked: !row.locked } })
+              }
+            />
+          )}
+          <HiddenToggle
+            hidden={hidden}
+            daisyui={daisyui}
+            onToggle={() =>
+              updateContainerProps({ kind: 'row', id: row.id, props: { hidden: !hidden } })
+            }
+          />
         </fieldset>
       );
     }
@@ -2550,30 +2614,6 @@ export function PropertiesPanel({
       const hasMultipleColumns = row.columns.length > 1;
       return (
         <fieldset className="space-y-6" disabled={locked}>
-          {unlockable && (
-            <LockedToggle
-              locked={!!column.locked}
-              daisyui={daisyui}
-              onToggle={() =>
-                updateContainerProps({
-                  kind: 'column',
-                  id: column.id,
-                  props: { locked: !column.locked },
-                })
-              }
-            />
-          )}
-          <HiddenToggle
-            hidden={hidden}
-            daisyui={daisyui}
-            onToggle={() =>
-              updateContainerProps({
-                kind: 'column',
-                id: column.id,
-                props: { hidden: !hidden },
-              })
-            }
-          />
           <div>
             <label className={labelCls}>Background</label>
             <div className="flex items-center gap-3">
@@ -2772,6 +2812,30 @@ export function PropertiesPanel({
               </div>
             )}
           </div>
+          {unlockable && (
+            <LockedToggle
+              locked={!!column.locked}
+              daisyui={daisyui}
+              onToggle={() =>
+                updateContainerProps({
+                  kind: 'column',
+                  id: column.id,
+                  props: { locked: !column.locked },
+                })
+              }
+            />
+          )}
+          <HiddenToggle
+            hidden={hidden}
+            daisyui={daisyui}
+            onToggle={() =>
+              updateContainerProps({
+                kind: 'column',
+                id: column.id,
+                props: { hidden: !hidden },
+              })
+            }
+          />
         </fieldset>
       );
     }
@@ -2848,18 +2912,6 @@ export function PropertiesPanel({
         <div className="p-6 pb-8 overflow-y-auto flex-1">
           {selectedBlock ? (
             <>
-              {unlockable && (
-                <LockedToggle
-                  locked={!!selectedBlock.locked}
-                  onToggle={handleToggleLocked}
-                  daisyui={daisyui}
-                />
-              )}
-              <HiddenToggle
-                hidden={!!selectedBlock.hidden}
-                onToggle={handleToggleHidden}
-                daisyui={daisyui}
-              />
               {isLocked && (
                 <div
                   className={clsx('mb-6 p-4 rounded-lg border-l-4 text-sm', {
@@ -2885,6 +2937,18 @@ export function PropertiesPanel({
                 </div>
               )}
               <div className={clsx({ 'opacity-60': isLocked })}>{renderPropsForm()}</div>
+              {unlockable && (
+                <LockedToggle
+                  locked={!!selectedBlock.locked}
+                  onToggle={handleToggleLocked}
+                  daisyui={daisyui}
+                />
+              )}
+              <HiddenToggle
+                hidden={!!selectedBlock.hidden}
+                onToggle={handleToggleHidden}
+                daisyui={daisyui}
+              />
             </>
           ) : (
             renderContainerForm()

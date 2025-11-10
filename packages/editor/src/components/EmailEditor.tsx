@@ -1,3 +1,5 @@
+'use client';
+
 import {
   DndContext,
   type DragEndEvent,
@@ -6,13 +8,17 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  pointerWithin,
 } from '@dnd-kit/core';
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { useState, useEffect, useMemo } from 'react';
 import { Sidebar, DEFAULT_CONTENT_ITEMS, DEFAULT_STRUCTURE_ITEMS } from './Sidebar';
 import { Main } from './Main';
 import { Header } from './Header';
 import type { ColorOption, Padding } from '@react-email-dnd/shared';
+
+// Re-export HeaderItem type to avoid import resolution issues
+export type HeaderItem = 'title' | 'preview' | 'codeview' | 'undo' | 'save';
 import { PropertiesPanel } from './PropertiesPanel';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import {
@@ -47,10 +53,17 @@ import clsx from 'clsx';
 import { buildBlockDefinitionMap, buildCustomBlockRegistry } from '../utils/block-library';
 import { withCombinedClassNames } from '../utils/classNames';
 import { normalizePaddingOptions } from '../utils/padding';
-export interface EmailEditorProps {
+export type EmailEditorProps = {
+  /** Show the header bar with actions */
   showHeader?: boolean;
+  /** Additional CSS class name for the root element */
   className?: string;
+  /** Use DaisyUI styling */
   daisyui?: boolean;
+  /** Color highlighting mode for canvas elements */
+  colorMode?: 'hierarchy' | 'primary' | 'none' | 'output';
+  /** Controls how deep the visual highlighting goes (1=Section, 2=Section+Row, 3=Section+Row+Column). Default null shows all levels. */
+  colorModeDepth?: number | null;
   /** When false, locked items cannot be unlocked and will not accept any drops */
   unlockable?: boolean;
   /** When false, hidden items are not shown in the editor */
@@ -67,6 +80,8 @@ export interface EmailEditorProps {
   textColors?: ColorOption[];
   /** Optional palette specifically for background colors; falls back to `colors` when omitted */
   bgColors?: ColorOption[];
+  /** Number of columns to display in the sidebar. Default is 2. */
+  sideBarColumns?: 1 | 2 | 3;
   /** Custom content blocks that should be available from the sidebar */
   // Using `any` by design to allow heterogeneous custom block props across definitions.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,35 +94,44 @@ export interface EmailEditorProps {
   blocks?: string[];
   /** When true, variables cannot be edited and only existing variables are displayed. If no variables exist, the variables section is hidden. */
   variablesLocked?: boolean;
-}
+  /** Filter which header items to show. Only items matching these types will be visible. Default is all items. */
+  headerItems?: HeaderItem[];
+};
 
-export function EmailEditor({
-  showHeader = true,
-  className = '',
-  daisyui = false,
-  unlockable = true,
-  showHidden = false,
-  initialDocument,
-  onDocumentChange,
-  colors,
-  textColors,
-  bgColors,
-  customBlocks = [],
-  padding,
-  fonts,
-  blocks,
-  variablesLocked = false,
-}: EmailEditorProps) {
+export function EmailEditor(props: EmailEditorProps) {
+  const {
+    showHeader = true,
+    className,
+    daisyui = false,
+    colorMode = 'hierarchy',
+    colorModeDepth = null,
+    unlockable = true,
+    showHidden = false,
+    sideBarColumns = 2,
+    initialDocument,
+    onDocumentChange,
+    colors,
+    textColors,
+    bgColors,
+    customBlocks = [],
+    padding,
+    fonts,
+    blocks,
+    variablesLocked = false,
+    headerItems,
+  } = props;
   const { document, setDocument } = useCanvasStore();
   const sections = document.sections;
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeDragData, setActiveDragData] = useState<ActiveDragData | null>(null);
 
+  // Build all blocks (for rendering) - includes all custom blocks
+  const allBlocks = useMemo(() => {
+    return [...DEFAULT_CONTENT_ITEMS, ...customBlocks] as BlockDefinition<CanvasContentBlock>[];
+  }, [customBlocks]);
+
+  // Filter blocks for sidebar display only (when blocks prop is provided)
   const contentBlocks = useMemo(() => {
-    const allBlocks = [
-      ...DEFAULT_CONTENT_ITEMS,
-      ...customBlocks,
-    ] as BlockDefinition<CanvasContentBlock>[];
-
     // If blocks prop is undefined or empty, show all blocks
     if (!blocks || blocks.length === 0) {
       return allBlocks;
@@ -122,7 +146,7 @@ export function EmailEditor({
       filteredTypes: filteredBlocks.map((b) => b.type),
     });
     return filteredBlocks;
-  }, [customBlocks, blocks]);
+  }, [allBlocks, blocks]);
 
   const filteredStructureItems = useMemo(() => {
     // If blocks prop is undefined or empty, show all structure items
@@ -137,10 +161,9 @@ export function EmailEditor({
 
   const blockDefinitionMap = useMemo(() => buildBlockDefinitionMap(contentBlocks), [contentBlocks]);
 
-  const customBlockRegistry = useMemo(
-    () => buildCustomBlockRegistry(contentBlocks),
-    [contentBlocks],
-  );
+  // Build customBlockRegistry from all custom blocks (not filtered) so they can be rendered
+  // even if they're not in the sidebar
+  const customBlockRegistry = useMemo(() => buildCustomBlockRegistry(allBlocks), [allBlocks]);
 
   const paddingOptionEntries = useMemo(() => normalizePaddingOptions(padding), [padding]);
 
@@ -250,15 +273,19 @@ export function EmailEditor({
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
+    const id = String(event.active.id);
+    const data = event.active.data.current as ActiveDragData | undefined;
+    setActiveId(id);
+    setActiveDragData(data || null);
     console.log('🟢 DRAG START:', {
-      activeId: String(event.active.id),
-      activeData: event.active.data.current,
+      activeId: id,
+      activeData: data,
     });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
+    setActiveDragData(null);
 
     if (!event.over) {
       return;
@@ -307,10 +334,17 @@ export function EmailEditor({
 
       const overRect = event.over?.rect;
       const pointer = getPointerCenter(event, overRect);
-      const result = handleSidebarDrop(activeId, overId, sections, blockDefinitionMap, {
-        pointerY: pointer.y,
-        overRect: overRect,
-      });
+      const result = handleSidebarDrop(
+        activeId,
+        overId,
+        sections,
+        blockDefinitionMap,
+        {
+          pointerY: pointer.y,
+          overRect: overRect,
+        },
+        textColors ?? colors,
+      );
       if (result) {
         commitSections(() => result);
       } else {
@@ -320,7 +354,7 @@ export function EmailEditor({
     }
 
     if (activeId.startsWith('block-')) {
-      const block = createBlockFromSidebar(activeId, blockDefinitionMap);
+      const block = createBlockFromSidebar(activeId, blockDefinitionMap, textColors ?? colors);
       if (!block) {
         console.warn('Unsupported block dragged from sidebar:', activeId);
         return;
@@ -402,6 +436,11 @@ export function EmailEditor({
           );
         }
         const columnId = targetRow.row.columns[targetColumnIndex].id;
+        // Check if target column is disabled
+        if (isColumnDisabled(columnId)) {
+          console.log('🚫 Cannot drop into disabled column');
+          return;
+        }
         const targetIndex = targetRow.row.columns[targetColumnIndex].blocks.length;
         commitSections((previous) =>
           addBlockToColumnAtIndex(previous, columnId, block, targetIndex),
@@ -426,7 +465,23 @@ export function EmailEditor({
               next = addRowToSection(next, sectionId, 1);
             }
             const updatedSection = next.find((s) => s.id === sectionId)!;
-            const firstColumnId = updatedSection.rows[updatedSection.rows.length - 1].columns[0].id;
+            const lastRow = updatedSection.rows[updatedSection.rows.length - 1];
+            // Safety check: ensure the row has columns
+            if (!lastRow || !lastRow.columns || lastRow.columns.length === 0) {
+              console.warn('Cannot add block to section: row has no columns');
+              return previous;
+            }
+            // Check if target row is disabled
+            if (isRowDisabled(lastRow.id)) {
+              console.log('🚫 Cannot drop into disabled row');
+              return previous;
+            }
+            const firstColumnId = lastRow.columns[0].id;
+            // Check if target column is disabled
+            if (isColumnDisabled(firstColumnId)) {
+              console.log('🚫 Cannot drop into disabled column');
+              return previous;
+            }
             return addBlockToColumnAtIndex(
               next,
               firstColumnId,
@@ -721,6 +776,11 @@ export function EmailEditor({
           );
         }
         const columnId = targetRow.row.columns[targetColumnIndex].id;
+        // Check if target column is disabled
+        if (isColumnDisabled(columnId)) {
+          console.log('🚫 Cannot move block to disabled column');
+          return;
+        }
         const targetIndex = targetRow.row.columns[targetColumnIndex].blocks.length;
 
         commitSections((previous) =>
@@ -790,20 +850,22 @@ export function EmailEditor({
 
   const handleDragCancel = () => {
     setActiveId(null);
+    setActiveDragData(null);
   };
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
       <div className={clsx('w-full h-screen flex flex-col', className)}>
-        {showHeader && <Header daisyui={daisyui} />}
+        {showHeader && <Header daisyui={daisyui} headerItems={headerItems} />}
         <div className="flex h-full overflow-hidden">
           <Sidebar
+            columns={sideBarColumns}
             daisyui={daisyui}
             blocks={contentBlocks}
             structureItems={filteredStructureItems}
@@ -813,6 +875,8 @@ export function EmailEditor({
             <Main
               sections={sections}
               daisyui={daisyui}
+              colorMode={colorMode}
+              colorModeDepth={colorModeDepth}
               unlockable={unlockable}
               showHidden={showHidden}
               customBlockRegistry={customBlockRegistry}
@@ -830,12 +894,67 @@ export function EmailEditor({
           fonts={fonts || document.theme?.fonts}
         />
       </div>
-      <DragOverlay>
-        {activeId ? (
-          <div className="px-3 py-1.5 rounded-md bg-slate-800 text-white text-sm shadow">
-            Dragging...
-          </div>
-        ) : null}
+      <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
+        {activeId && activeDragData
+          ? (() => {
+              // Check if it's a structure item
+              if (activeId.startsWith('structure-')) {
+                const structureItem = filteredStructureItems.find((item) => item.id === activeId);
+                if (structureItem) {
+                  const Icon = structureItem.icon;
+                  return (
+                    <div
+                      className={clsx('flex items-center gap-4', {
+                        'p-3 rounded-xl border border-dashed border-slate-900/10 bg-white text-slate-900 text-sm font-medium leading-5':
+                          !daisyui,
+                      })}
+                      style={{
+                        pointerEvents: 'none',
+                        cursor: 'grabbing',
+                      }}
+                    >
+                      <Icon size={18} weight="duotone" />
+                      <span>{structureItem.label}</span>
+                    </div>
+                  );
+                }
+              }
+              // Check if it's a content block
+              if (activeId.startsWith('block-')) {
+                const block = blockDefinitionMap[activeId];
+                if (block) {
+                  const Icon = block.icon;
+                  return (
+                    <div
+                      className={clsx('flex items-center gap-4', {
+                        'p-3 rounded-xl border border-dashed border-slate-900/10 bg-white text-slate-900 text-sm font-medium leading-5':
+                          !daisyui,
+                      })}
+                      style={{
+                        pointerEvents: 'none',
+                        cursor: 'grabbing',
+                      }}
+                    >
+                      <Icon size={18} weight="duotone" />
+                      <span>{block.label}</span>
+                    </div>
+                  );
+                }
+              }
+              // Fallback for other drag types
+              return (
+                <div
+                  className={clsx('px-3 py-1.5 rounded-md text-sm shadow-lg', {
+                    'bg-slate-800 text-white': !daisyui,
+                    'bg-base-200 text-base-content': daisyui,
+                  })}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  Dragging...
+                </div>
+              );
+            })()
+          : null}
       </DragOverlay>
     </DndContext>
   );

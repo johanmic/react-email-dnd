@@ -1,3 +1,5 @@
+'use client';
+
 import { useContext, useEffect, useLayoutEffect, useRef } from 'react';
 import type { CanvasSection, CustomBlockDefinition } from '@react-email-dnd/shared';
 import { createEmptySection } from '../utils/document';
@@ -9,6 +11,8 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
 export interface MainProps {
   sections: CanvasSection[];
   daisyui?: boolean;
+  colorMode?: 'hierarchy' | 'primary' | 'none' | 'output';
+  colorModeDepth?: number | null;
   unlockable?: boolean;
   showHidden?: boolean;
   // Using `any` by design to allow heterogeneous custom block props across definitions.
@@ -19,6 +23,8 @@ export interface MainProps {
 export function Main({
   sections,
   daisyui = false,
+  colorMode = 'hierarchy',
+  colorModeDepth = null,
   unlockable = true,
   showHidden = false,
   customBlockRegistry = {},
@@ -68,6 +74,8 @@ export function Main({
         <Canvas
           sections={normalizedSections}
           daisyui={daisyui}
+          colorMode={colorMode}
+          colorModeDepth={colorModeDepth}
           unlockable={unlockable}
           showHidden={showHidden}
           customBlockRegistry={customBlockRegistry}

@@ -45,7 +45,9 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
   const paddingClasses = resolvePaddingClasses(padding);
 
   const resolvedFontWeight = fontWeight === 'medium' ? 500 : fontWeight;
-  const defaultColor = '#1f2937';
+  // When daisyui is enabled and no colorClassName is set, use text-base-content class instead of inline color
+  // When daisyui is disabled and no colorClassName is set, use default gray color
+  const defaultColor = daisyui && !colorClassName ? undefined : '#1f2937';
   const inlineColor = color ?? (colorClassName ? undefined : defaultColor);
 
   const style: CSSProperties = {

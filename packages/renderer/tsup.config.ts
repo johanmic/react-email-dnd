@@ -9,6 +9,8 @@ export default defineConfig({
   minify: false,
   external: [
     "react",
+    "react-dom",
+    "react/jsx-runtime",
     "@react-email-dnd/shared",
     "react-email",
     "@react-email/components",

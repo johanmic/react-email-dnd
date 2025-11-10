@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "pnpm --filter react-email-dnd-docs dev",
+    "dev:packages": "pnpm -r --filter \"./packages/*\" --parallel dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",

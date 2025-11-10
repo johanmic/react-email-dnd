@@ -18,8 +18,8 @@ export type RendererFormat = "react" | "react-text" | "html" | "plain-text"
 export interface RendererOptions {
   /** Determines the output format. */
   format: RendererFormat
-  /** Optional variables used when substituting placeholders like {{first_name}}. */
-  variables?: Record<string, string>
+  /** Optional variables used when substituting placeholders like {{first_name}} or {{club.name}}. */
+  variables?: Record<string, unknown>
   /** Optional indentation width for string outputs (HTML, react-text, plain-text). */
   indent?: number
   /** Optional component name used for react-text output (defaults to EmailTemplate). */
@@ -46,7 +46,7 @@ export type RenderResult =
   | { format: "plain-text"; text: string }
 
 export interface RenderContext {
-  variables?: Record<string, string>
+  variables?: Record<string, unknown>
 }
 
 export type RenderFunction<Format extends RendererFormat, Result> = (

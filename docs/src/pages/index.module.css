@@ -1,23 +1,250 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
-
 .heroBanner {
-  padding: 4rem 0;
-  text-align: center;
-  position: relative;
+  background: #050505;
+  color: #f5f5f5;
+  padding: 6rem 0;
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 3rem;
+  align-items: center;
+}
+
+.heroContent {
+  text-align: left;
+}
+
+.heroEyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  font-size: 0.75rem;
+  color: #b3b3b3;
+  margin-bottom: 1rem;
+}
+
+.heroTitle {
+  font-size: clamp(2.5rem, 4vw, 3.75rem);
+  margin-bottom: 1rem;
+  color: #ffffff;
+}
+
+.heroSubtitle {
+  color: #d4d4d4;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  margin-bottom: 2rem;
+}
+
+.heroButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ctaButton {
+  background: #ffffff;
+  color: #0a0a0a;
+  border: 1px solid #ffffff;
+  text-transform: none;
+}
+
+.ctaButton:hover {
+  background: #e5e5e5;
+  color: #000000;
+}
+
+.ghostButton {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  text-transform: none;
+}
+
+.ghostButton:hover {
+  background: #111111;
+  color: #ffffff;
+}
+
+.heroMeta {
+  color: #8c8c8c;
+  font-size: 0.95rem;
+  margin-top: 1rem;
+}
+
+.heroExample {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.heroExampleLabel {
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #bfbfbf;
+}
+
+.exampleShell {
+  background: #050505;
+  border: 1px solid #1b1b1b;
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+}
+
+.editorWrapper {
+  height: 520px;
+  border-radius: 12px;
   overflow: hidden;
+  border: 1px solid #1f1f1f;
+  background: linear-gradient(135deg, #060606, #101010);
+}
+
+.embeddedEditor {
+  height: 100%;
+}
+
+.exampleFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 520px;
+  border-radius: 12px;
+  border: 1px dashed #444444;
+  color: #d0d0d0;
+  font-size: 0.9rem;
+}
+
+.section {
+  padding: 4rem 0;
+  background: #050505;
+  color: #f5f5f5;
+}
+
+.sectionLight {
+  background: #050505;
+  color: #f5f5f5;
+}
+
+.sectionDark {
+  background: #050505;
+  color: #f5f5f5;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.sectionSubtitle {
+  color: #989898;
+  margin-bottom: 2rem;
+  max-width: 720px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.cardMonochrome {
+  background: #111111;
+  border: 1px solid #2b2b2b;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cardHeader h3 {
+  margin: 0;
+  color: #ffffff;
+}
+
+.cardHeader p {
+  margin: 0.5rem 0 0;
+  color: #c8c8c8;
+}
+
+.cardMonochrome ul {
+  margin: 0;
+  padding-left: 1rem;
+  color: #d4d4d4;
+  line-height: 1.6;
+}
+
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #1b1b1b;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.tableContainer table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableContainer th,
+.tableContainer td {
+  padding: 1rem;
+  border-bottom: 1px solid #1b1b1b;
+}
+
+.tableContainer th {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+}
+
+.sectionDark .tableContainer {
+  border-color: #2f2f2f;
+}
+
+.sectionDark .tableContainer th,
+.sectionDark .tableContainer td {
+  border-bottom: 1px solid #2f2f2f;
+}
+
+.tableContainer tr:last-child td {
+  border-bottom: none;
+}
+
+.codeSplit {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.codePanel {
+  border: 1px solid #1b1b1b;
+  border-radius: 14px;
+  padding: 1.5rem;
+  background: #080808;
+  color: #f5f5f5;
+}
+
+.codePanel h3 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: #f5f5f5;
 }
 
 @media screen and (max-width: 996px) {
   .heroBanner {
-    padding: 2rem;
+    padding: 3rem 0;
   }
-}
 
-.buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  .heroButtons {
+    flex-direction: column;
+  }
+
+  .editorWrapper {
+    height: 460px;
+  }
 }

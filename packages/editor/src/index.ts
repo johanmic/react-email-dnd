@@ -67,8 +67,9 @@ export * from './components/Main';
 export * from './components/Sidebar';
 export * from './components/SidebarItem';
 export * from './components/CanvasProvider';
-export * from './components/Header';
-export * from './components/EmailEditor';
+export { Header } from './components/Header';
+export { EmailEditor } from './components/EmailEditor';
+export type { EmailEditorProps, HeaderItem } from './components/EmailEditor';
 export * from './components/PropertiesPanel';
 
 export type { CustomBlockPropEditors, ColorOption } from './components/PropertiesPanel';
