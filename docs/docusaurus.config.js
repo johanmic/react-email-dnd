@@ -11,7 +11,7 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "React Email DnD",
-  tagline: "Build drag-and-drop authoring and rendering experiences",
+  tagline: "React Email Drag-and-Drop",
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here
@@ -66,6 +66,7 @@ const config = {
         logo: {
           alt: "React Email DnD Logo",
           src: "img/logo.svg",
+          srcDark: "img/whitelogo.svg",
         },
         items: [
           {

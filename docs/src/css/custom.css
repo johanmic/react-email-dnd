@@ -19,7 +19,7 @@
 
 @custom-variant dark (&:is([data-theme="dark"] *));
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark, synthwave, retro;
+  themes: light --default, dark --prefersdark, dim, synthwave, lofi, retro;
 }
 
 @source "./**/*.{ts,tsx}";
@@ -49,6 +49,23 @@
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Code blocks should size to their content and allow horizontal scrolling */
+pre {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+pre code,
+code[class*='language-'],
+pre[class*='language-'] {
+  white-space: pre;
+  word-break: normal;
+}
+
+.token-line {
+  white-space: pre;
 }
 
 

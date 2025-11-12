@@ -34,3 +34,13 @@ Use component manifests to expose additional behaviors:
 - `experimental`: flag bleeding-edge components to hide them behind feature toggles.
 
 When adding new components, update both the palette registry and the renderer mapping to keep parity between authoring and delivery.
+
+### Working with the editor context
+
+Component inspector UIs run inside the same `CanvasProvider` context as the rest of the editor. Import the `useCanvasStore()` hook to:
+
+- Read shared variables or the active preview mode while rendering custom controls.
+- Trigger mutations (`updateBlockProps`, `selectBlock`, `save`) from bespoke inspector widgets.
+- Coordinate external side effects—such as asset uploads or clipboard integrations—without leaving the editor shell.
+
+This shared context keeps all UI extensions in sync with document history, undo/redo, and collaborative state management.

@@ -5,14 +5,16 @@
 }
 
 .heroGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 3rem;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  align-items: stretch;
 }
 
 .heroContent {
-  text-align: left;
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .heroEyebrow {
@@ -41,6 +43,7 @@
   flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1rem;
+  justify-content: center;
 }
 
 .ctaButton {
@@ -71,12 +74,16 @@
   color: #8c8c8c;
   font-size: 0.95rem;
   margin-top: 1rem;
+  text-align: center;
 }
 
 .heroExample {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  max-width: 960px;
+  margin: 0 auto;
+  align-items: center;
 }
 
 .heroExampleLabel {
@@ -84,6 +91,8 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #bfbfbf;
+  text-align: center;
+  width: 100%;
 }
 
 .exampleShell {
@@ -92,18 +101,56 @@
   border-radius: 20px;
   padding: 1rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+  width: 100%;
 }
 
 .editorWrapper {
   height: 520px;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #1f1f1f;
+  /* border: 1px solid #1f1f1f; */
   background: linear-gradient(135deg, #060606, #101010);
 }
 
 .embeddedEditor {
   height: 100%;
+}
+
+.themeControls {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.themeButton {
+  background: #111111;
+  border: 1px solid #2a2a2a;
+  border-radius: 999px;
+  color: #f5f5f5;
+  cursor: pointer;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  padding: 0.35rem 0.9rem;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.themeButton:hover {
+  background: #1a1a1a;
+  border-color: #3a3a3a;
+}
+
+.themeButtonActive {
+  background: #f5f5f5;
+  border-color: #f5f5f5;
+  color: #050505;
+}
+
+.canvasProvider {
+  width: 100%;
+  min-width: 100%;
+  height: 100%;
+  display: flex;
 }
 
 .exampleFallback {
@@ -177,6 +224,57 @@
   line-height: 1.6;
 }
 
+.npmGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.npmCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid #1b1b1b;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: linear-gradient(145deg, #0a0a0a, #050505);
+  color: #f5f5f5;
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.npmCard:hover {
+  border-color: #2f2f2f;
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+.npmEyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+.npmTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.npmDescription {
+  margin: 0;
+  color: #d1d5db;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.npmLink {
+  margin-top: auto;
+  font-size: 0.85rem;
+  color: #a855f7;
+}
+
 .tableContainer {
   width: 100%;
   overflow-x: auto;
@@ -227,6 +325,7 @@
   padding: 1.5rem;
   background: #080808;
   color: #f5f5f5;
+  overflow-x: auto;
 }
 
 .codePanel h3 {
@@ -235,9 +334,124 @@
   color: #f5f5f5;
 }
 
+.codePanel :global(.prism-code) {
+  background: #0d0d0d !important;
+  color: #f4f4f4;
+  border-radius: 0 0 10px 10px;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  display: block;
+  overflow: auto;
+}
+
+.codePanel :global(div[class*='codeBlockTitle']) {
+  background: #1a1a1a;
+  color: #d4d4d4;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  font-family: monospace;
+  border-radius: 10px 10px 0 0;
+  border-bottom: 1px solid #2a2a2a;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.codePanel :global(div[class*='codeBlockContainer']) {
+  border-radius: 10px;
+  overflow-x: auto !important;
+  max-width: 100%;
+}
+
+.codePanel :global(div[class*='codeBlockContainer']) > div {
+  min-width: 0;
+}
+
+.codePanel :global(pre) {
+  margin: 0 !important;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.codePanel :global(code) {
+  display: block;
+  white-space: pre;
+}
+
+.codePanel :global(.token-line) {
+  display: block;
+}
+
+.codePanel :global(.token.comment),
+.codePanel :global(.token.prolog),
+.codePanel :global(.token.doctype),
+.codePanel :global(.token.cdata) {
+  color: #6b7280;
+}
+
+.codePanel :global(.token.keyword),
+.codePanel :global(.token.boolean),
+.codePanel :global(.token.selector),
+.codePanel :global(.token.important) {
+  color: #8bafff;
+}
+
+.codePanel :global(.token.builtin),
+.codePanel :global(.token.class-name),
+.codePanel :global(.token.constant) {
+  color: #a5b4fc;
+}
+
+.codePanel :global(.token.function),
+.codePanel :global(.token.attr-name) {
+  color: #facc15;
+}
+
+.codePanel :global(.token.property),
+.codePanel :global(.token.tag) {
+  color: #f472b6;
+}
+
+.codePanel :global(.token.string),
+.codePanel :global(.token.char),
+.codePanel :global(.token.attr-value),
+.codePanel :global(.token.regex),
+.codePanel :global(.token.inserted) {
+  color: #34d399;
+}
+
+.codePanel :global(.token.number),
+.codePanel :global(.token.symbol) {
+  color: #f97316;
+}
+
+.codePanel :global(.token.operator),
+.codePanel :global(.token.entity),
+.codePanel :global(.token.url),
+.codePanel :global(.token.variable) {
+  color: #f8fafc;
+}
+
+.codePanel :global(.token.deleted) {
+  color: #f87171;
+}
+
+.codePanel :global(.token.bold) {
+  font-weight: 600;
+}
+
+.codePanel :global(.token.italic) {
+  font-style: italic;
+}
+
 @media screen and (max-width: 996px) {
   .heroBanner {
     padding: 3rem 0;
+  }
+
+  .heroLogo {
+    width: 200px;
+    height: 200px;
+    margin-right: 1rem;
   }
 
   .heroButtons {
@@ -245,6 +459,7 @@
   }
 
   .editorWrapper {
-    height: 460px;
+    height: 560px;
+    overflow: scroll;
   }
 }

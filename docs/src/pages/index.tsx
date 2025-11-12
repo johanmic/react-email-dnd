@@ -1,10 +1,12 @@
 import React from "react"
+import type { JSX } from "react"
 import clsx from "clsx"
 import Link from "@docusaurus/Link"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import Layout from "@theme/Layout"
 import CodeBlock from "@theme/CodeBlock"
 import BrowserOnly from "@docusaurus/BrowserOnly"
+// @ts-expect-error -- workspace path alias resolved via pnpm workspaces
 import type { CanvasDocument, Padding } from "@react-email-dnd/shared"
 
 import styles from "./index.module.css"
@@ -301,6 +303,23 @@ function LiveEditorPreview() {
       }
     >
       {() => {
+        const React = require("react") as typeof import("react")
+        type ThemeName =
+          | "light"
+          | "dark"
+          | "synthwave"
+          | "dim"
+          | "lofi"
+          | "retro"
+        const themeOptions: Array<{ label: string; value: ThemeName }> = [
+          { label: "Light", value: "light" },
+          { label: "Dark", value: "dark" },
+          { label: "Synthwave", value: "synthwave" },
+          { label: "Dim", value: "dim" },
+          { label: "Lo-fi", value: "lofi" },
+          { label: "Retro", value: "retro" },
+        ]
+        const [theme, setTheme] = React.useState<ThemeName>("dark")
         const {
           CanvasProvider,
           EmailEditor,
@@ -308,29 +327,54 @@ function LiveEditorPreview() {
 
         return (
           <div id="tw-scope">
-            <div className={styles.editorWrapper} data-theme="synthwave">
-              <CanvasProvider
-                initialDocument={demoDocument}
-                onDocumentChange={() => {}}
-              >
-                <EmailEditor
-                  // className={styles.embeddedEditor}
-                  showHeader={false}
-                  daisyui={true}
-                  colorMode="primary"
-                  // padding={livePaddingPresets}
-                  sideBarColumns={1}
-                  // colors={["#000000", "#ffffff"]}
-                  // textColors={[
-                  //   { hex: "#000000", label: "Ink" },
-                  //   { hex: "#ffffff", label: "Paper" },
-                  // ]}
-                  // bgColors={[
-                  //   { hex: "#ffffff", label: "Paper" },
-                  //   { hex: "#000000", label: "Carbon" },
-                  // ]}
-                />
-              </CanvasProvider>
+            <div
+              className={styles.themeControls}
+              role="toolbar"
+              aria-label="Theme selector"
+            >
+              {themeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTheme(option.value)}
+                  className={clsx(styles.themeButton, {
+                    [styles.themeButtonActive]: theme === option.value,
+                  })}
+                  aria-pressed={theme === option.value}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div
+              className="max-h-[600px] bg-base-300 overflow-y-auto"
+              data-theme={theme}
+            >
+              <div className="bg-base-300">
+                <CanvasProvider
+                  initialDocument={demoDocument}
+                  onDocumentChange={() => {}}
+                  className={styles.canvasProvider}
+                >
+                  <EmailEditor
+                    // className={styles.embeddedEditor}
+                    showHeader={true}
+                    daisyui={true}
+                    colorMode="primary"
+                    // padding={livePaddingPresets}
+                    sideBarColumns={1}
+                    // colors={["#000000", "#ffffff"]}
+                    // textColors={[
+                    //   { hex: "#000000", label: "Ink" },
+                    //   { hex: "#ffffff", label: "Paper" },
+                    // ]}
+                    // bgColors={[
+                    //   { hex: "#ffffff", label: "Paper" },
+                    //   { hex: "#000000", label: "Carbon" },
+                    // ]}
+                  />
+                </CanvasProvider>
+              </div>
             </div>
           </div>
         )
@@ -346,29 +390,37 @@ function HomepageHeader() {
       <div className="container">
         <div className={styles.heroGrid}>
           <div className={styles.heroContent}>
-            <p className={styles.heroEyebrow}>Strictly black & white tooling</p>
-            <h1 className={styles.heroTitle}>{siteConfig.title}</h1>
+            <h1 className={styles.heroTitle}>
+              {siteConfig.themeConfig.navbar?.logo?.srcDark && (
+                <img
+                  src={siteConfig.themeConfig.navbar.logo.srcDark}
+                  alt={siteConfig.title}
+                  className={styles.heroLogo}
+                />
+              )}
+              {siteConfig.title}
+            </h1>
             <p className={styles.heroSubtitle}>
-              {siteConfig.tagline} - now showcased in a monochrome playground so
-              you can see every structural control without color noise.
+              Editor, Renderer and utilities to make visual email editing for
+              React Email and the Resend framework
             </p>
             <div className={styles.heroButtons}>
               <Link
                 className={clsx("button button--lg", styles.ctaButton)}
-                to="/docs/intro"
+                to="/docs/quickstart"
               >
-                Read the overview
+                Get Started
               </Link>
               <Link
                 className={clsx("button button--lg", styles.ghostButton)}
                 to="/docs/json-structure"
               >
-                JSON schema reference
+                Read the docs
               </Link>
             </div>
             <p className={styles.heroMeta}>
-              Ships as a PNPM workspace with editor, renderer, and schema
-              packages you can mix and match.
+              Ships as separate packages for editor, renderer, and shared
+              utilities.
             </p>
           </div>
           <div className={styles.heroExample}>
@@ -383,43 +435,11 @@ function HomepageHeader() {
   )
 }
 
-function PackageBreakdown() {
-  return (
-    <section className={clsx(styles.section, styles.sectionDark)}>
-      <div className="container">
-        <h2 className={styles.sectionTitle}>Package breakdown</h2>
-        <p className={styles.sectionSubtitle}>
-          Three focused workspaces give you the flexibility to choose a headless
-          approach, a full editor experience, or just the rendering helpers you
-          need downstream.
-        </p>
-        <div className={styles.cardGrid}>
-          {packageCards.map((pkg) => (
-            <div key={pkg.name} className={styles.cardMonochrome}>
-              <div className={styles.cardHeader}>
-                <h3>{pkg.name}</h3>
-                <p>{pkg.summary}</p>
-              </div>
-              <ul>
-                {pkg.highlights.map((highlight) => (
-                  <li key={highlight}>{highlight}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 function CustomizationExamples() {
   return (
     <section className={clsx(styles.section, styles.sectionDark)}>
       <div className="container">
-        <h2 className={styles.sectionTitle}>
-          Practical customization examples
-        </h2>
+        <h2 className={styles.sectionTitle}>Basic Usage</h2>
         <p className={styles.sectionSubtitle}>
           The Vanilla playground in{" "}
           <code>packages/editor/example/src/Vanilla.tsx</code> wires fonts and
@@ -429,16 +449,97 @@ function CustomizationExamples() {
         <div className={styles.codeSplit}>
           <div className={styles.codePanel}>
             <h3>EmailEditor with monochrome palettes</h3>
-            <CodeBlock language="tsx" children={editorExample} />
+            <CodeBlock
+              language="tsx"
+              title="/src/components/MarketingEditor.tsx"
+              children={editorExample}
+            />
           </div>
-          <div className={styles.codePanel}>
-            <h3>Rendering with theme + variables</h3>
-            <CodeBlock language="ts" children={rendererExample} />
-          </div>
-          <div className={styles.codePanel}>
-            <h3>Tailwind + DaisyUI glue CSS</h3>
-            <CodeBlock language="css" children={editorCssExample} />
-          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const npmPackages = [
+  {
+    name: "@react-email-dnd/editor",
+    type: "Editor",
+    description:
+      "Drag-and-drop editor surface, Canvas orchestration, ready UI.",
+    href: "https://www.npmjs.com/package/@react-email-dnd/editor",
+  },
+  {
+    name: "@react-email-dnd/renderer",
+    type: "Renderer",
+    description:
+      "Render Canvas documents to HTML, React trees, or text output.",
+    href: "https://www.npmjs.com/package/@react-email-dnd/renderer",
+  },
+  {
+    name: "@react-email-dnd/shared",
+    type: "Validation & Utilities",
+    description: "Shared types, schema validation, and padding/color helpers.",
+    href: "https://www.npmjs.com/package/@react-email-dnd/shared",
+  },
+]
+
+function NpmPackages() {
+  return (
+    <section className={clsx(styles.section, styles.sectionDark)}>
+      <div className="container">
+        <h2 className={styles.sectionTitle}>Packages on npm</h2>
+        <p className={styles.sectionSubtitle}>
+          Explore the full toolkit under the <code>@react-email-dnd</code>{" "}
+          scope. Mix the editor, renderer, and shared contracts in any project.
+        </p>
+        <div className={styles.npmGrid}>
+          {npmPackages.map((pkg) => (
+            <a
+              key={pkg.name}
+              className={styles.npmCard}
+              href={pkg.href}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span className={styles.npmEyebrow}>{pkg.type}</span>
+              <h3 className={styles.npmTitle}>{pkg.name}</h3>
+              <p className={styles.npmDescription}>{pkg.description}</p>
+              <span className={styles.npmLink}>View on npm →</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const customComponentsExample = `import { registerComponent } from '@react-email-dnd/editor';
+
+registerComponent({
+  type: 'custom-component',
+  label: 'Custom Component',
+  icon: 'custom-component',
+  component: CustomComponent,
+})
+`
+function CustomComponents() {
+  return (
+    <section className={clsx(styles.section, styles.sectionDark)}>
+      <div className="container">
+        <h2 className={styles.sectionTitle}>Custom Components</h2>
+        <p className={styles.sectionSubtitle}>
+          Bring your own packages or convert any existing React Email components
+          to be drag-and-droppable.
+        </p>
+
+        <div className={styles.codePanel}>
+          <h3>Custom Components</h3>
+          <CodeBlock
+            language="tsx"
+            title="/src/components/CustomComponents.tsx"
+            children={customComponentsExample}
+          />
         </div>
       </div>
     </section>
@@ -453,8 +554,9 @@ export default function Home(): JSX.Element {
     >
       <HomepageHeader />
       <main>
-        <PackageBreakdown />
-        <CustomizationExamples />
+        <NpmPackages />
+        <CustomComponents />
+        {/* ´<CustomizationExamples /> */}
       </main>
     </Layout>
   )

@@ -3,6 +3,9 @@
   "extends": "@tsconfig/docusaurus/tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "module": "Node16"
+    "module": "Node16",
+    "paths": {
+      "@react-email-dnd/shared": ["../packages/shared/dist"]
+    }
   }
 }

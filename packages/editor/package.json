@@ -72,8 +72,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@phosphor-icons/react": "^2.1.10",
-    "@react-email-dnd/renderer": "file:../renderer",
-    "@react-email-dnd/shared": "file:../shared",
+    "@react-email-dnd/renderer": "workspace:*",
+    "@react-email-dnd/shared": "workspace:*",
     "clsx": "^2.1.1"
   },
   "packageManager": "pnpm@9.15.2"
