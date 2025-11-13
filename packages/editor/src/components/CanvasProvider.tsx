@@ -39,6 +39,9 @@ interface CanvasState {
     | { kind: 'column'; id: string }
     | null;
   previewMode: 'desktop' | 'mobile';
+  layoutMode: 'mobile' | 'desktop' | null;
+  forceLayoutMode: 'mobile' | 'desktop' | null;
+  showInlineInsertion: boolean;
 }
 
 type CanvasAction =
@@ -73,7 +76,10 @@ type CanvasAction =
     }
   | { type: 'setPreviewMode'; mode: 'desktop' | 'mobile' }
   | { type: 'upsertVariable'; key: string; value: string }
-  | { type: 'deleteVariable'; key: string };
+  | { type: 'deleteVariable'; key: string }
+  | { type: 'setLayoutMode'; mode: 'mobile' | 'desktop' | null }
+  | { type: 'setForceLayoutMode'; mode: 'mobile' | 'desktop' | null }
+  | { type: 'setShowInlineInsertion'; show: boolean };
 
 interface CanvasProviderProps {
   children: ReactNode;
@@ -98,6 +104,10 @@ export interface CanvasStoreValue {
     | { kind: 'column'; id: string }
     | null;
   previewMode: 'desktop' | 'mobile';
+  layoutMode: 'mobile' | 'desktop' | null;
+  forceLayoutMode: 'mobile' | 'desktop' | null;
+  showInlineInsertion: boolean;
+  isMobileExperience: boolean;
   variables: Record<string, unknown>;
   /** If provided by provider, components can use this to upload files */
   uploadFile?: (file: File) => Promise<string>;
@@ -128,6 +138,9 @@ export interface CanvasStoreValue {
   setPreviewMode: (mode: 'desktop' | 'mobile') => void;
   upsertVariable: (key: string, value: string) => void;
   deleteVariable: (key: string) => void;
+  setLayoutMode: (mode: 'mobile' | 'desktop' | null) => void;
+  setForceLayoutMode: (mode: 'mobile' | 'desktop' | null) => void;
+  setShowInlineInsertion: (show: boolean) => void;
 }
 
 const CanvasStoreContext = createContext<CanvasStoreValue | null>(null);
@@ -146,6 +159,9 @@ function createInitialState(initialDocument?: CanvasDocument): CanvasState {
     selectedBlockId: null,
     selectedContainer: null,
     previewMode: 'desktop',
+    layoutMode: null,
+    forceLayoutMode: null,
+    showInlineInsertion: false,
   };
 }
 
@@ -164,6 +180,9 @@ function pushToHistory(state: CanvasState, nextDocument: CanvasDocument): Canvas
     selectedBlockId: state.selectedBlockId,
     selectedContainer: state.selectedContainer,
     previewMode: state.previewMode,
+    layoutMode: state.layoutMode,
+    forceLayoutMode: state.forceLayoutMode,
+    showInlineInsertion: state.showInlineInsertion,
   };
 }
 
@@ -182,6 +201,9 @@ function replaceHistory(
     selectedBlockId: state.selectedBlockId,
     selectedContainer: state.selectedContainer,
     previewMode: state.previewMode,
+    layoutMode: state.layoutMode,
+    forceLayoutMode: state.forceLayoutMode,
+    showInlineInsertion: state.showInlineInsertion,
   };
 }
 
@@ -244,6 +266,9 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         selectedBlockId: state.selectedBlockId,
         selectedContainer: state.selectedContainer,
         previewMode: state.previewMode,
+        layoutMode: state.layoutMode,
+        forceLayoutMode: state.forceLayoutMode,
+        showInlineInsertion: state.showInlineInsertion,
       };
     }
     case 'selectBlock': {
@@ -306,6 +331,33 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
       return {
         ...state,
         previewMode: action.mode,
+      };
+    }
+    case 'setLayoutMode': {
+      if (state.layoutMode === action.mode) {
+        return state;
+      }
+      return {
+        ...state,
+        layoutMode: action.mode,
+      };
+    }
+    case 'setForceLayoutMode': {
+      if (state.forceLayoutMode === action.mode) {
+        return state;
+      }
+      return {
+        ...state,
+        forceLayoutMode: action.mode,
+      };
+    }
+    case 'setShowInlineInsertion': {
+      if (state.showInlineInsertion === action.show) {
+        return state;
+      }
+      return {
+        ...state,
+        showInlineInsertion: action.show,
       };
     }
     case 'upsertVariable': {
@@ -462,6 +514,22 @@ export function CanvasProvider({
     dispatch({ type: 'deleteVariable', key });
   }, []);
 
+  const setLayoutMode = useCallback((mode: 'mobile' | 'desktop' | null) => {
+    dispatch({ type: 'setLayoutMode', mode });
+  }, []);
+
+  const setForceLayoutMode = useCallback((mode: 'mobile' | 'desktop' | null) => {
+    dispatch({ type: 'setForceLayoutMode', mode });
+  }, []);
+
+  const setShowInlineInsertion = useCallback((show: boolean) => {
+    dispatch({ type: 'setShowInlineInsertion', show });
+  }, []);
+
+  const isMobileExperience = useMemo(() => {
+    return (state.forceLayoutMode ?? state.layoutMode) === 'mobile';
+  }, [state.forceLayoutMode, state.layoutMode]);
+
   const document = state.present;
   const isDirty = !documentsAreEqual(state.present, state.savedSnapshot);
   const selectedBlock = state.selectedBlockId
@@ -485,6 +553,10 @@ export function CanvasProvider({
       selectedBlock,
       selectedContainer: state.selectedContainer,
       previewMode: state.previewMode,
+      layoutMode: state.layoutMode,
+      forceLayoutMode: state.forceLayoutMode,
+      showInlineInsertion: state.showInlineInsertion,
+      isMobileExperience,
       variables: mergedVariables,
       uploadFile,
       portalRoot: portalRootRef.current,
@@ -499,6 +571,9 @@ export function CanvasProvider({
       setPreviewMode,
       upsertVariable,
       deleteVariable,
+      setLayoutMode,
+      setForceLayoutMode,
+      setShowInlineInsertion,
     }),
     [
       document,
@@ -508,6 +583,10 @@ export function CanvasProvider({
       selectedBlock,
       state.previewMode,
       state.selectedContainer,
+      state.layoutMode,
+      state.forceLayoutMode,
+      state.showInlineInsertion,
+      isMobileExperience,
       mergedVariables,
       uploadFile,
       updateTitle,
@@ -521,6 +600,9 @@ export function CanvasProvider({
       setPreviewMode,
       upsertVariable,
       deleteVariable,
+      setLayoutMode,
+      setForceLayoutMode,
+      setShowInlineInsertion,
     ],
   );
 

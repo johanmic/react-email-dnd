@@ -6,12 +6,13 @@ import {
   type DragStartEvent,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   pointerWithin,
 } from '@dnd-kit/core';
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Sidebar, DEFAULT_CONTENT_ITEMS, DEFAULT_STRUCTURE_ITEMS } from './Sidebar';
 import { Main } from './Main';
 import { Header } from './Header';
@@ -34,13 +35,14 @@ import {
   moveColumnToRow,
   moveSectionToPosition,
   createBlockFromSidebar,
+  addBlockToColumn,
   addBlockToColumnAtIndex,
   addRowToSection,
   addRowToSectionAtIndex,
   getColumnCountFromStructureId,
   type StructureDropId,
 } from '../utils/drag-drop';
-import { createEmptySection, documentsAreEqual } from '../utils/document';
+import { createEmptySection, createEmptyColumn, documentsAreEqual } from '../utils/document';
 import type {
   CanvasSection,
   CanvasDocument,
@@ -96,6 +98,16 @@ export type EmailEditorProps = {
   variablesLocked?: boolean;
   /** Filter which header items to show. Only items matching these types will be visible. Default is all items. */
   headerItems?: HeaderItem[];
+  /** Breakpoint in pixels for mobile/desktop detection. Default is 768. */
+  mobileBreakpoint?: number;
+  /** Force mobile layout regardless of viewport size */
+  forceMobileLayout?: boolean;
+  /** Force desktop layout regardless of viewport size */
+  forceDesktopLayout?: boolean;
+  /** Show inline insertion controls (plus buttons). Defaults to auto-detect based on mobile layout. */
+  showInlineInsertionControls?: boolean;
+  /** Always show sidebar even on mobile */
+  alwaysShowSidebar?: boolean;
 };
 
 export function EmailEditor(props: EmailEditorProps) {
@@ -119,8 +131,20 @@ export function EmailEditor(props: EmailEditorProps) {
     blocks,
     variablesLocked = false,
     headerItems,
+    mobileBreakpoint = 768,
+    forceMobileLayout,
+    forceDesktopLayout,
+    showInlineInsertionControls,
+    alwaysShowSidebar = false,
   } = props;
-  const { document, setDocument } = useCanvasStore();
+  const {
+    document,
+    setDocument,
+    setLayoutMode,
+    setForceLayoutMode,
+    setShowInlineInsertion,
+    isMobileExperience,
+  } = useCanvasStore();
   const sections = document.sections;
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeDragData, setActiveDragData] = useState<ActiveDragData | null>(null);
@@ -166,6 +190,50 @@ export function EmailEditor(props: EmailEditorProps) {
   const customBlockRegistry = useMemo(() => buildCustomBlockRegistry(allBlocks), [allBlocks]);
 
   const paddingOptionEntries = useMemo(() => normalizePaddingOptions(padding), [padding]);
+
+  // Viewport detection for mobile/desktop layout
+  useEffect(() => {
+    if (forceMobileLayout !== undefined || forceDesktopLayout !== undefined) {
+      // Respect forced layout modes
+      if (forceMobileLayout) {
+        setForceLayoutMode('mobile');
+      } else if (forceDesktopLayout) {
+        setForceLayoutMode('desktop');
+      } else {
+        setForceLayoutMode(null);
+      }
+      return;
+    }
+
+    // Auto-detect viewport size
+    const mediaQuery = window.matchMedia(`(max-width: ${mobileBreakpoint}px)`);
+    const updateLayoutMode = () => {
+      setLayoutMode(mediaQuery.matches ? 'mobile' : 'desktop');
+    };
+
+    // Set initial value
+    updateLayoutMode();
+
+    // Listen for changes
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', updateLayoutMode);
+      return () => mediaQuery.removeEventListener('change', updateLayoutMode);
+    } else {
+      // Fallback for older browsers
+      mediaQuery.addListener(updateLayoutMode);
+      return () => mediaQuery.removeListener(updateLayoutMode);
+    }
+  }, [mobileBreakpoint, forceMobileLayout, forceDesktopLayout, setLayoutMode, setForceLayoutMode]);
+
+  // Update showInlineInsertion based on mobile experience
+  useEffect(() => {
+    if (showInlineInsertionControls !== undefined) {
+      setShowInlineInsertion(showInlineInsertionControls);
+    } else {
+      // Auto-detect: show inline insertion on mobile
+      setShowInlineInsertion(isMobileExperience);
+    }
+  }, [showInlineInsertionControls, isMobileExperience, setShowInlineInsertion]);
 
   const getPointerCenter = (
     event: DragEndEvent,
@@ -237,6 +305,12 @@ export function EmailEditor(props: EmailEditorProps) {
         distance: 8,
       },
     }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 8,
+      },
+    }),
   );
 
   // Handle initial document
@@ -252,25 +326,90 @@ export function EmailEditor(props: EmailEditorProps) {
     setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
   }, [initialDocument, setDocument, document]);
 
-  const commitSections = (updater: (sections: CanvasSection[]) => CanvasSection[]) => {
-    const nextSections = updater(sections);
+  const commitSections = useCallback(
+    (updater: (sections: CanvasSection[]) => CanvasSection[]) => {
+      const nextSections = updater(sections);
 
-    if (nextSections === sections) {
-      return;
-    }
+      if (nextSections === sections) {
+        return;
+      }
 
-    const nextDocument = {
-      ...document,
-      sections: nextSections,
-    };
+      const nextDocument = {
+        ...document,
+        sections: nextSections,
+      };
 
-    setDocument(nextDocument);
+      setDocument(nextDocument);
 
-    // Notify parent component of document changes
-    if (onDocumentChange) {
-      onDocumentChange(withCombinedClassNames(nextDocument));
-    }
-  };
+      // Notify parent component of document changes
+      if (onDocumentChange) {
+        onDocumentChange(withCombinedClassNames(nextDocument));
+      }
+    },
+    [document, setDocument, onDocumentChange, sections],
+  );
+
+  // Callbacks for inline insertion
+  const handleAddSection = useCallback(() => {
+    commitSections((previous) => [...previous, createEmptySection()]);
+  }, [commitSections]);
+
+  const handleAddRow = useCallback(
+    (sectionId: string, columnCount: number = 1, index?: number) => {
+      commitSections((previous) => {
+        if (index !== undefined) {
+          return addRowToSectionAtIndex(previous, sectionId, columnCount, index);
+        }
+        return addRowToSection(previous, sectionId, columnCount);
+      });
+    },
+    [commitSections],
+  );
+
+  const handleAddColumn = useCallback(
+    (rowId: string, columnCount: number = 1, index?: number) => {
+      commitSections((previous) => {
+        // Find the row and add a column to it
+        return previous.map((section) => ({
+          ...section,
+          rows: section.rows.map((row) => {
+            if (row.id !== rowId) return row;
+            const newColumns = Array.from({ length: columnCount }, () => createEmptyColumn());
+            if (index !== undefined) {
+              const nextColumns = [...row.columns];
+              nextColumns.splice(index, 0, ...newColumns);
+              return { ...row, columns: nextColumns };
+            }
+            return { ...row, columns: [...row.columns, ...newColumns] };
+          }),
+        }));
+      });
+    },
+    [commitSections],
+  );
+
+  const handleAddBlock = useCallback(
+    (columnId: string, blockKey: string, index?: number) => {
+      // blockKey is the palette key (from getBlockPaletteKey), convert to sidebar block ID
+      const sidebarBlockId = `block-${blockKey}`;
+      const block = createBlockFromSidebar(
+        sidebarBlockId,
+        blockDefinitionMap,
+        textColors ?? colors,
+      );
+      if (!block) {
+        console.warn('Unsupported block key:', blockKey);
+        return;
+      }
+      commitSections((previous) => {
+        if (index !== undefined) {
+          return addBlockToColumnAtIndex(previous, columnId, block, index);
+        }
+        return addBlockToColumn(previous, columnId, block);
+      });
+    },
+    [commitSections, blockDefinitionMap, textColors, colors],
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
     const id = String(event.active.id);
@@ -864,13 +1003,16 @@ export function EmailEditor(props: EmailEditorProps) {
       <div className={clsx('w-full h-screen flex flex-col', className)}>
         {showHeader && <Header daisyui={daisyui} headerItems={headerItems} />}
         <div className="flex h-full overflow-hidden">
-          <Sidebar
-            columns={sideBarColumns}
-            daisyui={daisyui}
-            blocks={contentBlocks}
-            structureItems={filteredStructureItems}
-            variablesLocked={variablesLocked}
-          />
+          {(!isMobileExperience || alwaysShowSidebar) && (
+            <Sidebar
+              columns={sideBarColumns}
+              daisyui={daisyui}
+              blocks={contentBlocks}
+              structureItems={filteredStructureItems}
+              variablesLocked={variablesLocked}
+              hidden={isMobileExperience && !alwaysShowSidebar}
+            />
+          )}
           <div className="flex-1 h-full overflow-auto">
             <Main
               sections={sections}
@@ -880,6 +1022,14 @@ export function EmailEditor(props: EmailEditorProps) {
               unlockable={unlockable}
               showHidden={showHidden}
               customBlockRegistry={customBlockRegistry}
+              inlineInsertionMode={isMobileExperience && (showInlineInsertionControls ?? true)}
+              inlineInsertionVariant="icon-with-label"
+              onAddSection={handleAddSection}
+              onAddRow={handleAddRow}
+              onAddColumn={handleAddColumn}
+              onAddBlock={handleAddBlock}
+              contentBlocks={contentBlocks}
+              structureItems={filteredStructureItems}
             />
           </div>
         </div>

@@ -9,8 +9,6 @@ import BrowserOnly from "@docusaurus/BrowserOnly"
 // @ts-expect-error -- workspace path alias resolved via pnpm workspaces
 import type { CanvasDocument, Padding } from "@react-email-dnd/shared"
 
-import styles from "./index.module.css"
-
 // Suppress ResizeObserver loop errors at module level
 // This harmless error occurs during drag operations when ResizeObserver
 // callbacks trigger layout changes. We catch it early before webpack-dev-server's overlay.
@@ -247,7 +245,7 @@ const demoDocument: CanvasDocument = {
                   id: "heading-hero",
                   type: "heading",
                   props: {
-                    content: "Build monochrome-perfect campaigns",
+                    content: "Build perfect emails",
                     as: "h2",
                     align: "left",
                     fontSize: 26,
@@ -262,7 +260,7 @@ const demoDocument: CanvasDocument = {
                   type: "text",
                   props: {
                     content:
-                      "Drag, customize, and ship email layouts with the exact tokens your brand approves - no green gradients, ever.",
+                      "Drag, customize, and ship email layouts with the exact tokens your brand approves",
                     align: "left",
                     fontSize: 16,
                     color: "#FFFFFF",
@@ -299,7 +297,9 @@ function LiveEditorPreview() {
   return (
     <BrowserOnly
       fallback={
-        <div className={styles.exampleFallback}>Loading live editor...</div>
+        <div className="flex h-[32rem] items-center justify-center rounded-xl border border-dashed border-base-300 text-sm text-base-content/70">
+          Loading live editor...
+        </div>
       }
     >
       {() => {
@@ -326,9 +326,13 @@ function LiveEditorPreview() {
         } = require("@react-email-dnd/editor")
 
         return (
-          <div id="tw-scope">
+          <div
+            id="tw-scope"
+            className="flex w-full flex-col gap-3"
+            data-theme={theme}
+          >
             <div
-              className={styles.themeControls}
+              className="flex w-full flex-wrap justify-center gap-2 p-2"
               role="toolbar"
               aria-label="Theme selector"
             >
@@ -337,27 +341,30 @@ function LiveEditorPreview() {
                   key={option.value}
                   type="button"
                   onClick={() => setTheme(option.value)}
-                  className={clsx(styles.themeButton, {
-                    [styles.themeButtonActive]: theme === option.value,
-                  })}
+                  className={clsx(
+                    "min-w-[120px] flex-1 basis-[140px] btn btn-sm rounded-full px-4 py-1 text-sm tracking-wide text-neutral transition-colors",
+                    {
+                      "bg-primary text-primary-content": theme === option.value,
+                    },
+                    {
+                      "bg-neutral text-neutral-content": theme !== option.value,
+                    }
+                  )}
                   aria-pressed={theme === option.value}
                 >
                   {option.label}
                 </button>
               ))}
             </div>
-            <div
-              className="max-h-[600px] bg-base-300 overflow-y-auto"
-              data-theme={theme}
-            >
-              <div className="bg-base-300">
+            <div className="w-full max-h-[32rem] overflow-auto rounded-2xl border border-base-300 bg-primary/10 p-3 shadow-inner">
+              <div className="rounded-2xl border border-base-300 bg-primary/10">
                 <CanvasProvider
                   initialDocument={demoDocument}
                   onDocumentChange={() => {}}
-                  className={styles.canvasProvider}
+                  className="flex h-full w-full min-w-0 flex-col"
                 >
                   <EmailEditor
-                    // className={styles.embeddedEditor}
+                    className="flex h-full w-full flex-col"
                     showHeader={true}
                     daisyui={true}
                     colorMode="primary"
@@ -385,48 +392,51 @@ function LiveEditorPreview() {
 
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext()
+  const themeConfig = siteConfig.themeConfig as {
+    navbar?: { logo?: { srcDark?: string } }
+  }
   return (
-    <header className={styles.heroBanner}>
-      <div className="container">
-        <div className={styles.heroGrid}>
-          <div className={styles.heroContent}>
-            <h1 className={styles.heroTitle}>
-              {siteConfig.themeConfig.navbar?.logo?.srcDark && (
+    <header className="bg-primary py-[clamp(3.5rem,8vw,6rem)]">
+      <div className="container mx-auto max-w-screen-xl px-4">
+        <div className="flex flex-col gap-[clamp(2.5rem,6vw,4rem)]">
+          <div className="mx-auto flex flex-col items-center px-3 text-center lg:mx-0 lg:items-start lg:px-0 lg:text-left">
+            <h1 className="mb-4 inline-flex flex-wrap items-center justify-center gap-3 text-[clamp(2.5rem,4vw,3.75rem)] text-white lg:justify-start">
+              {themeConfig.navbar?.logo?.srcDark && (
                 <img
-                  src={siteConfig.themeConfig.navbar.logo.srcDark}
+                  src={themeConfig.navbar.logo.srcDark}
                   alt={siteConfig.title}
-                  className={styles.heroLogo}
+                  className="h-auto w-[clamp(2.25rem,4vw,3rem)] flex-shrink-0"
                 />
               )}
               {siteConfig.title}
             </h1>
-            <p className={styles.heroSubtitle}>
+            <p className="mb-8 text-[clamp(1rem,2.5vw,1.1rem)] leading-[1.7] text-base-content/80">
               Editor, Renderer and utilities to make visual email editing for
               React Email and the Resend framework
             </p>
-            <div className={styles.heroButtons}>
+            <div className="flex w-full flex-col items-center justify-center gap-4 lg:flex-row lg:items-center lg:justify-start">
               <Link
-                className={clsx("button button--lg", styles.ctaButton)}
+                className="btn btn-lg btn-neutral text-neutral-content!"
                 to="/docs/quickstart"
               >
                 Get Started
               </Link>
               <Link
-                className={clsx("button button--lg", styles.ghostButton)}
+                className="btn btn-lg btn-neutral btn-outline bg-transparent normal-case text-neutral!"
                 to="/docs/json-structure"
               >
                 Read the docs
               </Link>
             </div>
-            <p className={styles.heroMeta}>
-              Ships as separate packages for editor, renderer, and shared
-              utilities.
-            </p>
           </div>
-          <div className={styles.heroExample}>
-            <p className={styles.heroExampleLabel}>Working example</p>
-            <div className={styles.exampleShell}>
-              <LiveEditorPreview />
+          <div className="flex w-full flex-col items-center gap-3 px-3 lg:px-0">
+            <p className="w-full text-center text-sm uppercase tracking-widest text-base-content/70">
+              Working example
+            </p>
+            <div className="w-full overflow-hidden rounded-2xl border border-base-300 bg-base-100 p-[clamp(0.75rem,3vw,1.25rem)] shadow-2xl">
+              <div className="h-[32rem] overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300">
+                <LiveEditorPreview />
+              </div>
             </div>
           </div>
         </div>
@@ -437,23 +447,29 @@ function HomepageHeader() {
 
 function CustomizationExamples() {
   return (
-    <section className={clsx(styles.section, styles.sectionDark)}>
-      <div className="container">
-        <h2 className={styles.sectionTitle}>Basic Usage</h2>
-        <p className={styles.sectionSubtitle}>
+    <section className="bg-primary py-[clamp(3rem,7vw,4.5rem)] text-base-content">
+      <div className="container mx-auto max-w-screen-xl px-4">
+        <h2 className="mb-4 text-3xl">Basic Usage</h2>
+        <p className="mb-8 text-center text-base-content/60 md:text-left">
           The Vanilla playground in{" "}
           <code>packages/editor/example/src/Vanilla.tsx</code> wires fonts and
           custom blocks together. These snippets condense that setup for quick
           copy/paste usage.
         </p>
-        <div className={styles.codeSplit}>
-          <div className={styles.codePanel}>
-            <h3>EmailEditor with monochrome palettes</h3>
-            <CodeBlock
-              language="tsx"
-              title="/src/components/MarketingEditor.tsx"
-              children={editorExample}
-            />
+        <div className="flex flex-col gap-6">
+          <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-200 p-6 text-base-content">
+            <h3 className="mb-4 mt-0 text-base">
+              EmailEditor with monochrome palettes
+            </h3>
+            <BrowserOnly>
+              {() => (
+                <CodeBlock
+                  language="tsx"
+                  title="/src/components/MarketingEditor.tsx"
+                  children={editorExample}
+                />
+              )}
+            </BrowserOnly>
           </div>
         </div>
       </div>
@@ -486,26 +502,31 @@ const npmPackages = [
 
 function NpmPackages() {
   return (
-    <section className={clsx(styles.section, styles.sectionDark)}>
-      <div className="container">
-        <h2 className={styles.sectionTitle}>Packages on npm</h2>
-        <p className={styles.sectionSubtitle}>
-          Explore the full toolkit under the <code>@react-email-dnd</code>{" "}
-          scope. Mix the editor, renderer, and shared contracts in any project.
+    <section className="bg-base-100 py-[clamp(3rem,7vw,4.5rem)] text-base-content">
+      <div className="container mx-auto max-w-screen-xl px-4">
+        <h2 className="mb-4 text-3xl">Packages on npm</h2>
+        <p className="mb-8 text-center text-base-content/60 md:text-left">
+          <code>@react-email-dnd</code> is divided up in to multiple packages.
         </p>
-        <div className={styles.npmGrid}>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {npmPackages.map((pkg) => (
             <a
               key={pkg.name}
-              className={styles.npmCard}
+              className="flex flex-col gap-3 rounded-2xl border border-base-300 bg-gradient-to-br from-base-200 to-base-100 p-6 text-base-content no-underline transition hover:-translate-y-1 hover:border-base-300 hover:shadow-2xl"
               href={pkg.href}
               target="_blank"
               rel="noreferrer"
             >
-              <span className={styles.npmEyebrow}>{pkg.type}</span>
-              <h3 className={styles.npmTitle}>{pkg.name}</h3>
-              <p className={styles.npmDescription}>{pkg.description}</p>
-              <span className={styles.npmLink}>View on npm →</span>
+              <span className="text-xs uppercase tracking-widest text-base-content/60">
+                {pkg.type}
+              </span>
+              <h3 className="m-0 text-lg text-base-content">{pkg.name}</h3>
+              <p className="m-0 text-sm leading-relaxed text-base-content/80">
+                {pkg.description}
+              </p>
+              <span className="mt-auto text-sm text-primary">
+                View on npm →
+              </span>
             </a>
           ))}
         </div>
@@ -525,21 +546,25 @@ registerComponent({
 `
 function CustomComponents() {
   return (
-    <section className={clsx(styles.section, styles.sectionDark)}>
-      <div className="container">
-        <h2 className={styles.sectionTitle}>Custom Components</h2>
-        <p className={styles.sectionSubtitle}>
+    <section className="bg-base-100 py-[clamp(3rem,7vw,4.5rem)] text-base-content">
+      <div className="container mx-auto max-w-screen-xl px-4">
+        <h2 className="mb-4 text-3xl">Custom Components</h2>
+        <p className="mb-8 text-center text-base-content/60 md:text-left">
           Bring your own packages or convert any existing React Email components
           to be drag-and-droppable.
         </p>
 
-        <div className={styles.codePanel}>
-          <h3>Custom Components</h3>
-          <CodeBlock
-            language="tsx"
-            title="/src/components/CustomComponents.tsx"
-            children={customComponentsExample}
-          />
+        <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-200 p-6 text-base-content">
+          <h3 className="mb-4 mt-0 text-base">Custom Components</h3>
+          <BrowserOnly>
+            {() => (
+              <CodeBlock
+                language="tsx"
+                title="/src/components/CustomComponents.tsx"
+                children={customComponentsExample}
+              />
+            )}
+          </BrowserOnly>
         </div>
       </div>
     </section>
@@ -552,12 +577,14 @@ export default function Home(): JSX.Element {
       title="React Email DnD docs"
       description="Authoring and rendering documentation for the React Email drag-and-drop toolkit"
     >
-      <HomepageHeader />
-      <main>
-        <NpmPackages />
-        <CustomComponents />
-        {/* ´<CustomizationExamples /> */}
-      </main>
+      <div data-theme="dark">
+        <HomepageHeader />
+        <main>
+          <NpmPackages />
+          <CustomComponents />
+          {/* ´<CustomizationExamples /> */}
+        </main>
+      </div>
     </Layout>
   )
 }

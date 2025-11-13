@@ -8,6 +8,12 @@ import { CanvasStoreContext } from './CanvasProvider';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
+import type {
+  BlockDefinition,
+  CanvasContentBlock,
+  StructurePaletteItem,
+} from '@react-email-dnd/shared';
+
 export interface MainProps {
   sections: CanvasSection[];
   daisyui?: boolean;
@@ -18,6 +24,14 @@ export interface MainProps {
   // Using `any` by design to allow heterogeneous custom block props across definitions.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customBlockRegistry?: Record<string, CustomBlockDefinition<any>>;
+  inlineInsertionMode?: boolean;
+  inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
+  onAddSection?: () => void;
+  onAddRow?: (sectionId: string, columnCount?: number, index?: number) => void;
+  onAddColumn?: (rowId: string, columnCount?: number, index?: number) => void;
+  onAddBlock?: (columnId: string, blockKey: string, index?: number) => void;
+  contentBlocks?: BlockDefinition<CanvasContentBlock>[];
+  structureItems?: StructurePaletteItem[];
 }
 
 export function Main({
@@ -28,6 +42,14 @@ export function Main({
   unlockable = true,
   showHidden = false,
   customBlockRegistry = {},
+  inlineInsertionMode = false,
+  inlineInsertionVariant = 'icon-with-label',
+  onAddSection,
+  onAddRow,
+  onAddColumn,
+  onAddBlock,
+  contentBlocks,
+  structureItems,
 }: MainProps) {
   const canvasStore = useContext(CanvasStoreContext);
   const placeholderSectionRef = useRef<CanvasSection | null>(null);
@@ -79,6 +101,14 @@ export function Main({
           unlockable={unlockable}
           showHidden={showHidden}
           customBlockRegistry={customBlockRegistry}
+          inlineInsertionMode={inlineInsertionMode}
+          inlineInsertionVariant={inlineInsertionVariant}
+          onAddSection={onAddSection}
+          onAddRow={onAddRow}
+          onAddColumn={onAddColumn}
+          onAddBlock={onAddBlock}
+          contentBlocks={contentBlocks}
+          structureItems={structureItems}
         />
       </div>
     </div>

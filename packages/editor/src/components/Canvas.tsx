@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, type CSSProperties, Fragment } from 'react';
+import { useState, useEffect, useRef, type CSSProperties, Fragment } from 'react';
 import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
 import { DotsSixVerticalIcon, Trash, Lock, LockOpen, Eye, EyeSlash } from '@phosphor-icons/react';
+import type { IconProps } from '@phosphor-icons/react';
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -20,13 +21,17 @@ import type {
   CanvasSection,
   CustomBlockDefinition,
   CustomBlockProps,
+  BlockDefinition,
+  StructurePaletteItem,
 } from '@react-email-dnd/shared';
+import { Plus } from '@phosphor-icons/react';
 import { Button } from './button';
 import { Divider } from './divider';
 import { Heading } from './heading';
 import { Image } from './image';
 import { Text } from './text';
 import { useCanvasStore } from '../hooks/useCanvasStore';
+import { getBlockPaletteKey } from '../utils/block-library';
 import { ConfirmModal } from './ConfirmModal';
 import { removeColumn, removeRow, removeSection, type ActiveDragData } from '../utils/drag-drop';
 import {
@@ -46,6 +51,14 @@ export interface CanvasProps {
   unlockable?: boolean;
   showHidden?: boolean;
   customBlockRegistry?: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  inlineInsertionMode?: boolean;
+  inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
+  onAddSection?: () => void;
+  onAddRow?: (sectionId: string, columnCount?: number, index?: number) => void;
+  onAddColumn?: (rowId: string, columnCount?: number, index?: number) => void;
+  onAddBlock?: (columnId: string, blockKey: string, index?: number) => void;
+  contentBlocks?: BlockDefinition<CanvasContentBlock>[];
+  structureItems?: StructurePaletteItem[];
 }
 
 // Helper component for element type tabs
@@ -884,7 +897,7 @@ function CanvasBlockView({
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
   isCompactLayout?: boolean;
 }) {
-  const { selectBlock, selectedBlockId, variables } = useCanvasStore();
+  const { selectBlock, selectedBlockId, variables, isMobileExperience } = useCanvasStore();
   const { document, setDocument } = useCanvasStore();
 
   // Block is disabled if it's locked, or if any parent container is locked
@@ -935,6 +948,10 @@ function CanvasBlockView({
   };
 
   const handleBlockClick = (e: React.MouseEvent) => {
+    // Don't select if we're dragging
+    if (isDragging) {
+      return;
+    }
     e.stopPropagation();
     selectBlock(block.id);
   };
@@ -949,11 +966,13 @@ function CanvasBlockView({
       className={clsx(
         'relative transition',
         colorMode !== 'none' && colorMode !== 'output' && 'border rounded-xl shadow-sm',
-        isCompactLayout && colorMode !== 'output'
+        isMobileExperience && colorMode !== 'output'
           ? 'flex flex-col p-2 mb-2'
-          : colorMode === 'output'
-            ? 'flex items-start'
-            : 'flex items-start gap-3 p-3 mb-3',
+          : isCompactLayout && colorMode !== 'output'
+            ? 'flex flex-col p-2 mb-2'
+            : colorMode === 'output'
+              ? 'flex items-start'
+              : 'flex items-start gap-3 p-3 mb-3',
         {
           'border-slate-300/20 bg-white/80':
             !daisyui && colorMode !== 'none' && colorMode !== 'output',
@@ -980,38 +999,38 @@ function CanvasBlockView({
       )}
       onClick={handleBlockClick}
     >
-      {colorMode !== 'output' && isCompactLayout ? (
-        // Compact layout: controls on top
-        <div className="flex justify-between items-center gap-1 mb-2">
-          <div className="flex gap-1">
-            {showHidden && (
-              <button
-                type="button"
-                aria-label={block.hidden ? 'Show block' : 'Hide block'}
-                className={clsx(
-                  'inline-flex items-center justify-center w-5 h-5 rounded cursor-pointer transition',
-                  {
-                    'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && block.hidden,
-                    'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !block.hidden,
-                    'bg-info/10 text-info hover:bg-info/20': daisyui && block.hidden,
-                    'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !block.hidden,
-                  },
-                )}
-                onClick={handleToggleHidden}
-              >
-                {block.hidden ? (
-                  <EyeSlash size={14} weight="bold" />
-                ) : (
-                  <Eye size={14} weight="bold" />
-                )}
-              </button>
-            )}
-          </div>
+      {colorMode !== 'output' && (isCompactLayout || isMobileExperience) ? (
+        // Compact layout: controls on top (used for 3+ columns or mobile)
+        <div className="flex justify-end items-center gap-1 mb-2">
+          {showHidden && (
+            <button
+              type="button"
+              aria-label={block.hidden ? 'Show block' : 'Hide block'}
+              className={clsx(
+                'inline-flex items-center justify-center rounded cursor-pointer transition',
+                isMobileExperience ? 'min-w-[44px] min-h-[44px] p-2' : 'w-5 h-5',
+                {
+                  'bg-blue-50 text-blue-600 hover:bg-blue-100': !daisyui && block.hidden,
+                  'bg-slate-100 text-slate-500 hover:bg-slate-200': !daisyui && !block.hidden,
+                  'bg-info/10 text-info hover:bg-info/20': daisyui && block.hidden,
+                  'bg-base-200 text-base-content/60 hover:bg-base-300': daisyui && !block.hidden,
+                },
+              )}
+              onClick={handleToggleHidden}
+            >
+              {block.hidden ? (
+                <EyeSlash size={isMobileExperience ? 20 : 14} weight="bold" />
+              ) : (
+                <Eye size={isMobileExperience ? 20 : 14} weight="bold" />
+              )}
+            </button>
+          )}
           {!isDisabled && (
             <button
               type="button"
               className={clsx(
-                'inline-flex items-center justify-center w-5 h-5 border-0 rounded cursor-grab transition',
+                'inline-flex items-center justify-center border-0 rounded cursor-grab transition touch-none',
+                isMobileExperience ? 'min-w-[44px] min-h-[44px] p-2' : 'w-5 h-5',
                 {
                   'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
                     !daisyui,
@@ -1019,17 +1038,24 @@ function CanvasBlockView({
                     daisyui,
                 },
               )}
+              style={{ touchAction: 'none' }}
               aria-label="Drag to reorder"
               {...listeners}
               {...attributes}
-              onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                console.log('🟩 Block drag handle clicked:', block.id);
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
             >
-              <DotsSixVerticalIcon size={14} weight="bold" />
+              <DotsSixVerticalIcon size={isMobileExperience ? 20 : 14} weight="bold" />
             </button>
           )}
         </div>
-      ) : colorMode !== 'output' ? (
-        // Regular layout: controls on the side
+      ) : colorMode !== 'output' && !isMobileExperience ? (
+        // Regular layout: controls on the side (desktop only)
         <div className="flex gap-1">
           {showHidden && (
             <button
@@ -1057,7 +1083,8 @@ function CanvasBlockView({
             <button
               type="button"
               className={clsx(
-                'inline-flex items-center justify-center w-6 h-6 mt-0.5 border-0 rounded-lg cursor-grab transition',
+                'inline-flex items-center justify-center mt-0.5 border-0 rounded-lg cursor-grab transition touch-none',
+                isMobileExperience ? 'min-w-[44px] min-h-[44px] p-2' : 'w-6 h-6',
                 {
                   'bg-slate-200/60 text-slate-500 hover:bg-slate-200/90 hover:text-slate-800 active:cursor-grabbing focus-visible:outline focus-visible:outline-blue-500/55':
                     !daisyui,
@@ -1065,19 +1092,26 @@ function CanvasBlockView({
                     daisyui,
                 },
               )}
+              style={{ touchAction: 'none' }}
               aria-label="Drag to reorder"
               {...listeners}
               {...attributes}
-              onMouseDown={() => console.log('🟩 Block drag handle clicked:', block.id)}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                console.log('🟩 Block drag handle clicked:', block.id);
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
             >
-              <DotsSixVerticalIcon size={16} weight="bold" />
+              <DotsSixVerticalIcon size={isMobileExperience ? 20 : 16} weight="bold" />
             </button>
           )}
         </div>
       ) : null}
       <div
         className={
-          isCompactLayout && colorMode !== 'output'
+          (isCompactLayout || isMobileExperience) && colorMode !== 'output'
             ? 'w-full'
             : colorMode === 'output'
               ? 'w-full'
@@ -1106,6 +1140,10 @@ function CanvasColumnView({
   unlockable = true,
   showHidden = false,
   customBlockRegistry,
+  inlineInsertionMode = false,
+  inlineInsertionVariant = 'icon-with-label',
+  onAddBlock,
+  contentBlocks = [],
 }: {
   column: CanvasColumn;
   rowId: string;
@@ -1118,6 +1156,10 @@ function CanvasColumnView({
   unlockable?: boolean;
   showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  inlineInsertionMode?: boolean;
+  inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
+  onAddBlock?: (columnId: string, blockKey: string, index?: number) => void;
+  contentBlocks?: BlockDefinition<CanvasContentBlock>[];
 }) {
   // Determine if we should use compact layout (controls on top)
   const isCompactLayout = row.columns.length >= 3;
@@ -1454,6 +1496,24 @@ function CanvasColumnView({
               colorMode={colorMode}
             />
           )}
+          {inlineInsertionMode && onAddBlock && (
+            <InlineInsertionButton
+              label="Add Block"
+              variant={inlineInsertionVariant}
+              daisyui={daisyui}
+              items={contentBlocks.map((block) => ({
+                id: getBlockPaletteKey(block),
+                label: block.label,
+                icon: block.icon,
+              }))}
+              onSelect={(blockKey) => {
+                const block = contentBlocks.find((b) => getBlockPaletteKey(b) === blockKey);
+                if (block) {
+                  onAddBlock(column.id, blockKey, column.blocks.length);
+                }
+              }}
+            />
+          )}
         </div>
       </SortableContext>
     </div>
@@ -1470,6 +1530,12 @@ function CanvasRowView({
   unlockable = true,
   showHidden = false,
   customBlockRegistry,
+  inlineInsertionMode = false,
+  inlineInsertionVariant = 'icon-with-label',
+  onAddColumn,
+  onAddBlock,
+  contentBlocks = [],
+  structureItems = [],
 }: {
   row: CanvasRow;
   sectionId: string;
@@ -1480,6 +1546,12 @@ function CanvasRowView({
   unlockable?: boolean;
   showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  inlineInsertionMode?: boolean;
+  inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
+  onAddColumn?: (rowId: string, columnCount?: number, index?: number) => void;
+  onAddBlock?: (columnId: string, blockKey: string, index?: number) => void;
+  contentBlocks?: BlockDefinition<CanvasContentBlock>[];
+  structureItems?: StructurePaletteItem[];
 }) {
   const { previewMode, selectContainer } = useCanvasStore();
 
@@ -1683,8 +1755,40 @@ function CanvasRowView({
                   unlockable={unlockable}
                   showHidden={showHidden}
                   customBlockRegistry={customBlockRegistry}
+                  inlineInsertionMode={inlineInsertionMode}
+                  inlineInsertionVariant={inlineInsertionVariant}
+                  onAddBlock={onAddBlock}
+                  contentBlocks={contentBlocks}
                 />
               ))
+          )}
+          {inlineInsertionMode && onAddColumn && (
+            <InlineInsertionButton
+              label="Add Column"
+              variant={inlineInsertionVariant}
+              daisyui={daisyui}
+              items={[
+                {
+                  id: '1',
+                  label: '1 Column',
+                  icon: structureItems.find((item) => item.id === 'structure-columns-1')?.icon,
+                },
+                {
+                  id: '2',
+                  label: '2 Columns',
+                  icon: structureItems.find((item) => item.id === 'structure-columns-2')?.icon,
+                },
+                {
+                  id: '3',
+                  label: '3 Columns',
+                  icon: structureItems.find((item) => item.id === 'structure-columns-3')?.icon,
+                },
+              ]}
+              onSelect={(id) => {
+                const columnCount = parseInt(id, 10);
+                onAddColumn(row.id, columnCount, row.columns.length);
+              }}
+            />
           )}
         </div>
       </SortableContext>
@@ -1700,6 +1804,13 @@ function CanvasSectionView({
   unlockable = true,
   showHidden = false,
   customBlockRegistry,
+  inlineInsertionMode = false,
+  inlineInsertionVariant = 'icon-with-label',
+  onAddRow,
+  onAddColumn,
+  onAddBlock,
+  contentBlocks = [],
+  structureItems = [],
 }: {
   section: CanvasSection;
   daisyui?: boolean;
@@ -1708,6 +1819,13 @@ function CanvasSectionView({
   unlockable?: boolean;
   showHidden?: boolean;
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  inlineInsertionMode?: boolean;
+  inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
+  onAddRow?: (sectionId: string, columnCount?: number, index?: number) => void;
+  onAddColumn?: (rowId: string, columnCount?: number, index?: number) => void;
+  onAddBlock?: (columnId: string, blockKey: string, index?: number) => void;
+  contentBlocks?: BlockDefinition<CanvasContentBlock>[];
+  structureItems?: StructurePaletteItem[];
 }) {
   const { selectContainer } = useCanvasStore();
   const {
@@ -1753,6 +1871,11 @@ function CanvasSectionView({
 
   const sectionPaddingStyle = resolvePaddingStyle(section.padding);
   const sectionPaddingClasses = resolvePaddingClasses(section.padding);
+  // Replace p-6 with p-2 if present, otherwise use p-2 as default if no padding is specified
+  const effectiveSectionPaddingClasses =
+    sectionPaddingClasses.length > 0
+      ? sectionPaddingClasses.map((cls) => (cls === 'p-6' ? 'p-2' : cls))
+      : ['p-2'];
   const hasSectionPadding = sectionPaddingClasses.length > 0 || sectionPaddingStyle != null;
   const sectionMarginStyle = resolveMarginStyle(section.margin);
   const sectionMarginClasses = resolveMarginClasses(section.margin);
@@ -1862,7 +1985,7 @@ function CanvasSectionView({
           colorMode !== 'output' && 'rounded-[0.9rem]',
           showSectionHighlight && 'border',
           // Only apply default padding class when no explicit padding is provided and not in output mode
-          { 'p-2': !hasSectionPadding && colorMode !== 'output' },
+          { 'p-2 md:p-4': !hasSectionPadding && colorMode !== 'output' },
           // Add minimal border and padding for output mode, and bg-base-200/20 for daisyui
           colorMode === 'output' &&
             (daisyui ? 'border border-base-300/50' : 'border border-gray-300'),
@@ -1878,11 +2001,10 @@ function CanvasSectionView({
           },
           section.backgroundClassName,
           section.className,
-          sectionPaddingClasses,
+          effectiveSectionPaddingClasses,
           sectionMarginClasses,
           sectionAlignmentClass,
         )}
-        style={sectionInlineStyle}
         onClick={(e) => {
           e.stopPropagation();
           selectContainer({ kind: 'section', id: section.id });
@@ -1931,6 +2053,12 @@ function CanvasSectionView({
                   unlockable={unlockable}
                   showHidden={showHidden}
                   customBlockRegistry={customBlockRegistry}
+                  inlineInsertionMode={inlineInsertionMode}
+                  inlineInsertionVariant={inlineInsertionVariant}
+                  onAddColumn={onAddColumn}
+                  onAddBlock={onAddBlock}
+                  contentBlocks={contentBlocks}
+                  structureItems={structureItems}
                 />
                 {showSectionHighlight && (
                   <RowDropZone
@@ -1954,8 +2082,165 @@ function CanvasSectionView({
               colorMode={colorMode}
             />
           )}
+          {inlineInsertionMode && onAddRow && (
+            <InlineInsertionButton
+              label="Add Row"
+              variant={inlineInsertionVariant}
+              daisyui={daisyui}
+              items={[
+                {
+                  id: 'row-1',
+                  label: '1 Column',
+                  icon: structureItems.find((item) => item.id === 'structure-columns-1')?.icon,
+                },
+                {
+                  id: 'row-2',
+                  label: '2 Columns',
+                  icon: structureItems.find((item) => item.id === 'structure-columns-2')?.icon,
+                },
+                {
+                  id: 'row-3',
+                  label: '3 Columns',
+                  icon: structureItems.find((item) => item.id === 'structure-columns-3')?.icon,
+                },
+                {
+                  id: 'row',
+                  label: 'Row',
+                  icon: structureItems.find((item) => item.id === 'structure-row')?.icon,
+                },
+              ]}
+              onSelect={(id) => {
+                const columnCount = id === 'row' ? 1 : parseInt(id.replace('row-', ''), 10);
+                onAddRow(section.id, columnCount, section.rows.length);
+              }}
+            />
+          )}
         </SortableContext>
       </section>
+    </div>
+  );
+}
+
+// Inline Insertion Menu Component
+function InlineInsertionMenu({
+  items,
+  onSelect,
+  daisyui,
+  onClose,
+}: {
+  items: Array<{
+    id: string;
+    label: string;
+    icon?: React.ComponentType<IconProps>;
+  }>;
+  onSelect: (id: string) => void;
+  daisyui?: boolean;
+  onClose: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={menuRef}
+      className={clsx('absolute z-50 mt-2 w-56 rounded-lg shadow-lg border', {
+        'bg-white border-slate-200': !daisyui,
+        'bg-base-100 border-base-300': daisyui,
+      })}
+      style={{ bottom: '100%', left: '50%', transform: 'translateX(-50%)' }}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <div className="py-1">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={clsx('w-full flex items-center gap-3 px-4 py-2 text-sm transition', {
+                'text-slate-700 hover:bg-slate-100': !daisyui,
+                'text-base-content hover:bg-base-200': daisyui,
+              })}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(item.id);
+                onClose();
+              }}
+            >
+              {Icon && <Icon size={18} weight="duotone" />}
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Inline Insertion Button Component
+function InlineInsertionButton({
+  label,
+  variant = 'icon-with-label',
+  daisyui,
+  items,
+  onSelect,
+  disabled,
+}: {
+  label: string;
+  variant?: 'icon-only' | 'icon-with-label';
+  daisyui?: boolean;
+  items: Array<{
+    id: string;
+    label: string;
+    icon?: React.ComponentType<IconProps>;
+  }>;
+  onSelect: (id: string) => void;
+  disabled?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  if (disabled) {
+    return null;
+  }
+
+  return (
+    <div className="relative flex justify-center my-2">
+      <button
+        ref={buttonRef}
+        type="button"
+        className={clsx('flex items-center gap-2 px-4 py-2 rounded-lg transition min-h-[44px]', {
+          'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200': !daisyui,
+          'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20': daisyui,
+        })}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        aria-label={`Add ${label}`}
+      >
+        <Plus size={20} weight="bold" />
+        {variant === 'icon-with-label' && <span className="text-sm font-medium">{label}</span>}
+      </button>
+      {isOpen && (
+        <InlineInsertionMenu
+          items={items}
+          onSelect={onSelect}
+          daisyui={daisyui}
+          onClose={() => setIsOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1968,6 +2253,14 @@ export function Canvas({
   unlockable = true,
   showHidden = false,
   customBlockRegistry = {},
+  inlineInsertionMode = false,
+  inlineInsertionVariant = 'icon-with-label',
+  onAddSection,
+  onAddRow,
+  onAddColumn,
+  onAddBlock,
+  contentBlocks = [],
+  structureItems = [],
 }: CanvasProps) {
   const { selectBlock, selectContainer, document } = useCanvasStore();
   const { isOver, setNodeRef } = useDroppable({
@@ -2054,17 +2347,40 @@ export function Canvas({
       ) : (
         sections
           .filter((section) => showHidden || !section.hidden)
-          .map((section) => (
-            <CanvasSectionView
-              key={section.id}
-              section={section}
-              daisyui={daisyui}
-              colorMode={colorMode}
-              colorModeDepth={colorModeDepth}
-              unlockable={unlockable}
-              showHidden={showHidden}
-              customBlockRegistry={customBlockRegistry}
-            />
+          .map((section, index) => (
+            <Fragment key={section.id}>
+              <CanvasSectionView
+                section={section}
+                daisyui={daisyui}
+                colorMode={colorMode}
+                colorModeDepth={colorModeDepth}
+                unlockable={unlockable}
+                showHidden={showHidden}
+                customBlockRegistry={customBlockRegistry}
+                inlineInsertionMode={inlineInsertionMode}
+                inlineInsertionVariant={inlineInsertionVariant}
+                onAddRow={onAddRow}
+                onAddColumn={onAddColumn}
+                onAddBlock={onAddBlock}
+                contentBlocks={contentBlocks}
+                structureItems={structureItems}
+              />
+              {inlineInsertionMode && index < sections.length - 1 && onAddSection && (
+                <InlineInsertionButton
+                  label="Add Section"
+                  variant={inlineInsertionVariant}
+                  daisyui={daisyui}
+                  items={[
+                    {
+                      id: 'section',
+                      label: 'Section',
+                      icon: structureItems.find((item) => item.id === 'structure-section')?.icon,
+                    },
+                  ]}
+                  onSelect={() => onAddSection()}
+                />
+              )}
+            </Fragment>
           ))
       )}
     </div>

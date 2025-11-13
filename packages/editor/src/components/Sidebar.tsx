@@ -38,6 +38,7 @@ export interface SidebarProps {
   daisyui?: boolean;
   columns?: 1 | 2 | 3;
   variablesLocked?: boolean;
+  hidden?: boolean;
 }
 
 function getVariableType(value: unknown): 'string' | 'number' | 'object' {
@@ -51,8 +52,12 @@ export function Sidebar({
   blocks = DEFAULT_CONTENT_ITEMS,
   daisyui = false,
   columns = 2,
-  variablesLocked = false,
+  hidden = false,
+  ...props
 }: SidebarProps) {
+  // variablesLocked is available via props but not currently used
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _variablesLocked = props.variablesLocked ?? false;
   console.log(
     '[Sidebar] Received blocks prop:',
     blocks.map((b) => b.type),
@@ -70,6 +75,9 @@ export function Sidebar({
     [columns],
   );
 
+  if (hidden) {
+    return null;
+  }
 
   return (
     <aside

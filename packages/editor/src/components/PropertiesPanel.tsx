@@ -442,6 +442,7 @@ function PaddingButtonGroup({
 }
 
 function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
+  const { isMobileExperience } = useCanvasStore();
   return (
     <div
       className={clsx('flex items-center justify-between p-4 rounded-lg border mb-6', {
@@ -513,6 +514,7 @@ function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
 }
 
 function HiddenToggle({ hidden, onToggle, daisyui }: HiddenToggleProps) {
+  const { isMobileExperience } = useCanvasStore();
   return (
     <div
       className={clsx('flex items-center justify-between p-4 rounded-lg border mb-6', {
@@ -1871,6 +1873,7 @@ export function PropertiesPanel({
   paddingOptions,
   fonts,
 }: PropertiesPanelProps) {
+  const { isMobileExperience } = useCanvasStore();
   const {
     document,
     setDocument,
@@ -2897,7 +2900,8 @@ export function PropertiesPanel({
             type="button"
             onClick={handleClose}
             className={clsx(
-              'p-1.5 rounded-md inline-flex items-center justify-center -mt-0.5 transition',
+              'rounded-md inline-flex items-center justify-center -mt-0.5 transition',
+              isMobileExperience ? 'min-h-[44px] min-w-[44px] p-2' : 'p-1.5',
               {
                 'text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200': !daisyui,
                 'text-base-content/60 hover:bg-base-200 hover:text-base-content active:bg-base-300':
@@ -2969,7 +2973,8 @@ export function PropertiesPanel({
               type="button"
               onClick={() => setDeleteOpen(true)}
               className={clsx(
-                'w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md transition',
+                'w-full inline-flex items-center justify-center gap-2 rounded-md transition',
+                isMobileExperience ? 'min-h-[44px] px-4 py-3' : 'px-4 py-2',
                 {
                   'bg-red-600 text-white hover:bg-red-700': !daisyui,
                   'btn btn-error': daisyui,
