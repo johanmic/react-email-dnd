@@ -1,6 +1,16 @@
 {
   "author": "Johan Mickelin",
   "name": "@react-email-dnd",
+  "keywords": [
+    "react",
+    "email",
+    "drag-and-drop",
+    "dnd",
+    "editor",
+    "renderer",
+    "shared"
+  ],
+  "private": true,
   "packageManager": "pnpm@9",
   "workspaces": [
     "docs",

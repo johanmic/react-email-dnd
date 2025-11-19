@@ -3,6 +3,8 @@ title: Basics
 sidebar_position: 1
 ---
 
+> **Package:** `@react-email-dnd/editor` | **File:** `basics.md`
+
 The Editor provides a drag-and-drop surface for assembling email layouts. At a high level it:
 
 - loads a catalog of components the author can drop into the layout tree,

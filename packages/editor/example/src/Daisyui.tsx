@@ -21,7 +21,7 @@ import { createSampleCanvasDocument, bb } from './sample-document';
 import { customBlocks } from './components/custom-blocks';
 import { Footer } from './components/footer';
 import themes from '../themes.json';
-const theme = themes.lofi;
+const theme = themes.forest;
 const baseColorNames = [
   'primary',
   'secondary',
@@ -123,9 +123,8 @@ function App() {
   };
 
   return (
-    <div data-theme="lofi">
+    <div data-theme="forest">
       <div className="h-full flex flex-col">
-        <div className="bg-secondary ">Hej</div>
         <div className="p-4 shadow-sm flex justify-between items-center bg-base-100 border-b">
           <h2 className="text-xl font-semibold text-primary/80">DaisyUI Email Editor</h2>
           <div className="flex gap-3">
@@ -167,12 +166,15 @@ function App() {
             onSave={handleSave}
             onDocumentChange={handleDocumentChange}
             uploadFile={uploadFile}
+            variables={{ firstName: 'Tim', lastName: 'Apple' }}
           >
             <EmailEditor
               colors={colors}
               textColors={textColors}
               bgColors={bgColors}
+              variableChecks={true}
               daisyui={true}
+              colorMode="hierarchy"
               unlockable={true}
               showHidden={true}
               customBlocks={customBlocks}

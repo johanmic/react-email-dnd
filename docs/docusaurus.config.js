@@ -127,10 +127,17 @@ const config = {
         name: "editor-alias",
         configureWebpack() {
           return {
+            module: {
+              rules: [
+                {
+                  test: /\.m?js$/,
+                  resolve: {
+                    fullySpecified: false,
+                  },
+                },
+              ],
+            },
             resolve: {
-              // Disable fully specified imports so packages targeting React 17
-              // can continue referencing `react/jsx-runtime` without the .js suffix.
-              fullySpecified: false,
               alias: {
                 "@react-email-dnd/editor": path.resolve(
                   __dirname,

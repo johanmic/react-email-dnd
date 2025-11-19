@@ -3,14 +3,18 @@ title: Overview
 sidebar_position: 1
 ---
 
-# React Email DnD Documentation
+# React Email DnD
 
-Welcome to the documentation hub for the React Email drag-and-drop toolkit. These guides break down the two core runtime experiences—**Editor** and **Renderer**—and detail the JSON schema that connects them.
+A drag-and-drop email builder for React applications. It separates the **Editor** (for users) from the **Renderer** (for email clients), connected by a shared **JSON schema**.
 
-- Start with the concepts section to understand the responsibilities of each subsystem.
-- Dive into the Editor documentation to learn how to configure the builder experience, add components, and control styling primitives.
-- Review the Renderer guides to see how delivery clients consume your component library and typography.
-- Finish with the JSON structure reference when you need exact field names or want to extend the format safely.
-- Use the example walk-throughs to replicate the drag-and-drop editor shell and renderer playground in your own apps.
+## Core Documentation
 
-Pick any topic from the sidebar or follow the recommended order above to move from foundational ideas to implementation details.
+- **[Concepts](./why)**: Understand the architecture, user roles, and locking/hiding features.
+- **[Getting Started](./getting-started)**: Installation and setup guide.
+- **[JSON Structure](./json-structure)**: The data format that powers the document.
+- **[Variables](./variables)**: How to handle dynamic data (e.g., `{{user.name}}`).
+
+## Packages
+
+- **[Editor](./packages/editor/basics)**: The visual builder component.
+- **[Renderer](./packages/renderer/rendering-examples)**: Converting JSON to HTML/MJML.

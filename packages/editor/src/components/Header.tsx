@@ -1,29 +1,114 @@
 'use client';
 
-import { useState, type ChangeEvent } from 'react';
+import { useState, useMemo, type ChangeEvent } from 'react';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import {
   ArrowCounterClockwiseIcon,
   CodeIcon,
   DeviceMobileIcon,
   DesktopIcon,
+  CheckCircle,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import { renderDocument } from '@react-email-dnd/renderer';
 import clsx from 'clsx';
 import { ReactTextPreviewModal } from './ReactTextPreviewModal';
+import { extractVariableMatches, type VariableMatch } from '../utils/templateVariables';
+
 const TITLE_INPUT_ID = 'email-dnd-title-input';
 
 export type HeaderItem = 'title' | 'preview' | 'codeview' | 'undo' | 'save';
 
+function VariableMatchesHint({
+  label,
+  matches,
+  daisyui,
+}: {
+  label: string;
+  matches: VariableMatch[];
+  daisyui?: boolean;
+}) {
+  if (matches.length === 0) {
+    return null;
+  }
+
+  const hasMissing = matches.some((match) => !match.defined);
+
+  return (
+    <div
+      className={clsx('mt-2 rounded-md border px-3 py-2 text-[11px] leading-tight', {
+        'bg-slate-50 border-slate-200 text-slate-700': !daisyui,
+        'bg-base-200 border-base-300 text-base-content/80': daisyui,
+      })}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-semibold uppercase tracking-wide">{label}</span>
+        <span
+          className={clsx('text-[10px] font-semibold', {
+            'text-emerald-600': !daisyui && !hasMissing,
+            'text-red-500': !daisyui && hasMissing,
+            'text-success': daisyui && !hasMissing,
+            'text-error': daisyui && hasMissing,
+          })}
+        >
+          {matches.length} match{matches.length > 1 ? 'es' : ''}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {matches.map((match) => (
+          <span
+            key={match.key}
+            className={clsx(
+              'font-mono text-[11px]',
+              !daisyui && 'inline-flex items-center gap-1 rounded-full border px-2 py-0.5',
+              daisyui && 'badge badge-sm gap-1 h-5',
+              match.defined
+                ? {
+                    'border-emerald-200 bg-emerald-50 text-emerald-700': !daisyui,
+                    'badge-success': daisyui,
+                  }
+                : {
+                    'border-orange-200 bg-orange-50 text-orange-700': !daisyui,
+                    'badge-warning': daisyui,
+                  },
+            )}
+            title={match.defined ? 'Variable is available' : 'Variable is missing'}
+          >
+            {match.defined ? (
+              <CheckCircle size={12} weight="bold" />
+            ) : (
+              <WarningCircle size={12} weight="bold" />
+            )}
+            {'{{'}
+            {match.key}
+            {'}}'}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Header({
   daisyui = false,
   headerItems,
+  headerVariableCheck = false,
 }: {
   daisyui?: boolean;
   headerItems?: HeaderItem[];
+  headerVariableCheck?: boolean;
 }) {
-  const { document, updateTitle, save, undo, isDirty, canUndo, previewMode, setPreviewMode } =
-    useCanvasStore();
+  const {
+    document,
+    updateTitle,
+    save,
+    undo,
+    isDirty,
+    canUndo,
+    previewMode,
+    setPreviewMode,
+    variables,
+  } = useCanvasStore();
   const [reactTextOpen, setReactTextOpen] = useState(false);
   const [reactTextOutput, setReactTextOutput] = useState('');
 
@@ -57,6 +142,11 @@ export function Header({
     }
   };
 
+  const titleMatches = useMemo(
+    () => extractVariableMatches(document.meta.title, variables),
+    [document.meta.title, variables],
+  );
+
   // Determine which items to show (default to all if not specified)
   const shouldShow = (item: HeaderItem): boolean => {
     return !headerItems || headerItems.includes(item);
@@ -65,18 +155,18 @@ export function Header({
   return (
     <header
       className={clsx(
-        // Tailwind default styling
-        !daisyui &&
-          'flex items-center justify-between gap-4 p-3 border-b border-slate-900/10 bg-white',
-        // DaisyUI variant
-        daisyui && 'flex items-center justify-between gap-4 p-2 m-2 border-b border-primary/10',
+        'flex flex-col p-3 border-b',
+        !daisyui && 'gap-3 border-slate-900/10 bg-white',
+        daisyui && 'gap-2 m-2 border-primary/10',
+        'md:flex-row md:items-center md:justify-between md:gap-4',
       )}
       aria-label="Email editor header"
     >
       {shouldShow('title') && (
-        <div className={clsx('flex items-center gap-3 flex-1')}>
+        <div className={clsx('flex flex-col md:flex-row items-start gap-3 flex-1 min-w-[200px]')}>
           <label
             className={clsx(
+              'mt-2.5',
               !daisyui && 'text-sm font-semibold text-slate-900',
               daisyui && 'text-sm font-semibold text-base-content',
             )}
@@ -84,21 +174,30 @@ export function Header({
           >
             Email title
           </label>
-          <input
-            id={TITLE_INPUT_ID}
-            type="text"
-            value={document.meta.title}
-            onChange={handleTitleChange}
-            placeholder="Untitled email"
-            className={clsx(
-              !daisyui &&
-                'flex-1 px-3 py-2 border border-slate-300/60 rounded-lg text-[0.95rem] text-slate-900 bg-slate-50 transition focus:outline-none focus:border-green-500/60 focus:ring-2 focus:ring-green-500/20 focus:bg-white',
-              daisyui && 'input input-bordered input-sm rounded-box w-full max-w-xl',
+          <div className="flex-1 max-w-xl w-full">
+            <input
+              id={TITLE_INPUT_ID}
+              type="text"
+              value={document.meta.title}
+              onChange={handleTitleChange}
+              placeholder="Untitled email"
+              className={clsx(
+                !daisyui &&
+                  'w-full px-3 py-2 border border-slate-300/60 rounded-lg text-[0.95rem] text-slate-900 bg-slate-50 transition focus:outline-none focus:border-green-500/60 focus:ring-2 focus:ring-green-500/20 focus:bg-white',
+                daisyui && 'input input-bordered input-sm rounded-box w-full',
+              )}
+            />
+            {headerVariableCheck && (
+              <VariableMatchesHint
+                label="Variables in title"
+                matches={titleMatches}
+                daisyui={daisyui}
+              />
             )}
-          />
+          </div>
         </div>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-end gap-2 flex-wrap md:flex-nowrap">
         {shouldShow('preview') && (
           <div
             className={clsx('flex items-center gap-1 mr-2')}

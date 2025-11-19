@@ -85,7 +85,7 @@ describe('Canvas', () => {
   });
 
   it('renders custom blocks when registry provided', () => {
-    const customDefinition: CustomBlockDefinition<{ message: string }> = {
+    const customDefinition: CustomBlockDefinition<Record<string, unknown>> = {
       id: 'custom-hero',
       type: 'custom',
       label: 'Hero',
@@ -94,8 +94,8 @@ describe('Canvas', () => {
         componentName: 'HeroBlock',
         props: { message: 'Default text' },
       },
-      component: ({ message }: { message: string }) => (
-        <div data-testid="custom-block">{message}</div>
+      component: (props: Record<string, unknown>) => (
+        <div data-testid="custom-block">{props.message as string}</div>
       ),
     };
 

@@ -44,28 +44,62 @@ function valueToString(value: unknown): string {
   return String(value)
 }
 
+function lookupVariableValue(
+  key: string,
+  context: RenderContext
+): { found: boolean; value?: unknown } {
+  if (!context.variables) {
+    return { found: false }
+  }
+
+  const nestedValue = getNestedValue(context.variables, key)
+
+  if (nestedValue !== undefined) {
+    return { found: true, value: nestedValue }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(context.variables, key)) {
+    return { found: true, value: context.variables[key] }
+  }
+
+  return { found: false }
+}
+
+function ensureVariableExists(key: string, context: RenderContext): void {
+  if (context.throwOnMissingVariables) {
+    throw new Error(
+      `Missing template variable "${key}". Pass it via options.variables or disable throwOnMissingVariables.`
+    )
+  }
+}
+
 export function substitute(
   value: string | undefined,
   context: RenderContext
 ): string | undefined {
   if (!value) return value
-  if (!context.variables) return value
+  if (!context.variables) {
+    if (context.throwOnMissingVariables) {
+      for (const match of value.matchAll(PLACEHOLDER_PATTERN)) {
+        const key = match[1]
+        if (key) {
+          ensureVariableExists(key, context)
+        }
+      }
+    }
+    return value
+  }
 
   return value.replace(PLACEHOLDER_PATTERN, (_, key: string) => {
     if (!context.variables) return `{{${key}}}`
-    
-    // Support nested paths like "club.name" or "event.title"
-    const nestedValue = getNestedValue(context.variables, key)
-    
-    if (nestedValue !== undefined) {
-      return valueToString(nestedValue)
+
+    const result = lookupVariableValue(key, context)
+
+    if (result.found) {
+      return valueToString(result.value)
     }
-    
-    // Fallback to direct key access for backward compatibility
-    if (Object.prototype.hasOwnProperty.call(context.variables, key)) {
-      return valueToString(context.variables[key])
-    }
-    
+
+    ensureVariableExists(key, context)
     return `{{${key}}}`
   })
 }
@@ -74,23 +108,24 @@ export function substituteObject(
   value: unknown,
   context: RenderContext
 ): unknown {
-  if (!value || !context.variables) return value
+  if (!value) return value
   
   // Handle special case where the entire value is a variable placeholder
   if (typeof value === "string" && value.match(/^\{\{([a-zA-Z0-9_.-]+)\}\}$/)) {
     const key = value.slice(2, -2).trim()
-    
-    // Support nested paths like "club.name" or "event.title"
-    const nestedValue = getNestedValue(context.variables, key)
-    
-    if (nestedValue !== undefined) {
-      return nestedValue // Return the actual object, not a string
+
+    if (!context.variables) {
+      ensureVariableExists(key, context)
+      return value
     }
-    
-    // Fallback to direct key access for backward compatibility
-    if (Object.prototype.hasOwnProperty.call(context.variables, key)) {
-      return context.variables[key] // Return the actual object, not a string
+
+    const result = lookupVariableValue(key, context)
+
+    if (result.found) {
+      return result.value // Return the actual object, not a string
     }
+
+    ensureVariableExists(key, context)
   }
   
   return value

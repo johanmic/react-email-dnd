@@ -6,6 +6,7 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import Layout from "@theme/Layout"
 import CodeBlock from "@theme/CodeBlock"
 import BrowserOnly from "@docusaurus/BrowserOnly"
+
 // @ts-expect-error -- workspace path alias resolved via pnpm workspaces
 import type { CanvasDocument, Padding } from "@react-email-dnd/shared"
 
@@ -399,8 +400,8 @@ function HomepageHeader() {
     <header className="bg-primary py-[clamp(3.5rem,8vw,6rem)]">
       <div className="container mx-auto max-w-screen-xl px-4">
         <div className="flex flex-col gap-[clamp(2.5rem,6vw,4rem)]">
-          <div className="mx-auto flex flex-col items-center px-3 text-center lg:mx-0 lg:items-start lg:px-0 lg:text-left">
-            <h1 className="mb-4 inline-flex flex-wrap items-center justify-center gap-3 text-[clamp(2.5rem,4vw,3.75rem)] text-white lg:justify-start">
+          <div className="mx-auto flex flex-col items-center px-3 text-center">
+            <h1 className="mb-4 inline-flex flex-wrap items-center justify-center gap-3 text-white">
               {themeConfig.navbar?.logo?.srcDark && (
                 <img
                   src={themeConfig.navbar.logo.srcDark}
@@ -410,19 +411,28 @@ function HomepageHeader() {
               )}
               {siteConfig.title}
             </h1>
-            <p className="mb-8 text-[clamp(1rem,2.5vw,1.1rem)] leading-[1.7] text-base-content/80">
+            <p className="mb-8 text-center max-w-2xl mx-auto leading-[1.7] text-base-content/80">
               Editor, Renderer and utilities to make visual email editing for
-              React Email and the Resend framework
+              React Email. Built with custom styling, or integrated with{" "}
+              <a
+                href="https://daisyui.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline! text-base-content!"
+              >
+                DaisyUI
+              </a>
+              .
             </p>
-            <div className="flex w-full flex-col items-center justify-center gap-4 lg:flex-row lg:items-center lg:justify-start">
+            <div className="flex w-full flex-col items-center justify-center gap-4 lg:flex-row no-underline!">
               <Link
-                className="btn btn-lg btn-neutral text-neutral-content!"
+                className="btn btn-lg btn-neutral rounded-full text-neutral-content! no-underline!"
                 to="/docs/quickstart"
               >
                 Get Started
               </Link>
               <Link
-                className="btn btn-lg btn-neutral btn-outline bg-transparent normal-case text-neutral!"
+                className="btn btn-lg! btn-outline! hover:btn-primary! hover:text-primary-content! no-underline! rounded-full text-neutral!"
                 to="/docs/json-structure"
               >
                 Read the docs
@@ -502,26 +512,31 @@ const npmPackages = [
 
 function NpmPackages() {
   return (
-    <section className="bg-base-100 py-[clamp(3rem,7vw,4.5rem)] text-base-content">
+    <section className="bg-base-200! py-[clamp(3rem,7vw,4.5rem)] text-base-content">
       <div className="container mx-auto max-w-screen-xl px-4">
-        <h2 className="mb-4 text-3xl">Packages on npm</h2>
-        <p className="mb-8 text-center text-base-content/60 md:text-left">
-          <code>@react-email-dnd</code> is divided up in to multiple packages.
+        <h2 className="mb-4 text-center text-3xl">Packages on npm</h2>
+        <p className="mb-12 text-center">
+          <code className="text-primary! bg-base-100! rounded-md px-1 py-0.5">
+            @react-email-dnd
+          </code>{" "}
+          is divided up in to multiple packages.
         </p>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {npmPackages.map((pkg) => (
             <a
               key={pkg.name}
-              className="flex flex-col gap-3 rounded-2xl border border-base-300 bg-gradient-to-br from-base-200 to-base-100 p-6 text-base-content no-underline transition hover:-translate-y-1 hover:border-base-300 hover:shadow-2xl"
+              className="card card-border bg-base-300! p-6 no-underline! text-primary! transition hover:-translate-y-1 hover:shadow-xl"
               href={pkg.href}
               target="_blank"
               rel="noreferrer"
             >
-              <span className="text-xs uppercase tracking-widest text-base-content/60">
+              <span className="mb-2 text-xs uppercase tracking-widest text-base-content/60">
                 {pkg.type}
               </span>
-              <h3 className="m-0 text-lg text-base-content">{pkg.name}</h3>
-              <p className="m-0 text-sm leading-relaxed text-base-content/80">
+              <h3 className="mb-2 text-lg text-primary! font-semibold">
+                {pkg.name}
+              </h3>
+              <p className="mb-4 text-sm leading-relaxed text-base-content/70!">
                 {pkg.description}
               </p>
               <span className="mt-auto text-sm text-primary">
@@ -535,36 +550,64 @@ function NpmPackages() {
   )
 }
 
-const customComponentsExample = `import { registerComponent } from '@react-email-dnd/editor';
+function Features() {
+  const features = [
+    {
+      icon: "ph-fill ph-palette",
+      title: "Customizable",
+      link: "docs/packages/editor/styling-colors-paddings",
+      description:
+        "Custom styles, colors, and complete control over your email design system. Match your brand perfectly.",
+    },
+    {
+      icon: "ph-fill ph-text-aa",
+      title: "Custom Fonts",
+      link: "docs/packages/editor/fonts",
+      description:
+        "Bring any font you want. Full support for custom web fonts to maintain brand consistency.",
+    },
+    {
+      icon: "ph-fill ph-envelope-simple",
+      title: "Built on React Email",
+      link: "/docs/intro",
+      description:
+        "Leverages the power of React Email framework for reliable, production-ready email rendering.",
+    },
+    {
+      icon: "ph-fill ph-cube",
+      title: "Custom Components",
+      link: "/docs/custom-components",
+      description:
+        "Bring any React Email block, add variables, and create reusable components for your team.",
+    },
+  ]
 
-registerComponent({
-  type: 'custom-component',
-  label: 'Custom Component',
-  icon: 'custom-component',
-  component: CustomComponent,
-})
-`
-function CustomComponents() {
   return (
-    <section className="bg-base-100 py-[clamp(3rem,7vw,4.5rem)] text-base-content">
+    <section className="bg-base-200 py-[clamp(3rem,7vw,4.5rem)] text-base-content">
       <div className="container mx-auto max-w-screen-xl px-4">
-        <h2 className="mb-4 text-3xl">Custom Components</h2>
-        <p className="mb-8 text-center text-base-content/60 md:text-left">
-          Bring your own packages or convert any existing React Email components
-          to be drag-and-droppable.
+        <h2 className="mb-4 text-center text-3xl">Features</h2>
+        <p className="mb-12 text-center">
+          Everything you need to build beautiful, production-ready emails
         </p>
-
-        <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-200 p-6 text-base-content">
-          <h3 className="mb-4 mt-0 text-base">Custom Components</h3>
-          <BrowserOnly>
-            {() => (
-              <CodeBlock
-                language="tsx"
-                title="/src/components/CustomComponents.tsx"
-                children={customComponentsExample}
-              />
-            )}
-          </BrowserOnly>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature) => (
+            <Link
+              to={feature.link}
+              key={feature.title}
+              className="card card-border bg-base-300! no-underline! text-primary! p-6 transition-all duration-300! ease-out hover:scale-105 hover:shadow-xl"
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                <i
+                  className={`${feature.icon} text-2xl text-primary`}
+                  aria-hidden="true"
+                />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold">{feature.title}</h3>
+              <p className="text-sm leading-relaxed text-base-content/70">
+                {feature.description}
+              </p>
+            </Link>
+          ))}
         </div>
       </div>
     </section>
@@ -572,6 +615,20 @@ function CustomComponents() {
 }
 
 export default function Home(): JSX.Element {
+  // Load Phosphor Icons web font
+  React.useEffect(() => {
+    const link = document.createElement("link")
+    link.rel = "stylesheet"
+    link.type = "text/css"
+    link.href =
+      "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css"
+    document.head.appendChild(link)
+
+    // return () => {
+    //   document.head.removeChild(link)
+    // }
+  }, [])
+
   return (
     <Layout
       title="React Email DnD docs"
@@ -581,7 +638,8 @@ export default function Home(): JSX.Element {
         <HomepageHeader />
         <main>
           <NpmPackages />
-          <CustomComponents />
+          {/* <CustomComponents /> */}
+          <Features />
           {/* ´<CustomizationExamples /> */}
         </main>
       </div>

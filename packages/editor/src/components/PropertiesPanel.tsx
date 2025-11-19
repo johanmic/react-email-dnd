@@ -11,6 +11,8 @@ import {
   CaretDownIcon,
   Eye,
   EyeSlash,
+  CheckCircle,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import { ConfirmModal } from './ConfirmModal';
@@ -37,6 +39,7 @@ import {
   parsePaddingInput,
   type PaddingOptionEntry,
 } from '../utils/padding';
+import { extractVariableMatches, type VariableMatch } from '../utils/templateVariables';
 // Container types are inferred at usage; no direct type imports needed here
 
 // export type ColorOption =
@@ -54,6 +57,7 @@ export type CustomBlockPropEditors = Record<string, CustomBlockPropEditor<any>>;
 interface PropertiesPanelProps {
   className?: string;
   daisyui?: boolean;
+  variableChecks?: boolean;
 
   unlockable?: boolean;
   colors?: ColorOption[];
@@ -72,6 +76,7 @@ interface TextPropsFormProps {
   textColors?: ColorOption[];
   paddingOptions: PaddingOptionEntry[];
   fonts?: FontDefinition[];
+  variableChecks?: boolean;
 }
 
 interface LockedToggleProps {
@@ -94,6 +99,7 @@ interface HeadingPropsFormProps {
   textColors?: ColorOption[];
   paddingOptions: PaddingOptionEntry[];
   fonts?: FontDefinition[];
+  variableChecks?: boolean;
 }
 
 interface ButtonPropsFormProps {
@@ -104,6 +110,7 @@ interface ButtonPropsFormProps {
   textColors?: ColorOption[];
   paddingOptions: PaddingOptionEntry[];
   fonts?: FontDefinition[];
+  variableChecks?: boolean;
 }
 
 interface ImagePropsFormProps {
@@ -111,6 +118,7 @@ interface ImagePropsFormProps {
   onUpdate: (props: Partial<ImageBlockProps>) => void;
   daisyui?: boolean;
   paddingOptions: PaddingOptionEntry[];
+  variableChecks?: boolean;
 }
 
 interface ColorPickerProps {
@@ -289,11 +297,12 @@ function ColorPicker({
         <div
           className={clsx(
             'w-10 h-10 rounded-full border transition-all duration-200 flex items-center justify-center',
-            {
-              'border-gray-200 bg-white': !selectedSwatch?.className && !selectedSwatch?.hex,
-              'border-base-200 bg-base-100':
-                daisyui && !selectedSwatch?.className && !selectedSwatch?.hex,
-            },
+            // Apply default background only if no specific color class or hex is provided
+            !selectedSwatch?.className &&
+              !selectedSwatch?.hex && {
+                'border-gray-200 bg-white': !daisyui,
+                'border-base-200 bg-base-100': daisyui,
+              },
             selectedSwatch?.className,
             selectedSwatch?.labelClassName,
           )}
@@ -343,6 +352,80 @@ function ColorPicker({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function VariableMatchesHint({
+  label,
+  matches,
+  daisyui,
+}: {
+  label: string;
+  matches: VariableMatch[];
+  daisyui?: boolean;
+}) {
+  if (matches.length === 0) {
+    return null;
+  }
+
+  const hasMissing = matches.some((match) => !match.defined);
+  const summary = hasMissing
+    ? 'Some variables do not have values in this document.'
+    : 'All variables are available in the current document.';
+
+  return (
+    <div
+      className={clsx('mt-2 rounded-md border px-3 py-2 text-[11px] leading-tight', {
+        'bg-slate-50 border-slate-200 text-slate-700': !daisyui,
+        'bg-base-200 border-base-300 text-base-content/80': daisyui,
+      })}
+    >
+      <div className="flex items-center justify-between">
+        <span className="font-semibold uppercase tracking-wide">{label}</span>
+        <span
+          className={clsx('text-[10px] font-semibold', {
+            'text-emerald-600': !daisyui && !hasMissing,
+            'text-red-500': !daisyui && hasMissing,
+            'text-success': daisyui && !hasMissing,
+            'text-error': daisyui && hasMissing,
+          })}
+        >
+          {matches.length} match{matches.length > 1 ? 'es' : ''}
+        </span>
+      </div>
+      <p className="mt-1">{summary}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {matches.map((match) => (
+          <span
+            key={match.key}
+            className={clsx(
+              'font-mono text-[11px] ',
+              !daisyui && 'inline-flex items-center gap-1 rounded-full border px-2 py-0.5',
+              daisyui && 'badge badge-sm gap-1 h-auto py-0.5',
+              match.defined
+                ? {
+                    'border-emerald-200 bg-emerald-50 text-emerald-700': !daisyui,
+                    'badge-success! badge-soft! text-success-content': daisyui,
+                  }
+                : {
+                    'border-orange-200 bg-orange-50 text-orange-700': !daisyui,
+                    'badge-warning! badge-soft! text-warning-content': daisyui,
+                  },
+            )}
+            title={match.defined ? 'Variable is available' : 'Variable is missing'}
+          >
+            {match.defined ? (
+              <CheckCircle size={12} weight="bold" />
+            ) : (
+              <WarningCircle size={12} weight="bold" />
+            )}
+            {'{{'}
+            {match.key}
+            {'}}'}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -442,7 +525,6 @@ function PaddingButtonGroup({
 }
 
 function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
-  const { isMobileExperience } = useCanvasStore();
   return (
     <div
       className={clsx('flex items-center justify-between p-4 rounded-lg border mb-6', {
@@ -514,7 +596,6 @@ function LockedToggle({ locked, onToggle, daisyui }: LockedToggleProps) {
 }
 
 function HiddenToggle({ hidden, onToggle, daisyui }: HiddenToggleProps) {
-  const { isMobileExperience } = useCanvasStore();
   return (
     <div
       className={clsx('flex items-center justify-between p-4 rounded-lg border mb-6', {
@@ -596,12 +677,17 @@ function HeadingPropsForm({
   paddingOptions,
   fonts,
   disabled = false,
+  variableChecks = false,
 }: HeadingPropsFormProps & { disabled?: boolean }) {
   const props = block.props as HeadingBlockProps;
   const { variables } = useCanvasStore();
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
 
   const variableKeys = useMemo(() => Object.keys(variables), [variables]);
+  const contentMatches = useMemo(
+    () => extractVariableMatches(props.content, variables),
+    [props.content, variables],
+  );
 
   const insertVariable = (key: string) => {
     const el = contentRef.current;
@@ -698,8 +784,16 @@ function HeadingPropsForm({
             </div>
           )}
         </div>
+        {variableChecks && (
+          <VariableMatchesHint
+            label="Variables in heading"
+            matches={contentMatches}
+            daisyui={daisyui}
+          />
+        )}
         <textarea
           ref={contentRef}
+          autoFocus
           value={props.content || ''}
           onChange={(e) => onUpdate({ content: e.target.value })}
           className={clsx(fieldCls, 'resize-y min-h-16')}
@@ -917,12 +1011,17 @@ function TextPropsForm({
   paddingOptions,
   fonts,
   disabled = false,
+  variableChecks = false,
 }: TextPropsFormProps & { disabled?: boolean }) {
   const props = block.props as TextBlockProps;
   const { variables } = useCanvasStore();
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
 
   const variableKeys = useMemo(() => Object.keys(variables), [variables]);
+  const contentMatches = useMemo(
+    () => extractVariableMatches(props.content, variables),
+    [props.content, variables],
+  );
 
   const insertVariable = (key: string) => {
     const el = contentRef.current;
@@ -972,44 +1071,20 @@ function TextPropsForm({
       <div>
         <div className="flex items-center justify-between">
           <label className={labelCls}>Text Content</label>
-          {variableKeys.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span
-                className={clsx('text-xs', {
-                  'text-gray-500': !daisyui,
-                  'text-base-content/60': daisyui,
-                })}
-              >
-                variables:
-              </span>
-              <select
-                className={clsx('text-xs px-2 py-1 rounded', {
-                  'border border-gray-300 bg-white': !daisyui,
-                  'select select-bordered select-xs rounded': daisyui,
-                })}
-                onChange={(e) => {
-                  if (e.target.value) insertVariable(e.target.value);
-                  e.currentTarget.selectedIndex = 0;
-                }}
-              >
-                <option value="">Choose</option>
-                {variableKeys.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
+
         <textarea
           ref={contentRef}
+          autoFocus
           value={props.content || ''}
           onChange={(e) => onUpdate({ content: e.target.value })}
           className={clsx(fieldCls, 'resize-y min-h-16')}
           rows={3}
           placeholder="Enter your text content..."
         />
+        {variableChecks && (
+          <VariableMatchesHint label="" matches={contentMatches} daisyui={daisyui} />
+        )}
         {variableKeys.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {variableKeys.map((k) => (
@@ -1221,12 +1296,21 @@ function ButtonPropsForm({
   paddingOptions,
   fonts,
   disabled = false,
+  variableChecks = false,
 }: ButtonPropsFormProps & { disabled?: boolean }) {
   const props = block.props as ButtonBlockProps;
   const { variables } = useCanvasStore();
   const labelInputRef = useRef<HTMLInputElement | null>(null);
   const hrefInputRef = useRef<HTMLInputElement | null>(null);
   const variableKeys = useMemo(() => Object.keys(variables), [variables]);
+  const labelMatches = useMemo(
+    () => extractVariableMatches(props.label, variables),
+    [props.label, variables],
+  );
+  const hrefMatches = useMemo(
+    () => extractVariableMatches(props.href, variables),
+    [props.href, variables],
+  );
 
   const insertVariableInto = (
     ref: React.RefObject<HTMLInputElement | null>,
@@ -1302,9 +1386,17 @@ function ButtonPropsForm({
             </select>
           )}
         </div>
+        {variableChecks && (
+          <VariableMatchesHint
+            label="Variables in button text"
+            matches={labelMatches}
+            daisyui={daisyui}
+          />
+        )}
         <input
           type="text"
           ref={labelInputRef}
+          autoFocus
           value={props.label || ''}
           onChange={(e) => onUpdate({ label: e.target.value })}
           className={fieldCls}
@@ -1336,6 +1428,9 @@ function ButtonPropsForm({
             </select>
           )}
         </div>
+        {variableChecks && (
+          <VariableMatchesHint label="Variables in URL" matches={hrefMatches} daisyui={daisyui} />
+        )}
         <input
           type="url"
           ref={hrefInputRef}
@@ -1578,6 +1673,7 @@ function ImagePropsForm({
   daisyui,
   paddingOptions,
   disabled = false,
+  variableChecks = false,
 }: ImagePropsFormProps & { disabled?: boolean }) {
   const props = block.props as ImageBlockProps;
   const { variables, uploadFile } = useCanvasStore();
@@ -1586,6 +1682,18 @@ function ImagePropsForm({
   const hrefRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const variableKeys = useMemo(() => Object.keys(variables), [variables]);
+  const srcMatches = useMemo(
+    () => extractVariableMatches(props.src, variables),
+    [props.src, variables],
+  );
+  const altMatches = useMemo(
+    () => extractVariableMatches(props.alt, variables),
+    [props.alt, variables],
+  );
+  const hrefMatches = useMemo(
+    () => extractVariableMatches(props.href, variables),
+    [props.href, variables],
+  );
 
   const insertInto = (
     ref: React.RefObject<HTMLInputElement | null>,
@@ -1664,10 +1772,18 @@ function ImagePropsForm({
             </select>
           )}
         </div>
+        {variableChecks && (
+          <VariableMatchesHint
+            label="Variables in image URL"
+            matches={srcMatches}
+            daisyui={daisyui}
+          />
+        )}
         <div className="flex gap-2 items-center">
           <input
             type="url"
             ref={srcRef}
+            autoFocus
             value={props.src || ''}
             onChange={(e) => onUpdate({ src: e.target.value })}
             placeholder="https://example.com/image.jpg"
@@ -1713,6 +1829,13 @@ function ImagePropsForm({
             </select>
           )}
         </div>
+        {variableChecks && (
+          <VariableMatchesHint
+            label="Variables in alt text"
+            matches={altMatches}
+            daisyui={daisyui}
+          />
+        )}
         <input
           type="text"
           ref={altRef}
@@ -1747,6 +1870,13 @@ function ImagePropsForm({
             </select>
           )}
         </div>
+        {variableChecks && (
+          <VariableMatchesHint
+            label="Variables in link URL"
+            matches={hrefMatches}
+            daisyui={daisyui}
+          />
+        )}
         <input
           type="url"
           ref={hrefRef}
@@ -1872,6 +2002,7 @@ export function PropertiesPanel({
   customBlockRegistry,
   paddingOptions,
   fonts,
+  variableChecks = false,
 }: PropertiesPanelProps) {
   const { isMobileExperience } = useCanvasStore();
   const {
@@ -1988,6 +2119,7 @@ export function PropertiesPanel({
             paddingOptions={resolvedPaddingOptions}
             fonts={fonts}
             disabled={isLocked}
+            variableChecks={variableChecks}
           />
         );
       case 'button':
@@ -2001,6 +2133,7 @@ export function PropertiesPanel({
             paddingOptions={resolvedPaddingOptions}
             fonts={fonts}
             disabled={isLocked}
+            variableChecks={variableChecks}
           />
         );
       case 'image':
@@ -2011,6 +2144,7 @@ export function PropertiesPanel({
             daisyui={daisyui}
             paddingOptions={resolvedPaddingOptions}
             disabled={isLocked}
+            variableChecks={variableChecks}
           />
         );
       case 'heading':
@@ -2024,6 +2158,7 @@ export function PropertiesPanel({
             paddingOptions={resolvedPaddingOptions}
             fonts={fonts}
             disabled={isLocked}
+            variableChecks={variableChecks}
           />
         );
       case 'custom': {
@@ -2953,40 +3088,39 @@ export function PropertiesPanel({
                 onToggle={handleToggleHidden}
                 daisyui={daisyui}
               />
+              {selectedBlock &&
+              ['text', 'button', 'image', 'heading', 'divider'].includes(
+                (selectedBlock as CanvasContentBlock).type,
+              ) &&
+              !isLocked ? (
+                <div
+                  className={clsx('mt-6 pt-4 border-t', {
+                    'border-gray-100': !daisyui,
+                    'border-base-200': daisyui,
+                  })}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setDeleteOpen(true)}
+                    className={clsx(
+                      'w-full inline-flex items-center justify-center gap-2 rounded-md transition',
+                      isMobileExperience ? 'min-h-[44px] px-4 py-3' : 'px-4 py-2',
+                      {
+                        'bg-red-600 text-white hover:bg-red-700': !daisyui,
+                        'btn btn-error': daisyui,
+                      },
+                    )}
+                  >
+                    <TrashIcon size={18} />
+                    Delete this block
+                  </button>
+                </div>
+              ) : null}
             </>
           ) : (
             renderContainerForm()
           )}
         </div>
-        {selectedBlock &&
-        ['text', 'button', 'image', 'heading', 'divider'].includes(
-          (selectedBlock as CanvasContentBlock).type,
-        ) &&
-        !isLocked ? (
-          <div
-            className={clsx('px-6 pb-6 pt-4 border-t', {
-              'border-gray-100': !daisyui,
-              'border-base-200': daisyui,
-            })}
-          >
-            <button
-              type="button"
-              onClick={() => setDeleteOpen(true)}
-              className={clsx(
-                'w-full inline-flex items-center justify-center gap-2 rounded-md transition',
-                isMobileExperience ? 'min-h-[44px] px-4 py-3' : 'px-4 py-2',
-                {
-                  'bg-red-600 text-white hover:bg-red-700': !daisyui,
-                  'btn btn-error': daisyui,
-                },
-              )}
-            >
-              <TrashIcon size={18} />
-              Delete this block
-            </button>
-          </div>
-        ) : null}
-
         <ConfirmModal
           open={deleteOpen}
           daisyui={daisyui}
@@ -3000,6 +3134,30 @@ export function PropertiesPanel({
           onCancel={() => setDeleteOpen(false)}
           onConfirm={handleDeleteConfirm}
         />
+
+        {selectedBlock || selectedContainer ? (
+          <div
+            className={clsx('sticky bottom-0 left-0 right-0 p-4 border-t', {
+              'border-gray-100 bg-white': !daisyui,
+              'border-base-200 bg-base-100': daisyui,
+            })}
+          >
+            <button
+              type="button"
+              onClick={handleClose}
+              className={clsx(
+                'w-full inline-flex items-center justify-center gap-2 rounded-md transition',
+                isMobileExperience ? 'min-h-[44px] px-4 py-3' : 'px-4 py-2',
+                {
+                  'bg-green-500 text-white hover:bg-green-600': !daisyui,
+                  'btn btn-primary': daisyui,
+                },
+              )}
+            >
+              Save & Close
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

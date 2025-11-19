@@ -1,19 +1,19 @@
-import type {
-  RenderRequest,
-  RenderResult,
-  RendererOptions,
-  ColorOption,
-} from "./types"
 import { renderHtml } from "./renderers/html"
 import { renderPlainText } from "./renderers/plain-text"
 import { renderReact } from "./renderers/react"
 import { renderReactText } from "./renderers/react-text"
-import type { RenderContext } from "./types"
+import type {
+  RenderContext,
+  RenderRequest,
+  RenderResult,
+  RendererOptions,
+} from "./types"
 import { buildDaisyUIBaseStyles } from "./utils/daisyui"
 
 function createContext(options: RendererOptions): RenderContext {
   return {
     variables: options.variables,
+    throwOnMissingVariables: options.throwOnMissingVariables,
   }
 }
 
@@ -106,5 +106,5 @@ export function renderDocument({
   }
 }
 
-export * from "./types"
 export { renderReactText } from "./renderers/react-text"
+export * from "./types"

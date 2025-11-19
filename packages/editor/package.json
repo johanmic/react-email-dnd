@@ -6,9 +6,10 @@
     "react",
     "drag-and-drop",
     "email",
-    "dnd"
+    "dnd",
+    "editor"
   ],
-  "author": "",
+  "author": "Johan Mickelin",
   "license": "MIT",
   "sideEffects": [
     "./dist/styles.css"
@@ -27,6 +28,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
@@ -39,6 +43,7 @@
     "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
     "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
   },
+  "type": "module",
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
     "@testing-library/jest-dom": "^6.8.0",

@@ -62,6 +62,10 @@ export type EmailEditorProps = {
   className?: string;
   /** Use DaisyUI styling */
   daisyui?: boolean;
+  /** When true, shows variable checks in the properties panel */
+  variableChecks?: boolean;
+  /** When true, shows variable checks in the header */
+  headerVariableCheck?: boolean;
   /** Color highlighting mode for canvas elements */
   colorMode?: 'hierarchy' | 'primary' | 'none' | 'output';
   /** Controls how deep the visual highlighting goes (1=Section, 2=Section+Row, 3=Section+Row+Column). Default null shows all levels. */
@@ -136,6 +140,8 @@ export function EmailEditor(props: EmailEditorProps) {
     forceDesktopLayout,
     showInlineInsertionControls,
     alwaysShowSidebar = false,
+    variableChecks = false,
+    headerVariableCheck = false,
   } = props;
   const {
     document,
@@ -1001,7 +1007,7 @@ export function EmailEditor(props: EmailEditorProps) {
       onDragCancel={handleDragCancel}
     >
       <div className={clsx('w-full h-screen flex flex-col', className)}>
-        {showHeader && <Header daisyui={daisyui} headerItems={headerItems} />}
+        {showHeader && <Header daisyui={daisyui} headerItems={headerItems} headerVariableCheck={headerVariableCheck} />}
         <div className="flex h-full overflow-hidden">
           {(!isMobileExperience || alwaysShowSidebar) && (
             <Sidebar
@@ -1042,6 +1048,7 @@ export function EmailEditor(props: EmailEditorProps) {
           customBlockRegistry={customBlockRegistry}
           paddingOptions={paddingOptionEntries}
           fonts={fonts || document.theme?.fonts}
+          variableChecks={variableChecks}
         />
       </div>
       <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>

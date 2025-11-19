@@ -1,8 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, type CSSProperties, Fragment } from 'react';
+import { useState, useEffect, useRef, useMemo, type CSSProperties, Fragment } from 'react';
 import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
-import { DotsSixVerticalIcon, Trash, Lock, LockOpen, Eye, EyeSlash } from '@phosphor-icons/react';
+import {
+  DotsSixVerticalIcon,
+  Trash,
+  Lock,
+  LockOpen,
+  Eye,
+  EyeSlash,
+  BracketsCurly,
+} from '@phosphor-icons/react';
 import type { IconProps } from '@phosphor-icons/react';
 import {
   SortableContext,
@@ -40,6 +48,7 @@ import {
   resolveMarginClasses,
   resolveMarginStyle,
 } from '../utils/padding';
+import { collectBlockVariableMatches } from '../utils/templateVariables';
 
 type ColorMode = 'hierarchy' | 'primary' | 'none' | 'output';
 
@@ -899,6 +908,15 @@ function CanvasBlockView({
 }) {
   const { selectBlock, selectedBlockId, variables, isMobileExperience } = useCanvasStore();
   const { document, setDocument } = useCanvasStore();
+  const blockVariableMatches = useMemo(
+    () => collectBlockVariableMatches(block, variables),
+    [block, variables],
+  );
+  const hasVariableMatches = blockVariableMatches.length > 0;
+  const hasMissingVariables = blockVariableMatches.some((match) => !match.defined);
+  const matchesTooltip = blockVariableMatches
+    .map((match) => `${match.defined ? '✔' : '⚠'} ${match.key}`)
+    .join('\n');
 
   // Block is disabled if it's locked, or if any parent container is locked
   const isDisabled = !!(block.locked || isParentLocked);
@@ -999,6 +1017,28 @@ function CanvasBlockView({
       )}
       onClick={handleBlockClick}
     >
+      {colorMode !== 'output' && hasVariableMatches ? (
+        <div
+          className={clsx(
+            'absolute z-10 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide shadow-sm',
+            isMobileExperience ? 'bottom-2 right-3' : 'top-2 right-3',
+            hasMissingVariables
+              ? {
+                  'bg-orange-100 text-orange-800 border-orange-200': !daisyui,
+                  'bg-warning/20 text-warning border-warning/40': daisyui,
+                }
+              : {
+                  'bg-emerald-50 text-emerald-700 border-emerald-200': !daisyui,
+                  'bg-success/20 text-success border-success/40': daisyui,
+                },
+          )}
+          title={matchesTooltip}
+        >
+          <BracketsCurly size={12} weight="bold" />
+          <span>vars</span>
+          <span>{blockVariableMatches.length}</span>
+        </div>
+      ) : null}
       {colorMode !== 'output' && (isCompactLayout || isMobileExperience) ? (
         // Compact layout: controls on top (used for 3+ columns or mobile)
         <div className="flex justify-end items-center gap-1 mb-2">
@@ -1207,7 +1247,18 @@ function CanvasColumnView({
   const columnPaddingClasses = resolvePaddingClasses(column.padding);
   const hasCustomPadding = columnPaddingClasses.length > 0 || columnPaddingStyle != null;
   const columnMarginStyle = resolveMarginStyle(column.margin);
-  const columnMarginClasses = resolveMarginClasses(column.margin);
+  const columnMarginClasses = resolveMarginClasses(column.margin).map((cls) => {
+    // Cap margin at m-2 (8px) on mobile to avoid excessive spacing
+    const match = cls.match(/^m-(\d+(?:\.\d+)?)$/);
+    if (match) {
+      const value = parseFloat(match[1]);
+      // If margin is greater than 2, cap it at 2 for mobile
+      if (value > 2) {
+        return `m-2 sm:${cls}`;
+      }
+    }
+    return cls;
+  });
   const columnAlignmentClass = alignmentClassName(column.align);
   const columnAlignmentStyle = alignmentStyle(column.align);
   const columnHasBackgroundClass = Boolean(column.backgroundClassName);
@@ -1594,7 +1645,18 @@ function CanvasRowView({
   const rowPaddingStyle = resolvePaddingStyle(row.padding);
   const rowPaddingClasses = resolvePaddingClasses(row.padding);
   const rowMarginStyle = resolveMarginStyle(row.margin);
-  const rowMarginClasses = resolveMarginClasses(row.margin);
+  const rowMarginClasses = resolveMarginClasses(row.margin).map((cls) => {
+    // Cap margin at m-2 (8px) on mobile to avoid excessive spacing
+    const match = cls.match(/^m-(\d+(?:\.\d+)?)$/);
+    if (match) {
+      const value = parseFloat(match[1]);
+      // If margin is greater than 2, cap it at 2 for mobile
+      if (value > 2) {
+        return `m-2 sm:${cls}`;
+      }
+    }
+    return cls;
+  });
   const rowAlignmentClass = alignmentClassName(row.align);
   const rowAlignmentStyle = alignmentStyle(row.align);
   const rowHasBackgroundClass = Boolean(row.backgroundClassName);
@@ -1878,7 +1940,18 @@ function CanvasSectionView({
       : ['p-2'];
   const hasSectionPadding = sectionPaddingClasses.length > 0 || sectionPaddingStyle != null;
   const sectionMarginStyle = resolveMarginStyle(section.margin);
-  const sectionMarginClasses = resolveMarginClasses(section.margin);
+  const sectionMarginClasses = resolveMarginClasses(section.margin).map((cls) => {
+    // Cap margin at m-2 (8px) on mobile to avoid excessive spacing
+    const match = cls.match(/^m-(\d+(?:\.\d+)?)$/);
+    if (match) {
+      const value = parseFloat(match[1]);
+      // If margin is greater than 2, cap it at 2 for mobile
+      if (value > 2) {
+        return `m-2 sm:${cls}`;
+      }
+    }
+    return cls;
+  });
   const sectionAlignmentClass = alignmentClassName(section.align);
   const sectionAlignmentStyle = alignmentStyle(section.align);
   const sectionHasBackgroundClass = Boolean(section.backgroundClassName);

@@ -20,6 +20,8 @@ export interface RendererOptions {
   format: RendererFormat
   /** Optional variables used when substituting placeholders like {{first_name}} or {{club.name}}. */
   variables?: Record<string, unknown>
+  /** When true, throw if a template placeholder does not have a matching variable. */
+  throwOnMissingVariables?: boolean
   /** Optional indentation width for string outputs (HTML, react-text, plain-text). */
   indent?: number
   /** Optional component name used for react-text output (defaults to EmailTemplate). */
@@ -47,6 +49,7 @@ export type RenderResult =
 
 export interface RenderContext {
   variables?: Record<string, unknown>
+  throwOnMissingVariables?: boolean
 }
 
 export type RenderFunction<Format extends RendererFormat, Result> = (

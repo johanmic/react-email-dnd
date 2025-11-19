@@ -237,10 +237,9 @@ export const bb: CanvasDocument = {
                   id: 'text-7c0d5d75-0c18-4e04-a4d9-24ad98a0d926',
                   type: 'text',
                   props: {
-                    content: 'Start typing your message here.',
+                    content: 'Hello {{firstName}} {{lastName}} {{order_id}}',
                     align: 'left',
                     fontSize: 16,
-                    color: '#1f2937',
                     lineHeight: '1.6',
                     fontWeight: 'normal',
                     margin: '0 0 16px',

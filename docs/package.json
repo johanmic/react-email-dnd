@@ -19,6 +19,7 @@
     "@docusaurus/core": "2.4.3",
     "@docusaurus/preset-classic": "2.4.3",
     "@mdx-js/react": "^1.6.22",
+    "@phosphor-icons/react": "^2.1.10",
     "@react-email-dnd/editor": "workspace:*",
     "@tailwindcss/postcss": "^4.1.13",
     "clsx": "^1.2.1",

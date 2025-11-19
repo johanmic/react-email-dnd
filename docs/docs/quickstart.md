@@ -4,17 +4,45 @@ sidebar_position: 1
 description: Embed the editor and renderer in a project with minimal setup.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 Jump straight into using the packages without cloning the whole monorepo.
 
 ## 1. Install the packages
 
 Add the editor, shared schema helpers, and renderer to your app:
 
+<Tabs>
+  <TabItem value="pnpm" label="pnpm" default>
+
 ```bash
 pnpm add @react-email-dnd/editor @react-email-dnd/shared @react-email-dnd/renderer
 ```
 
-If you prefer npm or yarn, swap the command accordingly—all packages ship ESM builds.
+  </TabItem>
+  <TabItem value="bun" label="bun">
+
+```bash
+bun add @react-email-dnd/editor @react-email-dnd/shared @react-email-dnd/renderer
+```
+
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+
+```bash
+yarn add @react-email-dnd/editor @react-email-dnd/shared @react-email-dnd/renderer
+```
+
+  </TabItem>
+  <TabItem value="npm" label="npm">
+
+```bash
+npm install @react-email-dnd/editor @react-email-dnd/shared @react-email-dnd/renderer
+```
+
+  </TabItem>
+</Tabs>
 
 ## 2. Mount the editor
 
