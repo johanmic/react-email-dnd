@@ -13,18 +13,31 @@ export default defineConfig({
     alias: {
       react: toRoot('node_modules/react'),
       'react-dom': toRoot('node_modules/react-dom'),
-      'react-email-dnd/styles.css': toRoot('../dist/styles.css'),
-      'react-email-dnd': toRoot('../dist'),
+      '@react-email-dnd/styles.css': toRoot('../dist/styles.css'),
       '@react-email-dnd/shared': toRoot('../../shared/src'),
+      '@react-email-dnd/renderer': toRoot('../../renderer/src'),
+      '@react-email-dnd': toRoot('../src/index.ts'),
+      '@react-email-dnd/editor': toRoot('../src/index.ts'),
+      'react-email-dnd': toRoot('../src/index.ts'),
       '@react-email/components': toRoot('node_modules/@react-email/components'),
     },
   },
   optimizeDeps: {
-    exclude: ['react-email-dnd', '@react-email-dnd/shared'],
+    exclude: [
+      '@react-email-dnd',
+      '@react-email-dnd/editor',
+      'react-email-dnd',
+      '@react-email-dnd/shared',
+      '@react-email-dnd/renderer',
+    ],
   },
   server: {
     fs: {
-      allow: [toRoot('..')],
+      allow: [
+        toRoot('..'),
+        toRoot('../../shared/src'),
+        toRoot('../../renderer/src'),
+      ],
     },
   },
 });

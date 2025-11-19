@@ -1,5 +1,7 @@
+'use client';
+
 import type { ReactNode } from 'react';
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import clsx from 'clsx';
 
 export interface SidebarItemProps {
@@ -20,21 +22,37 @@ export function SidebarItem({ id, children, className, data, daisyui = false }: 
     },
   });
 
+  const { isOver, setNodeRef: setDroppableRef } = useDroppable({
+    id: `sidebar-drop-${id}`,
+    data: {
+      type: 'sidebar-drop',
+      originalId: id,
+      ...data,
+    },
+  });
+
+  // When dragging, apply transform for collision detection but hide visually
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        opacity: isDragging ? 0.6 : undefined,
+        opacity: isDragging ? 0 : undefined,
+        visibility: isDragging ? ('hidden' as const) : undefined,
       }
-    : undefined;
+    : isDragging
+      ? { opacity: 0, visibility: 'hidden' as const }
+      : undefined;
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        setDroppableRef(node);
+      }}
       style={style}
       className={clsx(className, {
         'cursor-grab select-none outline-none': !daisyui,
-        'opacity-60': isDragging,
-        'btn btn-primary btn-soft gap-2 rounded-lg': daisyui,
+        'btn btn-primary btn-soft text-xs text-start rounded-box': daisyui,
+        'ring-2 ring-blue-500 ring-opacity-50': isOver && !isDragging,
       })}
       {...listeners}
       {...attributes}

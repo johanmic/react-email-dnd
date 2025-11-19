@@ -3,22 +3,10 @@ import type {
   CanvasRow,
   CanvasColumn,
   CanvasContentBlock,
-  BlockDefinition,
+  ColorOption,
 } from '@react-email-dnd/shared';
 import { createEmptySection, createEmptyRow, createContentBlock } from './document';
-import { buttonDefinition } from '../components/button';
-import { dividerDefinition } from '../components/divider';
-import { headingDefinition } from '../components/heading';
-import { imageDefinition } from '../components/image';
-import { textDefinition } from '../components/text';
-
-// Types for drag and drop data
-export type BlockDropId =
-  | 'block-heading'
-  | 'block-text'
-  | 'block-divider'
-  | 'block-image'
-  | 'block-button';
+import type { BlockDefinitionMap } from './block-library';
 
 export type StructureDropId =
   | 'structure-section'
@@ -27,7 +15,7 @@ export type StructureDropId =
   | 'structure-columns-2'
   | 'structure-columns-3';
 
-export type SidebarDropId = BlockDropId | StructureDropId;
+export type SidebarDropId = string | StructureDropId;
 
 export interface CanvasBlockDragData {
   type: 'canvas-block';
@@ -41,6 +29,18 @@ export interface CanvasBlockContainerData {
   rowId: string;
   sectionId: string;
   blockCount: number;
+}
+
+export interface CanvasBlockDropZoneData {
+  type: 'canvas-block-dropzone';
+  columnId: string;
+  index: number;
+}
+
+export interface CanvasRowDropZoneData {
+  type: 'canvas-row-dropzone';
+  sectionId: string;
+  index: number;
 }
 
 export interface CanvasColumnDragData {
@@ -83,32 +83,63 @@ export type ActiveDragData =
 export type OverDragData =
   | CanvasBlockDragData
   | CanvasBlockContainerData
+  | CanvasBlockDropZoneData
+  | CanvasRowDropZoneData
   | CanvasColumnDragData
   | CanvasRowContainerDropData
   | CanvasRowDragData
   | CanvasSectionDropData
   | CanvasSectionDragData;
 
-// Block definitions mapping
-const BLOCK_DEFINITIONS: Record<BlockDropId, BlockDefinition<CanvasContentBlock>> = {
-  'block-heading': headingDefinition as BlockDefinition<CanvasContentBlock>,
-  'block-text': textDefinition as BlockDefinition<CanvasContentBlock>,
-  'block-divider': dividerDefinition as BlockDefinition<CanvasContentBlock>,
-  'block-image': imageDefinition as BlockDefinition<CanvasContentBlock>,
-  'block-button': buttonDefinition as BlockDefinition<CanvasContentBlock>,
-};
+// Helper function to extract color from ColorOption
+function getColorFromOption(option: ColorOption): { color?: string; colorClassName?: string } {
+  if (typeof option === 'string') {
+    return { color: option };
+  }
+  return {
+    color: option.hex,
+    colorClassName: option.class,
+  };
+}
 
 // Helper functions
-export function createBlockFromSidebar(id: BlockDropId): CanvasContentBlock {
-  const definition = BLOCK_DEFINITIONS[id];
+export function createBlockFromSidebar(
+  id: string,
+  definitions: BlockDefinitionMap,
+  textColors?: ColorOption[],
+): CanvasContentBlock | null {
+  const definition = definitions[id];
   if (!definition) {
-    throw new Error(`Unsupported block: ${id}`);
+    return null;
   }
 
-  return createContentBlock(
-    definition.type,
-    definition.defaults as Record<string, unknown>,
-  ) as CanvasContentBlock;
+  const defaults = { ...definition.defaults } as Record<string, unknown>;
+
+  // Set default color from first ColorOption for text and heading blocks
+  // Override any existing default color when ColorOption array is provided
+  if (
+    (definition.type === 'text' || definition.type === 'heading') &&
+    textColors &&
+    textColors.length > 0
+  ) {
+    const firstColor = getColorFromOption(textColors[0]);
+    // Always override the color when ColorOption array is provided
+    // If ColorOption has a hex, use it; otherwise explicitly clear color and use className only
+    if (firstColor.color) {
+      defaults.color = firstColor.color;
+      defaults.colorClassName = firstColor.colorClassName ?? undefined;
+    } else if (firstColor.colorClassName) {
+      // If only className is provided, explicitly delete the color property to avoid default color
+      delete defaults.color;
+      defaults.colorClassName = firstColor.colorClassName;
+    } else {
+      // If ColorOption has neither hex nor class, clear both
+      delete defaults.color;
+      defaults.colorClassName = undefined;
+    }
+  }
+
+  return createContentBlock(definition.type, defaults) as CanvasContentBlock;
 }
 
 export function getColumnCountFromStructureId(id: StructureDropId): number {
@@ -133,6 +164,28 @@ export function addRowToSection(
     return {
       ...section,
       rows: [...section.rows, createEmptyRow(columnCount)],
+    };
+  });
+}
+
+export function addRowToSectionAtIndex(
+  sections: CanvasSection[],
+  sectionId: string,
+  columnCount: number,
+  index: number,
+): CanvasSection[] {
+  return sections.map((section) => {
+    if (section.id !== sectionId) {
+      return section;
+    }
+
+    const nextRows = [...section.rows];
+    const insertionIndex = Math.max(0, Math.min(index, nextRows.length));
+    nextRows.splice(insertionIndex, 0, createEmptyRow(columnCount));
+
+    return {
+      ...section,
+      rows: nextRows,
     };
   });
 }
@@ -341,6 +394,16 @@ export function insertEmptySectionAfter(
   }
   const next = [...sections];
   next.splice(index + 1, 0, createEmptySection());
+  return next;
+}
+
+export function insertEmptySectionAt(
+  sections: CanvasSection[],
+  targetIndex: number,
+): CanvasSection[] {
+  const next = [...sections];
+  const insertionIndex = Math.max(0, Math.min(targetIndex, next.length));
+  next.splice(insertionIndex, 0, createEmptySection());
   return next;
 }
 
@@ -710,7 +773,12 @@ export function moveSectionToPosition(
 
   const result = [...sections];
   const [movedSection] = result.splice(fromIndex, 1);
-  result.splice(toIndex, 0, movedSection);
+
+  // Adjust target index if moving upward (fromIndex > toIndex)
+  // because removing the item shifts all subsequent indices down by 1
+  const adjustedToIndex = fromIndex > toIndex ? toIndex : toIndex - 1;
+
+  result.splice(adjustedToIndex, 0, movedSection);
 
   return result;
 }
@@ -750,7 +818,15 @@ export function handleSidebarDrop(
   activeId: string,
   overId: string,
   sections: CanvasSection[],
+  blockDefinitions: BlockDefinitionMap,
+  pointerInfo?: { pointerY: number; overRect?: { top: number; height: number } | null },
+  textColors?: ColorOption[],
 ): CanvasSection[] | null {
+  // Prevent drops back to sidebar - these should be handled as cancellations
+  if (overId.startsWith('sidebar-drop-')) {
+    return null;
+  }
+
   // Handle structure drops
   if (activeId === 'structure-section') {
     if (overId === 'canvas') {
@@ -758,12 +834,26 @@ export function handleSidebarDrop(
     }
     if (overId.startsWith('section-')) {
       const sectionId = overId.replace('section-', '');
+      const targetSectionIndex = findSectionPosition(sections, sectionId);
+      if (targetSectionIndex !== null && pointerInfo?.overRect) {
+        const insertAfter =
+          pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+        const finalTargetIndex = targetSectionIndex + (insertAfter ? 1 : 0);
+        return insertEmptySectionAt(sections, finalTargetIndex);
+      }
       return insertEmptySectionAfter(sections, sectionId);
     }
     if (overId.startsWith('row-')) {
       const rowId = overId.replace('row-', '');
       const pos = findRowPosition(sections as unknown as CanvasSection[], rowId);
       if (pos) {
+        const targetSectionIndex = findSectionPosition(sections, pos.sectionId);
+        if (targetSectionIndex !== null && pointerInfo?.overRect) {
+          const insertAfter =
+            pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+          const finalTargetIndex = targetSectionIndex + (insertAfter ? 1 : 0);
+          return insertEmptySectionAt(sections, finalTargetIndex);
+        }
         return insertEmptySectionAfter(sections, pos.sectionId);
       }
     }
@@ -771,6 +861,13 @@ export function handleSidebarDrop(
       const columnId = overId.replace('column-', '');
       const pos = findColumnPosition(sections, columnId);
       if (pos) {
+        const targetSectionIndex = findSectionPosition(sections, pos.sectionId);
+        if (targetSectionIndex !== null && pointerInfo?.overRect) {
+          const insertAfter =
+            pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+          const finalTargetIndex = targetSectionIndex + (insertAfter ? 1 : 0);
+          return insertEmptySectionAt(sections, finalTargetIndex);
+        }
         return insertEmptySectionAfter(sections, pos.sectionId);
       }
     }
@@ -778,11 +875,18 @@ export function handleSidebarDrop(
       const blockId = overId.replace('canvas-block-', '');
       const pos = findBlockPosition(sections, blockId);
       if (pos) {
+        const targetSectionIndex = findSectionPosition(sections, pos.sectionId);
+        if (targetSectionIndex !== null && pointerInfo?.overRect) {
+          const insertAfter =
+            pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+          const finalTargetIndex = targetSectionIndex + (insertAfter ? 1 : 0);
+          return insertEmptySectionAt(sections, finalTargetIndex);
+        }
         return insertEmptySectionAfter(sections, pos.sectionId);
       }
     }
-    // Fallback: add to end
-    return [...sections, createEmptySection()];
+    // No valid drop target found - return null to prevent adding items
+    return null;
   }
 
   if (activeId === 'structure-row' || activeId.startsWith('structure-columns-')) {
@@ -806,6 +910,16 @@ export function handleSidebarDrop(
       const rowId = overId.replace('row-', '');
       const pos = findRowPosition(sections, rowId);
       if (pos) {
+        // Check if target row is locked
+        if (isRowLocked(sections, rowId)) {
+          return null;
+        }
+        if (pointerInfo?.overRect) {
+          const insertAfter =
+            pointerInfo.pointerY > pointerInfo.overRect.top + pointerInfo.overRect.height / 2;
+          const targetRowIndex = pos.rowIndex + (insertAfter ? 1 : 0);
+          return insertRowToSectionAt(sections, pos.sectionId, targetRowIndex, columnCount);
+        }
         return insertRowToSectionAt(sections, pos.sectionId, pos.rowIndex, columnCount);
       }
     }
@@ -814,6 +928,10 @@ export function handleSidebarDrop(
       const columnId = overId.replace('column-', '');
       const pos = findColumnPosition(sections, columnId);
       if (pos) {
+        // Check if target column is locked (which cascades to row/section)
+        if (isColumnLocked(sections, columnId)) {
+          return null;
+        }
         return insertRowToSectionAt(sections, pos.sectionId, pos.rowIndex, columnCount);
       }
     }
@@ -822,6 +940,10 @@ export function handleSidebarDrop(
       const blockId = overId.replace('canvas-block-', '');
       const pos = findBlockPosition(sections, blockId);
       if (pos) {
+        // Check if target row is locked
+        if (isRowLocked(sections, pos.rowId)) {
+          return null;
+        }
         const rowPos = findRowPosition(sections, pos.rowId);
         if (rowPos) {
           return insertRowToSectionAt(sections, rowPos.sectionId, rowPos.rowIndex, columnCount);
@@ -870,7 +992,10 @@ export function handleSidebarDrop(
     if (isColumnLocked(sections, columnId)) {
       return null;
     }
-    const block = createBlockFromSidebar(activeId as BlockDropId);
+    const block = createBlockFromSidebar(activeId, blockDefinitions, textColors);
+    if (!block) {
+      return null;
+    }
     return addBlockToColumn(sections, columnId, block);
   }
 

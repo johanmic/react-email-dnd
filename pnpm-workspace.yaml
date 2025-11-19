@@ -1,2 +1,4 @@
 packages:
-  - 'packages/*'  
+  - 'docs'
+  - 'packages/*'
+  - 'packages/editor/example'

@@ -1,13 +1,6 @@
 import * as ReactEmailComponents from '@react-email/components';
 import type { RowProps, ColumnProps, SectionProps } from '@react-email/components';
-
-const ReactEmailModule = ReactEmailComponents as {
-  Row: React.ComponentType<RowProps>;
-  Column: React.ComponentType<ColumnProps>;
-  Section: React.ComponentType<SectionProps>;
-};
-
-const { Row, Column, Section } = ReactEmailModule;
+import { resolvePaddingClasses, resolvePaddingStyle } from './padding';
 import type {
   CanvasDocument,
   CanvasSection,
@@ -18,12 +11,40 @@ import type {
   TextBlockProps,
   HeadingBlockProps,
   ImageBlockProps,
+  CustomBlockDefinition,
+  CustomBlockProps,
 } from '@react-email-dnd/shared';
 import { Button } from '../components/button';
 import { Divider } from '../components/divider';
 import { Heading } from '../components/heading';
 import { Image } from '../components/image';
 import { Text } from '../components/text';
+
+const ReactEmailModule = ReactEmailComponents as {
+  Row: React.ComponentType<RowProps>;
+  Column: React.ComponentType<ColumnProps>;
+  Section: React.ComponentType<SectionProps>;
+};
+
+const { Row, Column, Section } = ReactEmailModule;
+
+function combineClasses(...values: Array<string | null | undefined>): string | undefined {
+  const merged = values.filter((value) => Boolean(value && value.trim())).join(' ');
+  return merged.length > 0 ? merged : undefined;
+}
+
+function extractStringVariables(
+  values?: Record<string, unknown>,
+): Record<string, string> | undefined {
+  if (!values) return undefined;
+  const entries = Object.entries(values).reduce<Record<string, string>>((acc, [key, value]) => {
+    if (typeof value === 'string') {
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
+  return Object.keys(entries).length > 0 ? entries : undefined;
+}
 
 /**
  * Renders a content block using the appropriate component
@@ -75,7 +96,13 @@ function withSubstitutions(
   }
 }
 
-function renderEmailBlock(block: CanvasContentBlock, variables?: Record<string, string>) {
+function renderEmailBlock(
+  block: CanvasContentBlock,
+  variables: Record<string, string> | undefined,
+  // Using `any` by design to allow heterogeneous custom block props across definitions.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  customRegistry: Record<string, CustomBlockDefinition<any>>,
+) {
   const b = withSubstitutions(block, variables);
   switch (block.type) {
     case 'button':
@@ -89,7 +116,13 @@ function renderEmailBlock(block: CanvasContentBlock, variables?: Record<string, 
     case 'image':
       return <Image {...(b.props as ImageBlockProps)} />;
     case 'custom':
-      return <div data-component={block.props.componentName}>{block.props.componentName}</div>;
+      const customProps = block.props as CustomBlockProps;
+      const definition = customRegistry[customProps.componentName];
+      if (definition) {
+        const Component = definition.component;
+        return <Component {...(customProps.props as Record<string, unknown>)} />;
+      }
+      return <div data-component={customProps.componentName}>{customProps.componentName}</div>;
     default:
       return null;
   }
@@ -98,11 +131,33 @@ function renderEmailBlock(block: CanvasContentBlock, variables?: Record<string, 
 /**
  * Renders a canvas column using React Email Column component
  */
-function renderEmailColumn(column: CanvasColumn, variables?: Record<string, string>) {
+function renderEmailColumn(
+  column: CanvasColumn,
+  variables: Record<string, string> | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  customRegistry: Record<string, CustomBlockDefinition<any>>,
+) {
+  const columnStyle: Record<string, unknown> = {};
+  if (column.backgroundColor) columnStyle.backgroundColor = column.backgroundColor;
+  const columnPaddingStyle = resolvePaddingStyle(column.padding);
+  const columnPaddingClasses = resolvePaddingClasses(column.padding).filter(
+    (className) => !className.includes(':'),
+  );
+  if (columnPaddingStyle) columnStyle.padding = columnPaddingStyle;
+  if (column.width != null) columnStyle.width = column.width;
+
   return (
-    <Column key={column.id}>
+    <Column
+      key={column.id}
+      className={combineClasses(
+        column.backgroundClassName,
+        column.className,
+        columnPaddingClasses.join(' '),
+      )}
+      style={columnStyle}
+    >
       {column.blocks.map((block) => (
-        <div key={block.id}>{renderEmailBlock(block, variables)}</div>
+        <div key={block.id}>{renderEmailBlock(block, variables, customRegistry)}</div>
       ))}
     </Column>
   );
@@ -111,19 +166,69 @@ function renderEmailColumn(column: CanvasColumn, variables?: Record<string, stri
 /**
  * Renders a canvas row using React Email Row component
  */
-function renderEmailRow(row: CanvasRow, variables?: Record<string, string>) {
+function renderEmailRow(
+  row: CanvasRow,
+  variables: Record<string, string> | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  customRegistry: Record<string, CustomBlockDefinition<any>>,
+) {
+  const rowStyle: Record<string, unknown> = {};
+  if (row.gutter != null) rowStyle.gap = `${row.gutter}px`;
+  if (row.backgroundColor) rowStyle.backgroundColor = row.backgroundColor;
+  const rowPaddingStyle = resolvePaddingStyle(row.padding);
+  const rowPaddingClasses = resolvePaddingClasses(row.padding).filter(
+    (className) => !className.includes(':'),
+  );
+  if (rowPaddingStyle) rowStyle.padding = rowPaddingStyle;
+
   return (
-    <Row key={row.id}>{row.columns.map((column) => renderEmailColumn(column, variables))}</Row>
+    <Row
+      key={row.id}
+      className={combineClasses(row.backgroundClassName, row.className, rowPaddingClasses.join(' '))}
+      style={rowStyle}
+    >
+      {row.columns.map((column) => renderEmailColumn(column, variables, customRegistry))}
+    </Row>
   );
 }
 
 /**
  * Renders a canvas section using React Email Section component
  */
-function renderEmailSection(section: CanvasSection, variables?: Record<string, string>) {
-  return (
-    <Section key={section.id}>{section.rows.map((row) => renderEmailRow(row, variables))}</Section>
+function renderEmailSection(
+  section: CanvasSection,
+  variables: Record<string, string> | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  customRegistry: Record<string, CustomBlockDefinition<any>>,
+) {
+  const sectionStyle: Record<string, unknown> = {};
+  if (section.backgroundColor) sectionStyle.backgroundColor = section.backgroundColor;
+  const sectionPaddingStyle = resolvePaddingStyle(section.padding);
+  const sectionPaddingClasses = resolvePaddingClasses(section.padding).filter(
+    (className) => !className.includes(':'),
   );
+  if (sectionPaddingStyle) sectionStyle.padding = sectionPaddingStyle;
+
+  return (
+    <Section
+      key={section.id}
+      className={combineClasses(
+        section.backgroundClassName,
+        section.className,
+        sectionPaddingClasses.join(' '),
+      )}
+      style={sectionStyle}
+    >
+      {section.rows.map((row) => renderEmailRow(row, variables, customRegistry))}
+    </Section>
+  );
+}
+
+export interface RenderEmailDocumentOptions {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  customBlocks?: CustomBlockDefinition<any>[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  customBlockRegistry?: Record<string, CustomBlockDefinition<any>>;
 }
 
 /**
@@ -137,9 +242,26 @@ function renderEmailSection(section: CanvasSection, variables?: Record<string, s
 export function renderEmailDocument(
   document: CanvasDocument,
   runtimeVariables?: Record<string, string>,
+  options: RenderEmailDocumentOptions = {},
 ) {
-  const merged = { ...(document.variables ?? {}), ...(runtimeVariables ?? {}) };
-  return <>{document.sections.map((section) => renderEmailSection(section, merged))}</>;
+  const documentVariables = extractStringVariables(document.variables);
+  const merged =
+    documentVariables || runtimeVariables
+      ? { ...(documentVariables ?? {}), ...(runtimeVariables ?? {}) }
+      : undefined;
+  // Using `any` by design at the registry boundary; each entry keeps its own prop type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const registry: Record<string, CustomBlockDefinition<any>> =
+    options.customBlockRegistry ??
+    (options.customBlocks
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        options.customBlocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
+          acc[block.defaults.componentName] = block;
+          return acc;
+        }, {})
+      : {});
+
+  return <>{document.sections.map((section) => renderEmailSection(section, merged, registry))}</>;
 }
 
 /**

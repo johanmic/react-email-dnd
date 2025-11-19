@@ -6,9 +6,10 @@
     "react",
     "drag-and-drop",
     "email",
-    "dnd"
+    "dnd",
+    "editor"
   ],
-  "author": "",
+  "author": "Johan Mickelin",
   "license": "MIT",
   "sideEffects": [
     "./dist/styles.css"
@@ -27,6 +28,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
@@ -35,10 +39,11 @@
     "test": "vitest"
   },
   "peerDependencies": {
-    "@react-email/components": "0.5.5",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "@react-email/components": "0.5.0",
+    "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
   },
+  "type": "module",
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
     "@testing-library/jest-dom": "^6.8.0",
@@ -67,11 +72,13 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@react-email-dnd/shared": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@phosphor-icons/react": "^2.1.10",
+    "@react-email-dnd/renderer": "workspace:*",
+    "@react-email-dnd/shared": "workspace:*",
     "clsx": "^2.1.1"
   },
   "packageManager": "pnpm@9.15.2"

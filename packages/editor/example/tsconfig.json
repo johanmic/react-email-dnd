@@ -4,10 +4,14 @@
     "baseUrl": "./",
     "paths": {
       "@utils/*": ["../src/utils/*"],
-      "react-email-dnd": ["../src/index.ts"],
-      "react-email-dnd/*": ["../src/*"],
+      "@react-email-dnd": ["../src/index.ts"],
+      "@react-email-dnd/*": ["../src/*"],
+      "@react-email-dnd/editor": ["../src/index.ts"],
+      "@react-email-dnd/editor/*": ["../src/*"],
       "@react-email-dnd/shared": ["../../shared/src/index.ts"],
-      "@react-email-dnd/shared/*": ["../../shared/src/*"]
+      "@react-email-dnd/shared/*": ["../../shared/src/*"],
+      "@react-email-dnd/renderer": ["../../renderer/src/index.ts"],
+      "@react-email-dnd/renderer/*": ["../../renderer/src/*"]
     }
   },
   "include": ["src"]

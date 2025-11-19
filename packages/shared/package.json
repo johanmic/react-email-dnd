@@ -1,23 +1,35 @@
 {
   "name": "@react-email-dnd/shared",
+  "author": "Johan Mickelin",
   "version": "0.1.0",
   "description": "Shared schema types and validation utilities for react-email-dnd.",
-  "main": "dist/index.cjs",
+  "keywords": [
+    "react",
+    "email",
+    "dnd",
+    "shared",
+    "schema"
+  ],
+  "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
+    "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "jest --config ./jest.config.ts"
   },
@@ -26,7 +38,8 @@
   },
   "peerDependencies": {
     "@phosphor-icons/react": "^2.1.10",
-    "react": "^18.2.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

@@ -17,18 +17,25 @@ export function createSampleCanvasDocument(): CanvasDocument {
         type: 'section',
         backgroundColor: '#ffffff',
         padding: '20px',
+        className: 'rounded-xl',
         locked: true,
         rows: [
           {
             id: 'row-1',
             type: 'row',
             gutter: 24,
+            backgroundColor: '#f8fafc',
+            padding: '12px',
+            className: 'ring-1 ring-slate-200',
             locked: true,
             columns: [
               {
                 id: 'column-1',
                 type: 'column',
                 width: 100,
+                backgroundColor: '#ffffff',
+                padding: '16px',
+                className: 'shadow-md rounded-lg',
                 locked: true,
                 blocks: [
                   {
@@ -42,6 +49,22 @@ export function createSampleCanvasDocument(): CanvasDocument {
                       fontSize: 32,
                       color: '#333333',
                       fontWeight: 'bold',
+                    },
+                  },
+                  {
+                    id: 'hero-custom-1',
+                    type: 'custom',
+                    locked: true,
+                    props: {
+                      componentName: 'HeroBlock',
+                      props: {
+                        title: 'Summer sale is live',
+                        description: 'Save up to 30% across the entire catalog this week only.',
+                        ctaLabel: 'Explore deals',
+                        ctaHref: 'https://example.com/sale',
+                        backgroundColor: '#0ea5e9',
+                        textColor: '#ffffff',
+                      },
                     },
                   },
                   {
@@ -132,6 +155,21 @@ export function createSampleCanvasDocument(): CanvasDocument {
                     },
                   },
                   {
+                    id: 'hero-custom-1',
+                    type: 'custom',
+                    props: {
+                      componentName: 'HeroBlock',
+                      props: {
+                        title: 'Summer sale is live',
+                        description: 'Save up to 30% across the entire catalog this week only.',
+                        ctaLabel: 'Explore deals',
+                        ctaHref: 'https://example.com/sale',
+                        backgroundColor: '#0ea5e9',
+                        textColor: '#ffffff',
+                      },
+                    },
+                  },
+                  {
                     id: 'text-1',
                     type: 'text',
                     props: {
@@ -174,3 +212,45 @@ export function createSampleCanvasDocument(): CanvasDocument {
   };
   return t;
 }
+
+export const bb: CanvasDocument = {
+  version: 1,
+  meta: {
+    title: 'Untitled email',
+  },
+  variables: {},
+  sections: [
+    {
+      id: 'section-874a48ba-bdfd-47bf-991e-7c6abbb67399',
+      type: 'section',
+      rows: [
+        {
+          id: 'row-f004b74c-9489-4ac0-97c7-c407fd00064f',
+          type: 'row',
+          gutter: 16,
+          columns: [
+            {
+              id: 'column-09c40003-ed38-4c63-a02d-f3fe58b150ed',
+              type: 'column',
+              blocks: [
+                {
+                  id: 'text-7c0d5d75-0c18-4e04-a4d9-24ad98a0d926',
+                  type: 'text',
+                  props: {
+                    content: 'Hello {{firstName}} {{lastName}} {{order_id}}',
+                    align: 'left',
+                    fontSize: 16,
+                    lineHeight: '1.6',
+                    fontWeight: 'normal',
+                    margin: '0 0 16px',
+                    padding: '0',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
