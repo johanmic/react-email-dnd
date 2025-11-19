@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkreact_email_dnd_docs=globalThis.webpackChunkreact_email_dnd_docs||[]).push([[235],{8552:a=>{a.exports=JSON.parse('{"name":"docusaurus-plugin-content-pages","id":"default"}')}}]);

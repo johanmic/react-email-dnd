@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkreact_email_dnd_docs=globalThis.webpackChunkreact_email_dnd_docs||[]).push([[647],{3596:(e,a,s)=>{s.r(a),s.d(a,{default:()=>u});s(7378);var r=s(3372),c=s(509),d=s(7602),l=s(8041),n=s(5108),t=s(6106);function u(e){return(0,t.jsx)(d.e3,{className:(0,r.A)(c.G.wrapper.docsPages),children:(0,t.jsx)(n.A,{children:(0,l.v)(e.route.routes)})})}}}]);
