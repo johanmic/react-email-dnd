@@ -4,7 +4,7 @@ import clsx from "clsx"
 import Link from "@docusaurus/Link"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import Layout from "@theme/Layout"
-import CodeBlock from "@theme/CodeBlock"
+// import CodeBlock from "@theme/CodeBlock"
 import BrowserOnly from "@docusaurus/BrowserOnly"
 
 // @ts-expect-error -- workspace path alias resolved via pnpm workspaces
@@ -101,117 +101,6 @@ if (typeof window !== "undefined") {
   document.addEventListener("error", handleError, true)
 }
 
-const packageCards = [
-  {
-    name: "@react-email-dnd/editor",
-    summary:
-      "Drag-and-drop React primitives plus the ready-to-ship EmailEditor experience.",
-    highlights: [
-      "CanvasProvider for document/state orchestration",
-      "EmailEditor for fully opinionated UI",
-      "Canvas for headless rendering of sections/rows/columns",
-    ],
-  },
-  {
-    name: "@react-email-dnd/renderer",
-    summary:
-      "Pure rendering helpers that convert a CanvasDocument into React, HTML, or text.",
-    highlights: [
-      "renderDocument entry point with format switching",
-      "DaisyUI-aware theme merging and palette normalization",
-      "Supports custom block registries when rendering React",
-    ],
-  },
-  {
-    name: "@react-email-dnd/shared",
-    summary:
-      "Schemas, TypeScript contracts, and utilities reused by editor + renderer.",
-    highlights: [
-      "CanvasDocument, CanvasSection, and block typings",
-      "Validation helpers for bespoke pipelines",
-      "Shared color/font/padding helpers to keep UIs aligned",
-    ],
-  },
-]
-
-const editorExample = `import {
-  CanvasDocument,
-  CanvasProvider,
-  EmailEditor,
-} from '@react-email-dnd/editor';
-
-import { customBlocks } from './custom-blocks';
-import { advancedFonts as fonts } from './fonts';
-
-const initialDocument: CanvasDocument = {
-  version: 1,
-  sections: [],
-};
-
-const paddingPresets = {
-  compact: { top: 8, right: 16, bottom: 8, left: 16 },
-  relaxed: { top: 24, right: 24, bottom: 24, left: 24 },
-};
-
-export function MarketingEditor() {
-  return (
-    <CanvasProvider initialDocument={initialDocument}>
-      <EmailEditor
-        daisyui
-        colorMode="hierarchy"
-        colorModeDepth={2}
-        customBlocks={customBlocks}
-        colors={[
-          { hex: '#000000', label: 'Carbon' },
-          { hex: '#ffffff', label: 'Paper' },
-        ]}
-        textColors={[{ hex: '#111111', label: 'Body' }]}
-        bgColors={[{ hex: '#f5f5f5', label: 'Panel' }]}
-        fonts={fonts}
-        padding={paddingPresets}
-        blocks={['heading', 'text', 'image', 'button', '2-col', '3-col']}
-        headerItems={['title', 'preview', 'save']}
-      />
-    </CanvasProvider>
-  );
-}`
-
-const rendererExample = `import { renderDocument } from '@react-email-dnd/renderer';
-import { customBlocks } from './custom-blocks';
-
-const { html } = renderDocument({
-  document,
-  options: {
-    format: 'html',
-    daisyui: false,
-    colors: [
-      { hex: '#000000', label: 'ink' },
-      { hex: '#ffffff', label: 'paper' },
-    ],
-    theme: { primary: '#000000' },
-    variables: { firstName: 'Lee' },
-    customBlocks,
-  },
-});
-
-// html contains the rendered email markup in a monochrome palette.`
-
-const editorCssExample = `@import "tailwindcss";
-@plugin "daisyui" {
-  themes: light --default, dark --prefersdark, forest, lofi;
-}
-
-@source "./**/*.{ts,tsx}";
-@source "../../src/**/*.{ts,tsx}";
-@source "../../shared/src/**/*.{ts,tsx}";
-@source "../../renderer/src/**/*.{ts,tsx}";
-`
-
-const livePaddingPresets: Record<string, Padding> = {
-  snug: { top: 12, right: 16, bottom: 12, left: 16 },
-  airy: { top: 28, right: 28, bottom: 28, left: 28 },
-}
-
 const demoDocument: CanvasDocument = {
   version: 1,
   meta: {
@@ -294,99 +183,94 @@ const demoDocument: CanvasDocument = {
   ],
 }
 
+function LiveEditor() {
+  const React = require("react") as typeof import("react")
+  const { CanvasProvider, EmailEditor } = require("@react-email-dnd/editor")
+
+  type ThemeName = "light" | "dark" | "synthwave" | "dim" | "lofi" | "retro"
+
+  const themeOptions: Array<{ label: string; value: ThemeName }> = [
+    { label: "Light", value: "light" },
+    { label: "Dark", value: "dark" },
+    { label: "Synthwave", value: "synthwave" },
+    { label: "Dim", value: "dim" },
+    { label: "Lo-fi", value: "lofi" },
+    { label: "Retro", value: "retro" },
+  ]
+  const [theme, setTheme] = React.useState<ThemeName>("dark")
+
+  return (
+    <div
+      id="tw-scope"
+      className="flex w-full flex-col gap-3"
+      data-theme={theme}
+    >
+      <div
+        className="flex w-full flex-wrap justify-center gap-2 p-2"
+        role="toolbar"
+        aria-label="Theme selector"
+      >
+        {themeOptions.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setTheme(option.value)}
+            className={clsx(
+              "min-w-[120px] flex-1 basis-[140px] btn btn-sm rounded-full px-4 py-1 text-sm tracking-wide text-neutral transition-colors",
+              {
+                "bg-primary text-primary-content": theme === option.value,
+              },
+              {
+                "bg-neutral text-neutral-content": theme !== option.value,
+              }
+            )}
+            aria-pressed={theme === option.value}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <div className="w-full  overflow-auto rounded-2xl border border-base-300 bg-primary/10 p-3 shadow-inner">
+        <div className="rounded-2xl border border-base-300 bg-primary/10 p-2">
+          <CanvasProvider
+            initialDocument={demoDocument}
+            onDocumentChange={() => {}}
+            className="flex h-full w-full min-w-0 flex-col"
+          >
+            <EmailEditor
+              className="flex h-full w-full flex-col"
+              showHeader={true}
+              daisyui={true}
+              colorMode="primary"
+              // padding={livePaddingPresets}
+              sideBarColumns={1}
+              // colors={["#000000", "#ffffff"]}
+              // textColors={[
+              //   { hex: "#000000", label: "Ink" },
+              //   { hex: "#ffffff", label: "Paper" },
+              // ]}
+              // bgColors={[
+              //   { hex: "#ffffff", label: "Paper" },
+              //   { hex: "#000000", label: "Carbon" },
+              // ]}
+            />
+          </CanvasProvider>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function LiveEditorPreview() {
   return (
     <BrowserOnly
       fallback={
-        <div className="flex h-[32rem] items-center justify-center rounded-xl border border-dashed border-base-300 text-sm text-base-content/70">
+        <div className="flex h-128 items-center justify-center rounded-xl border border-dashed border-base-300 text-sm text-base-content/70">
           Loading live editor...
         </div>
       }
     >
-      {() => {
-        const React = require("react") as typeof import("react")
-        type ThemeName =
-          | "light"
-          | "dark"
-          | "synthwave"
-          | "dim"
-          | "lofi"
-          | "retro"
-        const themeOptions: Array<{ label: string; value: ThemeName }> = [
-          { label: "Light", value: "light" },
-          { label: "Dark", value: "dark" },
-          { label: "Synthwave", value: "synthwave" },
-          { label: "Dim", value: "dim" },
-          { label: "Lo-fi", value: "lofi" },
-          { label: "Retro", value: "retro" },
-        ]
-        const [theme, setTheme] = React.useState<ThemeName>("dark")
-        const {
-          CanvasProvider,
-          EmailEditor,
-        } = require("@react-email-dnd/editor")
-
-        return (
-          <div
-            id="tw-scope"
-            className="flex w-full flex-col gap-3"
-            data-theme={theme}
-          >
-            <div
-              className="flex w-full flex-wrap justify-center gap-2 p-2"
-              role="toolbar"
-              aria-label="Theme selector"
-            >
-              {themeOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setTheme(option.value)}
-                  className={clsx(
-                    "min-w-[120px] flex-1 basis-[140px] btn btn-sm rounded-full px-4 py-1 text-sm tracking-wide text-neutral transition-colors",
-                    {
-                      "bg-primary text-primary-content": theme === option.value,
-                    },
-                    {
-                      "bg-neutral text-neutral-content": theme !== option.value,
-                    }
-                  )}
-                  aria-pressed={theme === option.value}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <div className="w-full max-h-[32rem] overflow-auto rounded-2xl border border-base-300 bg-primary/10 p-3 shadow-inner">
-              <div className="rounded-2xl border border-base-300 bg-primary/10">
-                <CanvasProvider
-                  initialDocument={demoDocument}
-                  onDocumentChange={() => {}}
-                  className="flex h-full w-full min-w-0 flex-col"
-                >
-                  <EmailEditor
-                    className="flex h-full w-full flex-col"
-                    showHeader={true}
-                    daisyui={true}
-                    colorMode="primary"
-                    // padding={livePaddingPresets}
-                    sideBarColumns={1}
-                    // colors={["#000000", "#ffffff"]}
-                    // textColors={[
-                    //   { hex: "#000000", label: "Ink" },
-                    //   { hex: "#ffffff", label: "Paper" },
-                    // ]}
-                    // bgColors={[
-                    //   { hex: "#ffffff", label: "Paper" },
-                    //   { hex: "#000000", label: "Carbon" },
-                    // ]}
-                  />
-                </CanvasProvider>
-              </div>
-            </div>
-          </div>
-        )
-      }}
+      {() => <LiveEditor />}
     </BrowserOnly>
   )
 }
@@ -394,22 +278,25 @@ function LiveEditorPreview() {
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext()
   const themeConfig = siteConfig.themeConfig as {
-    navbar?: { logo?: { srcDark?: string } }
+    navbar?: { logo?: { src?: string; srcDark?: string } }
   }
   return (
     <header className="bg-primary py-[clamp(3.5rem,8vw,6rem)]">
-      <div className="container mx-auto max-w-screen-xl px-4">
+      <div className="container mx-auto max-w-7xl px-4">
         <div className="flex flex-col gap-[clamp(2.5rem,6vw,4rem)]">
           <div className="mx-auto flex flex-col items-center px-3 text-center">
-            <h1 className="mb-4 inline-flex flex-wrap items-center justify-center gap-3 text-white">
-              {themeConfig.navbar?.logo?.srcDark && (
+            <h1 className="mb-4 inline-flex flex-wrap items-center justify-center gap-2 text-white">
+              {themeConfig.navbar?.logo?.src && (
                 <img
-                  src={themeConfig.navbar.logo.srcDark}
+                  src={themeConfig.navbar.logo.src}
                   alt={siteConfig.title}
-                  className="h-auto w-[clamp(2.25rem,4vw,3rem)] flex-shrink-0"
+                  className="h-auto w-12 md:w-24"
                 />
               )}
               {siteConfig.title}
+              <div className="text-xs text-base-content/70 border border-base-content/70 rounded-full px-2 py-1">
+                Beta
+              </div>
             </h1>
             <p className="mb-8 text-center max-w-2xl mx-auto leading-[1.7] text-base-content/80">
               Editor, Renderer and utilities to make visual email editing for
@@ -444,7 +331,7 @@ function HomepageHeader() {
               Working example
             </p>
             <div className="w-full overflow-hidden rounded-2xl border border-base-300 bg-base-100 p-[clamp(0.75rem,3vw,1.25rem)] shadow-2xl">
-              <div className="h-[32rem] overflow-hidden rounded-xl bg-gradient-to-br from-base-200 to-base-300">
+              <div className="h-192 md:h-128 overflow-hidden rounded-xl bg-linear-to-br from-base-200 to-base-300">
                 <LiveEditorPreview />
               </div>
             </div>
@@ -452,38 +339,6 @@ function HomepageHeader() {
         </div>
       </div>
     </header>
-  )
-}
-
-function CustomizationExamples() {
-  return (
-    <section className="bg-primary py-[clamp(3rem,7vw,4.5rem)] text-base-content">
-      <div className="container mx-auto max-w-screen-xl px-4">
-        <h2 className="mb-4 text-3xl">Basic Usage</h2>
-        <p className="mb-8 text-center text-base-content/60 md:text-left">
-          The Vanilla playground in{" "}
-          <code>packages/editor/example/src/Vanilla.tsx</code> wires fonts and
-          custom blocks together. These snippets condense that setup for quick
-          copy/paste usage.
-        </p>
-        <div className="flex flex-col gap-6">
-          <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-200 p-6 text-base-content">
-            <h3 className="mb-4 mt-0 text-base">
-              EmailEditor with monochrome palettes
-            </h3>
-            <BrowserOnly>
-              {() => (
-                <CodeBlock
-                  language="tsx"
-                  title="/src/components/MarketingEditor.tsx"
-                  children={editorExample}
-                />
-              )}
-            </BrowserOnly>
-          </div>
-        </div>
-      </div>
-    </section>
   )
 }
 
@@ -513,7 +368,7 @@ const npmPackages = [
 function NpmPackages() {
   return (
     <section className="bg-base-200! py-[clamp(3rem,7vw,4.5rem)] text-base-content">
-      <div className="container mx-auto max-w-screen-xl px-4">
+      <div className="container mx-auto max-w-7xl px-4">
         <h2 className="mb-4 text-center text-3xl">Packages on npm</h2>
         <p className="mb-12 text-center">
           <code className="text-primary! bg-base-100! rounded-md px-1 py-0.5">
@@ -584,7 +439,7 @@ function Features() {
 
   return (
     <section className="bg-base-200 py-[clamp(3rem,7vw,4.5rem)] text-base-content">
-      <div className="container mx-auto max-w-screen-xl px-4">
+      <div className="container mx-auto max-w-7xl px-4">
         <h2 className="mb-4 text-center text-3xl">Features</h2>
         <p className="mb-12 text-center">
           Everything you need to build beautiful, production-ready emails
@@ -598,7 +453,7 @@ function Features() {
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                 <i
-                  className={`${feature.icon} text-2xl text-primary`}
+                  className={clsx(feature.icon, "text-2xl text-primary")}
                   aria-hidden="true"
                 />
               </div>

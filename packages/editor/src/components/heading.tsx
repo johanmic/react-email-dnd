@@ -4,6 +4,7 @@ import { TextHIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, HeadingBlock, HeadingBlockProps } from '@react-email-dnd/shared';
 import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
+import { replaceVariables } from '../utils/templateVariables';
 
 export const headingDefaults: HeadingBlockProps = {
   content: 'Add a clear headline',
@@ -26,7 +27,13 @@ export const headingDefinition: BlockDefinition<HeadingBlock> = {
 
 export const HeadingIcon = TextHIcon;
 
-export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
+export function Heading(
+  props: HeadingBlockProps & {
+    daisyui?: boolean;
+    variables?: Record<string, unknown>;
+    previewVariables?: boolean;
+  },
+) {
   const {
     content,
     as = 'h2',
@@ -41,6 +48,8 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
     padding = '0',
     daisyui = false,
     className: customClassName,
+    variables,
+    previewVariables,
   } = props;
 
   const paddingStyle = resolvePaddingStyle(padding);
@@ -49,6 +58,10 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
   const resolvedFontWeight = fontWeight === 'medium' ? 500 : fontWeight;
   const defaultColor = '#111827';
   const inlineColor = color ?? (colorClassName ? undefined : defaultColor);
+
+  const displayContent = previewVariables
+    ? replaceVariables(content, variables, daisyui)
+    : content;
 
   const style: CSSProperties = {
     textAlign: align,
@@ -143,7 +156,7 @@ export function Heading(props: HeadingBlockProps & { daisyui?: boolean }) {
       )}
       style={style}
     >
-      {content}
+      {displayContent}
     </EmailHeading>
   );
 }

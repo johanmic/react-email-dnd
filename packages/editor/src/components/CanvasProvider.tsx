@@ -42,6 +42,7 @@ interface CanvasState {
   layoutMode: 'mobile' | 'desktop' | null;
   forceLayoutMode: 'mobile' | 'desktop' | null;
   showInlineInsertion: boolean;
+  previewVariables: boolean;
 }
 
 type CanvasAction =
@@ -79,7 +80,8 @@ type CanvasAction =
   | { type: 'deleteVariable'; key: string }
   | { type: 'setLayoutMode'; mode: 'mobile' | 'desktop' | null }
   | { type: 'setForceLayoutMode'; mode: 'mobile' | 'desktop' | null }
-  | { type: 'setShowInlineInsertion'; show: boolean };
+  | { type: 'setShowInlineInsertion'; show: boolean }
+  | { type: 'setPreviewVariables'; enabled: boolean };
 
 interface CanvasProviderProps {
   children: ReactNode;
@@ -107,6 +109,7 @@ export interface CanvasStoreValue {
   layoutMode: 'mobile' | 'desktop' | null;
   forceLayoutMode: 'mobile' | 'desktop' | null;
   showInlineInsertion: boolean;
+  previewVariables: boolean;
   isMobileExperience: boolean;
   variables: Record<string, unknown>;
   /** If provided by provider, components can use this to upload files */
@@ -141,6 +144,7 @@ export interface CanvasStoreValue {
   setLayoutMode: (mode: 'mobile' | 'desktop' | null) => void;
   setForceLayoutMode: (mode: 'mobile' | 'desktop' | null) => void;
   setShowInlineInsertion: (show: boolean) => void;
+  setPreviewVariables: (enabled: boolean) => void;
 }
 
 const CanvasStoreContext = createContext<CanvasStoreValue | null>(null);
@@ -162,6 +166,7 @@ function createInitialState(initialDocument?: CanvasDocument): CanvasState {
     layoutMode: null,
     forceLayoutMode: null,
     showInlineInsertion: false,
+    previewVariables: false,
   };
 }
 
@@ -183,6 +188,7 @@ function pushToHistory(state: CanvasState, nextDocument: CanvasDocument): Canvas
     layoutMode: state.layoutMode,
     forceLayoutMode: state.forceLayoutMode,
     showInlineInsertion: state.showInlineInsertion,
+    previewVariables: state.previewVariables,
   };
 }
 
@@ -204,6 +210,7 @@ function replaceHistory(
     layoutMode: state.layoutMode,
     forceLayoutMode: state.forceLayoutMode,
     showInlineInsertion: state.showInlineInsertion,
+    previewVariables: state.previewVariables,
   };
 }
 
@@ -269,6 +276,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         layoutMode: state.layoutMode,
         forceLayoutMode: state.forceLayoutMode,
         showInlineInsertion: state.showInlineInsertion,
+        previewVariables: state.previewVariables,
       };
     }
     case 'selectBlock': {
@@ -358,6 +366,15 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
       return {
         ...state,
         showInlineInsertion: action.show,
+      };
+    }
+    case 'setPreviewVariables': {
+      if (state.previewVariables === action.enabled) {
+        return state;
+      }
+      return {
+        ...state,
+        previewVariables: action.enabled,
       };
     }
     case 'upsertVariable': {
@@ -526,6 +543,10 @@ export function CanvasProvider({
     dispatch({ type: 'setShowInlineInsertion', show });
   }, []);
 
+  const setPreviewVariables = useCallback((enabled: boolean) => {
+    dispatch({ type: 'setPreviewVariables', enabled });
+  }, []);
+
   const isMobileExperience = useMemo(() => {
     return (state.forceLayoutMode ?? state.layoutMode) === 'mobile';
   }, [state.forceLayoutMode, state.layoutMode]);
@@ -556,6 +577,7 @@ export function CanvasProvider({
       layoutMode: state.layoutMode,
       forceLayoutMode: state.forceLayoutMode,
       showInlineInsertion: state.showInlineInsertion,
+      previewVariables: state.previewVariables,
       isMobileExperience,
       variables: mergedVariables,
       uploadFile,
@@ -574,6 +596,7 @@ export function CanvasProvider({
       setLayoutMode,
       setForceLayoutMode,
       setShowInlineInsertion,
+      setPreviewVariables,
     }),
     [
       document,
@@ -586,6 +609,7 @@ export function CanvasProvider({
       state.layoutMode,
       state.forceLayoutMode,
       state.showInlineInsertion,
+      state.previewVariables,
       isMobileExperience,
       mergedVariables,
       uploadFile,
@@ -603,6 +627,7 @@ export function CanvasProvider({
       setLayoutMode,
       setForceLayoutMode,
       setShowInlineInsertion,
+      setPreviewVariables,
     ],
   );
 

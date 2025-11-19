@@ -1893,7 +1893,7 @@ function ImagePropsForm({
           <label className={labelCls}>Width</label>
           <input
             type="number"
-            value={props.width ?? 600}
+            value={props.width ?? 0}
             onChange={(e) => onUpdate({ width: Number(e.target.value) })}
             className={fieldCls}
             min="0"
@@ -1905,7 +1905,7 @@ function ImagePropsForm({
           <label className={labelCls}>Height</label>
           <input
             type="number"
-            value={props.height ?? 200}
+            value={props.height ?? 0}
             onChange={(e) => onUpdate({ height: Number(e.target.value) })}
             className={fieldCls}
             min="0"
@@ -2984,12 +2984,12 @@ export function PropertiesPanel({
   return (
     <div className={clsx('fixed inset-0 z-50 flex items-end justify-end', className)}>
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] cursor-pointer"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] cursor-pointer animate-[fade-in_0.3s_ease-out]"
         onClick={handleClose}
       />
       <div
         className={clsx(
-          'relative w-[400px] max-w-[90vw] h-full flex flex-col border-l shadow-[ -20px_0_25px_-5px_rgba(0,0,0,0.1),_-8px_0_10px_-6px_rgba(0,0,0,0.1)] animate-[slide-in-right_0.25s_cubic-bezier(0.4,0,0.2,1)]',
+          'relative w-[400px] max-w-[90vw] h-full flex flex-col border-l shadow-[ -20px_0_25px_-5px_rgba(0,0,0,0.1),_-8px_0_10px_-6px_rgba(0,0,0,0.1)] animate-[slide-in-right_0.3s_cubic-bezier(0.4,0,0.2,1)]',
           {
             'bg-white border-gray-200': !daisyui,
             'bg-base-100 border-base-200': daisyui,
@@ -3089,7 +3089,7 @@ export function PropertiesPanel({
                 daisyui={daisyui}
               />
               {selectedBlock &&
-              ['text', 'button', 'image', 'heading', 'divider'].includes(
+              ['text', 'button', 'image', 'heading', 'divider', 'custom'].includes(
                 (selectedBlock as CanvasContentBlock).type,
               ) &&
               !isLocked ? (

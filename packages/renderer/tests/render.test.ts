@@ -50,7 +50,9 @@ describe("renderDocument", () => {
     })
 
     expect(result.format).toBe("react")
-    expect(result.node).toBeDefined()
+    if (result.format === "react") {
+      expect(result.node).toBeDefined()
+    }
   })
 
   it("returns HTML for html format", () => {
@@ -60,7 +62,9 @@ describe("renderDocument", () => {
     })
 
     expect(result.format).toBe("html")
-    expect(result.html).toContain("<section")
+    if (result.format === "html") {
+      expect(result.html).toContain("<section")
+    }
   })
 
   it("returns React Email JSX for react-text", () => {
@@ -73,9 +77,11 @@ describe("renderDocument", () => {
       },
     })
     expect(result.format).toBe("react-text")
-    expect(result.code).toContain("SampleEmail")
-    expect(result.code).toContain("<Html>")
-    expect(result.code).toContain("Thanks for joining us, Alice!")
+    if (result.format === "react-text") {
+      expect(result.code).toContain("SampleEmail")
+      expect(result.code).toContain("<Html>")
+      expect(result.code).toContain("Thanks for joining us, Alice!")
+    }
   })
 
   it("returns plain text", () => {
@@ -85,6 +91,8 @@ describe("renderDocument", () => {
     })
 
     expect(result.format).toBe("plain-text")
-    expect(result.text).toContain("Alice")
+    if (result.format === "plain-text") {
+      expect(result.text).toContain("Alice")
+    }
   })
 })

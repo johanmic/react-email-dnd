@@ -65,7 +65,6 @@ export function ReactTextPreviewModal({ open, code, onClose, daisyui = false }: 
         setCopied(false);
       }, 1500);
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Failed to copy react-text output', error);
       setCopied(false);
     }

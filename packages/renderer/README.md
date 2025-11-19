@@ -56,7 +56,7 @@ Transforms a `CanvasDocument` into the requested format.
 | ------------------------- | ------------------------- | ------- | -------------------------------------------------------------------------- |
 | `format`                  | `RendererFormat`          | -       | Output format: `'react'`, `'html'`, `'plain-text'`, or `'react-text'`.     |
 | `variables`               | `Record<string, unknown>` | `{}`    | Data for variable interpolation (e.g., `{{ user.name }}`).                 |
-| `throwOnMissingVariables` | `boolean`                 | `false` | If `true`, throws an error when a variable is used in the doc but missing. |
+| `throwOnMissingVariables` | `boolean`                 | `true`  | If `true`, throws an error when a variable is used in the doc but missing. |
 | `indent`                  | `number`                  | `2`     | Indentation spaces for string outputs (`html`, `react-text`).              |
 | `componentName`           | `string`                  | -       | Name of the exported component when using `react-text` format.             |
 | `customBlocks`            | `CustomBlockRegistry`     | -       | Registry for rendering custom components defined in the editor.            |

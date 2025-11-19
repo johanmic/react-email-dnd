@@ -9,6 +9,7 @@ import {
   DesktopIcon,
   CheckCircle,
   WarningCircle,
+  BracketsCurly,
 } from '@phosphor-icons/react';
 import { renderDocument } from '@react-email-dnd/renderer';
 import clsx from 'clsx';
@@ -108,6 +109,8 @@ export function Header({
     previewMode,
     setPreviewMode,
     variables,
+    previewVariables,
+    setPreviewVariables,
   } = useCanvasStore();
   const [reactTextOpen, setReactTextOpen] = useState(false);
   const [reactTextOutput, setReactTextOutput] = useState('');
@@ -155,25 +158,15 @@ export function Header({
   return (
     <header
       className={clsx(
-        'flex flex-col p-3 border-b',
+        'flex flex-col py-3 border-b',
         !daisyui && 'gap-3 border-slate-900/10 bg-white',
-        daisyui && 'gap-2 m-2 border-primary/10',
+        daisyui && 'gap-2 border-primary/10',
         'md:flex-row md:items-center md:justify-between md:gap-4',
       )}
       aria-label="Email editor header"
     >
       {shouldShow('title') && (
         <div className={clsx('flex flex-col md:flex-row items-start gap-3 flex-1 min-w-[200px]')}>
-          <label
-            className={clsx(
-              'mt-2.5',
-              !daisyui && 'text-sm font-semibold text-slate-900',
-              daisyui && 'text-sm font-semibold text-base-content',
-            )}
-            htmlFor={TITLE_INPUT_ID}
-          >
-            Email title
-          </label>
           <div className="flex-1 max-w-xl w-full">
             <input
               id={TITLE_INPUT_ID}
@@ -204,6 +197,27 @@ export function Header({
             role="group"
             aria-label="Preview mode"
           >
+            <button
+              type="button"
+              onClick={() => setPreviewVariables(!previewVariables)}
+              aria-pressed={previewVariables}
+              title="Toggle variable preview"
+              className={clsx(
+                !daisyui &&
+                  'inline-flex items-center gap-1 py-2 px-2.5 rounded-lg border text-sm transition',
+                !daisyui &&
+                  (previewVariables
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-900 border-slate-300/60 hover:border-green-500/60 hover:bg-green-500/10'),
+                daisyui && 'btn btn-ghost btn-sm',
+                daisyui && (previewVariables ? 'btn-active' : ''),
+              )}
+            >
+              <BracketsCurly size={18} />
+            </button>
+            <div
+              className={clsx('w-px h-5 mx-1', daisyui ? 'bg-base-content/10' : 'bg-slate-200')}
+            />
             <button
               type="button"
               onClick={() => setPreviewMode('desktop')}

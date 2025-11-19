@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import type { BlockDefinition, ButtonBlock, ButtonBlockProps } from '@react-email-dnd/shared';
 import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
 import { useCanvasStore } from '../hooks/useCanvasStore';
+import { replaceVariables } from '../utils/templateVariables';
 
 export const buttonDefaults: ButtonBlockProps = {
   label: 'Call to action',
@@ -31,7 +32,13 @@ export const buttonDefinition: BlockDefinition<ButtonBlock> = {
 export const ButtonIcon = HandPointingIcon;
 
 export function Button(
-  props: ButtonBlockProps & { daisyui?: boolean; editorMode?: boolean; blockId?: string },
+  props: ButtonBlockProps & {
+    daisyui?: boolean;
+    editorMode?: boolean;
+    blockId?: string;
+    variables?: Record<string, unknown>;
+    previewVariables?: boolean;
+  },
 ) {
   const {
     label,
@@ -51,6 +58,8 @@ export function Button(
     editorMode = false,
     blockId,
     className: customClassName,
+    variables,
+    previewVariables,
   } = props;
 
   const { selectBlock } = useCanvasStore();
@@ -72,6 +81,10 @@ export function Button(
   const inlineBackgroundColor =
     hasBackgroundClass || daisyui ? undefined : (backgroundColor ?? defaultBackground);
   const inlineTextColor = hasTextClass || daisyui ? undefined : (color ?? defaultTextColor);
+
+  const displayLabel = previewVariables
+    ? replaceVariables(label, variables, daisyui)
+    : label;
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
     if (editorMode) {
@@ -230,7 +243,7 @@ export function Button(
         }}
         onClick={handleClick}
       >
-        {label}
+        {displayLabel}
       </ButtonElement>
     </div>
   );

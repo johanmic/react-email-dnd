@@ -237,7 +237,7 @@ export const bb: CanvasDocument = {
                   id: 'text-7c0d5d75-0c18-4e04-a4d9-24ad98a0d926',
                   type: 'text',
                   props: {
-                    content: 'Hello {{firstName}} {{lastName}} {{order_id}}',
+                    content: 'Hello World',
                     align: 'left',
                     fontSize: 16,
                     lineHeight: '1.6',

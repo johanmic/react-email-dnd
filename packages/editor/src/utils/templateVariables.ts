@@ -1,3 +1,5 @@
+import { createElement, Fragment, type ReactNode } from 'react';
+import { pathOr } from 'ramda';
 import type { CanvasContentBlock } from '@react-email-dnd/shared';
 
 const TEMPLATE_VARIABLE_PATTERN = /\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g;
@@ -7,7 +9,77 @@ export type VariableMatch = {
   defined: boolean;
 };
 
-function getNestedValue(source: unknown, path: string): unknown {
+export function replaceVariables(
+  content: string,
+  variables: Record<string, unknown> | undefined,
+  daisyui: boolean = false,
+): ReactNode {
+  if (!content || !variables) return content;
+
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  const matches = content.matchAll(TEMPLATE_VARIABLE_PATTERN);
+  let hasMatch = false;
+
+  for (const match of matches) {
+    hasMatch = true;
+    const [fullMatch, key] = match;
+    const index = match.index!;
+
+    // Push text before the match
+    if (index > lastIndex) {
+      parts.push(content.slice(lastIndex, index));
+    }
+
+    // Check if variable exists and get value
+    // We use undefined as default to distinguish between "missing" and "empty string"
+    const val = pathOr(undefined, key.split('.'), variables);
+
+    if (val !== undefined) {
+      // Matched
+      const displayValue = String(val);
+      parts.push(
+        createElement(
+          'span',
+          {
+            key: `var-${index}`,
+            className: daisyui ? 'text-success font-medium' : 'text-green-600 font-medium',
+          },
+          displayValue,
+        ),
+      );
+    } else {
+      // Not matched
+      parts.push(
+        createElement(
+          'span',
+          {
+            key: `miss-${index}`,
+            className: daisyui ? 'text-warning font-medium' : 'text-orange-500 font-medium',
+          },
+          fullMatch,
+        ),
+      );
+    }
+
+    lastIndex = index + fullMatch.length;
+  }
+
+  if (!hasMatch) {
+    return content;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  if (parts.length === 0) return content;
+  if (parts.length === 1 && typeof parts[0] === 'string') return parts[0];
+
+  return createElement(Fragment, {}, ...parts);
+}
+
+export function getNestedValue(source: unknown, path: string): unknown {
   if (!source || typeof source !== 'object') {
     return undefined;
   }
@@ -32,6 +104,22 @@ function getNestedValue(source: unknown, path: string): unknown {
   }
 
   return current;
+}
+
+export function substituteString(
+  value: string | undefined,
+  variables: Record<string, unknown> | undefined,
+): string | undefined {
+  if (!value) return value;
+  if (!variables) return value;
+
+  return value.replace(TEMPLATE_VARIABLE_PATTERN, (_, key: string) => {
+    const val = getNestedValue(variables, key);
+    if (val === undefined || val === null) {
+      return `{{${key}}}`;
+    }
+    return String(val);
+  });
 }
 
 function variableExists(

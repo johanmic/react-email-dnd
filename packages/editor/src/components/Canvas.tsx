@@ -178,16 +178,40 @@ function renderBlock(
     daisyui?: boolean;
     customBlocks: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
     variables?: Record<string, unknown>;
+    previewVariables?: boolean;
   },
 ) {
-  const { daisyui, customBlocks, variables } = options;
+  const { daisyui, customBlocks, variables, previewVariables } = options;
   switch (block.type) {
     case 'button':
-      return <Button {...block.props} daisyui={daisyui} editorMode blockId={block.id} />;
+      return (
+        <Button
+          {...block.props}
+          daisyui={daisyui}
+          editorMode
+          blockId={block.id}
+          variables={variables}
+          previewVariables={previewVariables}
+        />
+      );
     case 'text':
-      return <Text {...block.props} daisyui={daisyui} />;
+      return (
+        <Text
+          {...block.props}
+          daisyui={daisyui}
+          variables={variables}
+          previewVariables={previewVariables}
+        />
+      );
     case 'heading':
-      return <Heading {...block.props} daisyui={daisyui} />;
+      return (
+        <Heading
+          {...block.props}
+          daisyui={daisyui}
+          variables={variables}
+          previewVariables={previewVariables}
+        />
+      );
     case 'divider':
       return <Divider {...block.props} daisyui={daisyui} />;
     case 'image':
@@ -906,7 +930,8 @@ function CanvasBlockView({
   customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
   isCompactLayout?: boolean;
 }) {
-  const { selectBlock, selectedBlockId, variables, isMobileExperience } = useCanvasStore();
+  const { selectBlock, selectedBlockId, variables, isMobileExperience, previewVariables } =
+    useCanvasStore();
   const { document, setDocument } = useCanvasStore();
   const blockVariableMatches = useMemo(
     () => collectBlockVariableMatches(block, variables),
@@ -1162,6 +1187,7 @@ function CanvasBlockView({
           daisyui,
           customBlocks: customBlockRegistry,
           variables,
+          previewVariables,
         })}
       </div>
     </div>
@@ -1934,12 +1960,8 @@ function CanvasSectionView({
   const sectionPaddingStyle = resolvePaddingStyle(section.padding);
   const sectionPaddingClasses = resolvePaddingClasses(section.padding);
   // Replace p-6 with p-2 if present, otherwise use p-2 as default if no padding is specified
-  const effectiveSectionPaddingClasses =
-    sectionPaddingClasses.length > 0
-      ? sectionPaddingClasses.map((cls) => (cls === 'p-6' ? 'p-2' : cls))
-      : ['p-2'];
+  const effectiveSectionPaddingClasses = ['pt-1 px-2 pb-2'];
   const hasSectionPadding = sectionPaddingClasses.length > 0 || sectionPaddingStyle != null;
-  const sectionMarginStyle = resolveMarginStyle(section.margin);
   const sectionMarginClasses = resolveMarginClasses(section.margin).map((cls) => {
     // Cap margin at m-2 (8px) on mobile to avoid excessive spacing
     const match = cls.match(/^m-(\d+(?:\.\d+)?)$/);
@@ -1953,20 +1975,6 @@ function CanvasSectionView({
     return cls;
   });
   const sectionAlignmentClass = alignmentClassName(section.align);
-  const sectionAlignmentStyle = alignmentStyle(section.align);
-  const sectionHasBackgroundClass = Boolean(section.backgroundClassName);
-
-  // Inline styles from the JSON input should always take precedence over theme classes
-  const sectionInlineStyle: CSSProperties = {
-    // Using background instead of backgroundColor to reset any background-image from theme gradients
-    ...(!sectionHasBackgroundClass && section.backgroundColor
-      ? { background: section.backgroundColor }
-      : {}),
-    ...(sectionPaddingStyle ? { padding: sectionPaddingStyle } : {}),
-    ...(sectionMarginStyle ? { margin: sectionMarginStyle } : {}),
-    ...(sectionAlignmentStyle ?? {}),
-  };
-
   // Determine if section level highlighting should be shown
   const showSectionHighlight =
     colorMode !== 'none' &&
