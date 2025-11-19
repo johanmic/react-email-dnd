@@ -3,8 +3,6 @@
 
 const path = require("path")
 const webpack = require("webpack")
-const jsxRuntimePath = require.resolve("react/jsx-runtime.js")
-const reactDomServerBrowserPath = require.resolve("react-dom/server.browser.js")
 const lightCodeTheme = require("prism-react-renderer/themes/github")
 const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 
@@ -65,8 +63,8 @@ const config = {
         title: "React Email DnD",
         logo: {
           alt: "React Email DnD Logo",
-          src: "img/logo.svg",
-          srcDark: "img/whitelogo.svg",
+          src: "img/logo-transparent.png",
+          // srcDark: "img/whitelogo.png",
         },
         items: [
           {
@@ -86,28 +84,15 @@ const config = {
         style: "dark",
         links: [
           {
-            title: "Docs",
-            items: [{ label: "Overview", to: "/docs/intro" }],
-          },
-          {
-            title: "Community",
+            title: "Find me on",
             items: [
               {
-                label: "Stack Overflow",
-                href: "https://stackoverflow.com/questions/tagged/docusaurus",
+                label: "Bluesky",
+                href: "https://bsky.app/profile/jojomic.bsky.social",
               },
               {
-                label: "Discord",
-                href: "https://discordapp.com/invite/docusaurus",
-              },
-            ],
-          },
-          {
-            title: "More",
-            items: [
-              {
-                label: "GitHub",
-                href: "https://github.com/johanmickelin/react-email-dnd",
+                label: "X",
+                href: "https://x.com/jmickelin",
               },
             ],
           },
@@ -143,8 +128,12 @@ const config = {
                   __dirname,
                   "../packages/editor/src"
                 ),
-                "react/jsx-runtime": jsxRuntimePath,
-                "react-dom/server.browser": reactDomServerBrowserPath,
+                "@react-email/components": path.resolve(
+                  __dirname,
+                  "../node_modules/@react-email/components"
+                ),
+                "react": path.resolve(__dirname, "../node_modules/react"),
+                "react-dom": path.resolve(__dirname, "../node_modules/react-dom"),
               },
             },
             plugins: [
@@ -153,11 +142,11 @@ const config = {
                 React: "react",
               }),
             ],
-          }
+          };
         },
-      }
+      };
     },
   ],
-}
+};
 
-module.exports = config
+module.exports = config;

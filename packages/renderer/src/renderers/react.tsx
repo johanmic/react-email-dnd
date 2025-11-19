@@ -111,10 +111,10 @@ export function renderReact(
   const tailwindConfig =
     options.daisyui && daisyUIColorMap
       ? {
-          presets: [pixelBasedPreset],
+          presets: pixelBasedPreset ? [pixelBasedPreset] : [],
           theme: { extend: { colors: daisyUIColorMap } },
         }
-      : { presets: [pixelBasedPreset] }
+      : { presets: pixelBasedPreset ? [pixelBasedPreset] : [] }
 
   return (
     <Html>
@@ -762,11 +762,24 @@ export function renderReact(
                                             )
                                           }
                                           case "image": {
-                                            const src =
+                                            let src =
                                               substitute(
                                                 block.props.src,
                                                 context
                                               ) ?? block.props.src
+                                            
+                                            // If src is still a variable pattern (unresolved), try to fall back to placeholder
+                                            if (src && typeof src === 'string' && src.includes('{{')) {
+                                              const substitutedPlaceholder = substitute(block.props.placeholder, context)
+                                              
+                                              // Use substituted placeholder if valid, or raw placeholder if it has no variables
+                                              if (substitutedPlaceholder && !substitutedPlaceholder.includes('{{')) {
+                                                src = substitutedPlaceholder
+                                              } else if (block.props.placeholder && !block.props.placeholder.includes('{{')) {
+                                                src = block.props.placeholder
+                                              }
+                                            }
+
                                             const alt = substitute(
                                               block.props.alt,
                                               context

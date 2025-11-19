@@ -3,9 +3,13 @@
   "extends": "@tsconfig/docusaurus/tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "module": "Node16",
+    "skipLibCheck": true,
     "paths": {
       "@react-email-dnd/shared": ["../packages/shared/dist"]
-    }
-  }
+    },
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["node"]
+  },
+  "include": ["src/**/*", "src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "build", ".docusaurus"]
 }

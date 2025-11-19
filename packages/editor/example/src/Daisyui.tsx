@@ -21,7 +21,8 @@ import { createSampleCanvasDocument, bb } from './sample-document';
 import { customBlocks } from './components/custom-blocks';
 import { Footer } from './components/footer';
 import themes from '../themes.json';
-const theme = themes.forest;
+const THEME_NAME = 'winter';
+const theme = themes[THEME_NAME];
 const baseColorNames = [
   'primary',
   'secondary',
@@ -54,12 +55,24 @@ const bgColors = ['base-100', 'base-200', 'base-300'].map((name) => ({
   label: name,
   labelClass: `bg-${name}`,
 }));
-const textColors = baseColorNames.slice(0, 3).map((name) => ({
-  // hex: forest[`${name}-content` as keyof typeof forest],
-  class: `text-${name}`,
-  labelClass: `bg-${name}`,
-  label: name,
-}));
+const textColors = [
+  {
+    // hex: forest[`${name}-content` as keyof typeof forest],
+    class: `text-neutral`,
+    labelClass: `bg-neutral`,
+    label: 'Neutral',
+  },
+  {
+    class: `text-primary`,
+    labelClass: `bg-primary`,
+    label: 'Primary',
+  },
+  {
+    class: `text-accent`,
+    labelClass: `bg-accent`,
+    label: 'Accent',
+  },
+];
 import { advancedFonts as fonts } from './font-examples';
 
 console.log({ textColors, bgColors, fonts });
@@ -123,9 +136,9 @@ function App() {
   };
 
   return (
-    <div data-theme="forest">
+    <div data-theme={THEME_NAME}>
       <div className="h-full flex flex-col">
-        <div className="p-4 shadow-sm flex justify-between items-center bg-base-100 border-b">
+        <div className="p-4 shadow-sm flex justify-between items-center border-b">
           <h2 className="text-xl font-semibold text-primary/80">DaisyUI Email Editor</h2>
           <div className="flex gap-3">
             <button
@@ -160,27 +173,34 @@ function App() {
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden p-2 bg-base-200">
           <CanvasProvider
             initialDocument={bb}
             onSave={handleSave}
             onDocumentChange={handleDocumentChange}
             uploadFile={uploadFile}
-            variables={{ firstName: 'Tim', lastName: 'Apple' }}
+            variables={{
+              name: 'Steve',
+              lastName: 'Zamboni',
+              image:
+                'https://images.unsplash.com/photo-1662986474431-2070b2d28d89?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8ZGFyayUyMHNoYWRvd3xlbnwwfDJ8MHx8fDA%3D',
+            }}
           >
             <EmailEditor
               colors={colors}
               textColors={textColors}
               bgColors={bgColors}
+              sideBarColumns={2}
               variableChecks={true}
               daisyui={true}
-              colorMode="hierarchy"
+              colorMode="primary"
               unlockable={true}
               showHidden={true}
               customBlocks={customBlocks}
               padding={padding}
               fonts={fonts}
             />
+            <div className="h-24">hi</div>
           </CanvasProvider>
         </div>
       </div>

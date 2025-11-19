@@ -4,6 +4,7 @@ import { TextT } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, TextBlock, TextBlockProps } from '@react-email-dnd/shared';
 import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
+import { replaceVariables } from '../utils/templateVariables';
 
 export const textDefaults: TextBlockProps = {
   content: 'Start typing your message here.',
@@ -25,7 +26,13 @@ export const textDefinition: BlockDefinition<TextBlock> = {
 
 export const TextIcon = TextT;
 
-export function Text(props: TextBlockProps & { daisyui?: boolean }) {
+export function Text(
+  props: TextBlockProps & {
+    daisyui?: boolean;
+    variables?: Record<string, unknown>;
+    previewVariables?: boolean;
+  },
+) {
   const {
     content,
     align = 'left',
@@ -39,6 +46,8 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
     padding = '0',
     daisyui = false,
     className: customClassName,
+    variables,
+    previewVariables,
   } = props;
 
   const paddingStyle = resolvePaddingStyle(padding);
@@ -49,6 +58,10 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
   // When daisyui is disabled and no colorClassName is set, use default gray color
   const defaultColor = daisyui && !colorClassName ? undefined : '#1f2937';
   const inlineColor = color ?? (colorClassName ? undefined : defaultColor);
+
+  const displayContent = previewVariables
+    ? replaceVariables(content, variables, daisyui)
+    : content;
 
   const style: CSSProperties = {
     textAlign: align,
@@ -125,7 +138,7 @@ export function Text(props: TextBlockProps & { daisyui?: boolean }) {
       )}
       style={style}
     >
-      {content}
+      {displayContent}
     </EmailText>
   );
 }

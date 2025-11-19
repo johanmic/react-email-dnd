@@ -1,7 +1,7 @@
 @import "tailwindcss";
 /* daisyUI theme config */
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark, forest, lofi;
+  themes: light --default, dark --prefersdark, winter, forest, pastel, lofi;
 }
 
 /* Make Tailwind scan both the example and the library sources */

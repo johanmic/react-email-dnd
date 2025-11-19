@@ -4,6 +4,8 @@ import { ImageSquareIcon } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import type { BlockDefinition, ImageBlock, ImageBlockProps } from '@react-email-dnd/shared';
 import { resolvePaddingClasses, resolvePaddingStyle } from '../utils/padding';
+import { useCanvasStore } from '../hooks/useCanvasStore';
+import { substituteString } from '../utils/templateVariables';
 
 export const imageDefaults: ImageBlockProps = {
   src: 'https://placehold.co/600x200',
@@ -40,6 +42,8 @@ export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
     placeholder,
     className: customClassName,
   } = props;
+  
+  const { variables } = useCanvasStore();
 
   const paddingStyle = resolvePaddingStyle(padding);
   const paddingClasses = resolvePaddingClasses(padding);
@@ -84,14 +88,26 @@ export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
     return 'max-w-4xl';
   };
 
+  // If src or placeholder contain variables (e.g. {{imageUrl}}), treat them as missing/invalid
+  // for display purposes in the editor to prevent 404s, falling back to default.
+  const isVariable = (value?: string) => value?.includes('{{');
+  
+  const resolvedSrc = substituteString(src, variables);
+  const resolvedPlaceholder = substituteString(placeholder, variables);
+  
+  const displaySrc = 
+    (!isVariable(resolvedSrc) ? resolvedSrc : null) || 
+    (!isVariable(resolvedPlaceholder) ? resolvedPlaceholder : null) || 
+    imageDefaults.src;
+
   return (
     <div style={wrapperStyle} className={clsx('w-full', getAlignmentClass())}>
       <Img
-        src={src || placeholder || imageDefaults.src}
+        src={displaySrc}
         alt={alt}
         href={href}
-        width={width ?? imageDefaults.width}
-        height={height ?? imageDefaults.height}
+        width={width === 0 ? undefined : (width ?? imageDefaults.width)}
+        height={height === 0 ? undefined : (height ?? imageDefaults.height)}
         className={clsx(
           // Base responsive classes
           'block mx-auto',
@@ -111,7 +127,7 @@ export function Image(props: ImageBlockProps & { daisyui?: boolean }) {
           ...(paddingStyle ? { padding: paddingStyle } : {}),
           display: 'inline-block',
           maxWidth: '100%',
-          height: 'auto',
+          height: height ? undefined : 'auto',
           border: 'none',
           outline: 'none',
         }}

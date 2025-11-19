@@ -13,7 +13,7 @@ import { buildDaisyUIBaseStyles } from "./utils/daisyui"
 function createContext(options: RendererOptions): RenderContext {
   return {
     variables: options.variables,
-    throwOnMissingVariables: options.throwOnMissingVariables,
+    throwOnMissingVariables: options.throwOnMissingVariables ?? true,
   }
 }
 
