@@ -83,6 +83,21 @@ const demoDocument: CanvasDocument = {
 
 // --- Visual Components ---
 
+const CODE_STRING = `import { Html, Button } from "@react-email/components";
+
+export default function Email() {
+  return (
+    <Html>
+      <Button
+        href="https://example.com"
+        style={{ color: "#fff", padding: "12px 20px" }}
+      >
+        Click me
+      </Button>
+    </Html>
+  );
+}`
+
 function ReactEmailGridVisual() {
   const components = [
     { name: "Container", icon: "ph-fill ph-bounding-box" },
@@ -93,7 +108,6 @@ function ReactEmailGridVisual() {
     { name: "Heading", icon: "ph-fill ph-text-h" },
     { name: "Text", icon: "ph-fill ph-text-aa" },
     { name: "Divider", icon: "ph-fill ph-minus" },
-    { name: "Button", icon: "ph-fill ph-square" },
   ]
 
   return (
@@ -102,33 +116,33 @@ function ReactEmailGridVisual() {
         {components.map((comp, i) => (
           <div
             key={comp.name}
-            className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1e] p-6 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-white/20 hover:bg-primary! hover:shadow-2xl"
+            className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1e] p-6 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-primary hover:bg-[#1e1e1e] hover:shadow-2xl hover:shadow-primary/20"
             style={{ transitionDelay: `${i * 50}ms` }}
           >
             {/* Glow effect */}
-            <div className="absolute -inset-px rounded-xl bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+            <div className="absolute -inset-px rounded-xl bg-linear-to-br from-primary/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-white/5 text-white transition-transform group-hover:scale-110 group-hover:bg-white/10">
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-white/5 text-primary transition-transform group-hover:scale-110 group-hover:bg-primary/10">
               <i className={clsx(comp.icon, "text-2xl")} />
             </div>
-            <span className="relative font-mono text-xs font-medium text-white/60 transition-colors group-hover:text-white">
+            <span className="relative font-mono text-xs font-medium text-white/60 transition-colors group-hover:text-primary">
               {`<${comp.name} />`}
             </span>
           </div>
         ))}
       </div>
       {/* Decorative background elements */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-purple-500/10 via-transparent to-blue-500/10 blur-3xl" />
+      <div className="absolute inset-0 -z-10 bg-linear-to-tr from-purple-500/10 via-transparent to-primary/10 blur-3xl" />
     </div>
   )
 }
 
 function DaisyUIThemeVisual() {
   const colors = [
-    { name: "primary", hex: "#6419e6", bg: "bg-[#6419e6]" },
-    { name: "secondary", hex: "#d926a9", bg: "bg-[#d926a9]" },
-    { name: "accent", hex: "#1fb2a6", bg: "bg-[#1fb2a6]" },
-    { name: "neutral", hex: "#2a323c", bg: "bg-[#2a323c]" },
+    { name: "primary", hex: "#6419e6", bg: "bg-primary" },
+    { name: "secondary", hex: "#d926a9", bg: "bg-secondary" },
+    { name: "accent", hex: "#1fb2a6", bg: "bg-accent" },
+    { name: "neutral", hex: "#2a323c", bg: "bg-neutral" },
   ]
 
   return (
@@ -160,10 +174,10 @@ function DaisyUIThemeVisual() {
       </div>
       <div className="space-y-3">
         <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-          <div className="h-full w-3/4 bg-gradient-to-r from-[#6419e6] to-[#d926a9]" />
+          <div className="h-full w-3/4 bg-linear-to-r from-primary to-secondary" />
         </div>
         <div className="flex gap-2">
-          <button className="rounded-md bg-[#6419e6] px-4 py-1.5 text-xs font-medium text-white">
+          <button className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-white">
             Save
           </button>
           <button className="rounded-md border border-white/20 bg-[#111] px-4 py-1.5 text-xs font-medium text-white">
@@ -180,13 +194,13 @@ function CustomComponentVisual() {
     <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6 sm:flex-row sm:gap-8">
       {/* Code Side */}
       <div className="group relative w-full flex-1">
-        <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 blur opacity-20 transition duration-1000 group-hover:opacity-40" />
+        <div className="absolute -inset-0.5 rounded-lg bg-linear-to-r from-blue-600 to-cyan-600 blur opacity-20 transition duration-1000 group-hover:opacity-40" />
         <div className="relative rounded-lg border border-white/10 bg-[#1e1e1e] p-5 shadow-2xl">
           <div className="mb-3 flex items-center justify-between border-b border-white/5 pb-2">
             <span className="font-mono text-[10px] text-white/40">
               Product.tsx
             </span>
-            <div className="h-1.5 w-1.5 rounded-full bg-blue-500/50" />
+            <div className="h-1.5 w-1.5 rounded-full bg-primary/50" />
           </div>
           <div className="space-y-1.5 font-mono text-[10px] leading-relaxed">
             <div className="text-purple-400">
@@ -216,9 +230,9 @@ function CustomComponentVisual() {
       {/* Editor Side */}
       <div className="w-full flex-1">
         <div className="rounded-lg border border-white/10 bg-[#111] p-1 shadow-2xl">
-          <div className="group relative rounded border border-dashed border-white/20 bg-[#0d0d0d] p-4 transition-colors hover:border-blue-500/50">
+          <div className="group relative rounded border border-dashed border-white/20 bg-[#0d0d0d] p-4 transition-colors hover:border-primary/50">
             {/* Floating Label */}
-            <div className="absolute -top-2.5 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-blue-600 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg ring-2 ring-[#0d0d0d]">
+            <div className="absolute -top-2.5 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold text-white shadow-lg ring-2 ring-[#0d0d0d]">
               <i className="ph-fill ph-cube" />
               <span>Custom Block</span>
             </div>
@@ -229,7 +243,7 @@ function CustomComponentVisual() {
               </div>
               <div className="flex-1 space-y-2">
                 <div className="h-2.5 w-3/4 rounded bg-white/20" />
-                <div className="h-2 w-1/2 rounded bg-blue-500/30" />
+                <div className="h-2 w-1/2 rounded bg-primary/30" />
               </div>
             </div>
           </div>
@@ -291,9 +305,9 @@ function LiveEditorPreview() {
 // --- Sections ---
 function Header() {
   return (
-    <header className="relative overflow-hidden bg-[#0d0d0d] py-24 lg:py-32">
+    <header className="relative bg-[#0d0d0d] py-24 lg:py-32" data-theme="dark">
       <div className="pointer-events-none absolute left-1/2 top-0 h-[600px] w-[1000px] -translate-x-1/2 rounded-full bg-purple-500/20 opacity-50 blur-[120px] mix-blend-screen" />
-      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[600px] w-[800px] rounded-full bg-blue-500/10 opacity-30 blur-[100px]" />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[600px] w-[800px] rounded-full bg-primary/10 opacity-30 blur-[100px]" />
 
       <div className="container relative z-10 mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center text-center">
@@ -304,9 +318,9 @@ function Header() {
             </span>
           </div>
 
-          <h1 className="mb-6 font-display text-5xl text-white drop-shadow-2xl tracking-tight md:text-7xl">
+          <h1 className="mb-6 font-display text-3xl text-white drop-shadow-2xl tracking-tight md:text-4xl">
             React Email <br className="md:hidden" />
-            <span className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-white to-white/60 bg-clip-text text-transparent">
               Drag & Drop
             </span>
           </h1>
@@ -319,13 +333,13 @@ function Header() {
           <div className="mb-20 flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
             <Link
               to="/docs/quickstart"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-base font-bold text-black transition-all hover:scale-105 hover:bg-white/90 hover:no-underline active:scale-95"
+              className="btn btn-primary btn-soft rounded-full p-6 no-underline! hover:opacity-90 hover:bg-primary/10 border-none "
             >
               Get Started
             </Link>
             <Link
               to="/docs/intro"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/10 px-8 text-base font-medium text-white transition-all hover:scale-105 hover:bg-white/20 hover:no-underline active:scale-95 backdrop-blur-sm"
+              className="btn btn-neutral btn-outline text-neutral-content! border-neutral-content! hover:bg-neutral-content/10! hover:text-neutral-content! border-none rounded-full p-6 no-underline!"
             >
               Read Documentation
             </Link>
@@ -361,14 +375,9 @@ function FeatureSection({
   isLast?: boolean
 }) {
   return (
-    <section
-      className={clsx(
-        "relative overflow-hidden py-24 lg:py-32",
-        "bg-[#0d0d0d]"
-      )}
-    >
+    <section className={clsx("relative py-24 lg:py-32", "bg-[#0d0d0d]")}>
       {!isLast && (
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/10 to-transparent" />
       )}
       <div className="container mx-auto max-w-6xl px-4">
         <div
@@ -389,7 +398,7 @@ function FeatureSection({
             </p>
             <Link
               to={link}
-              className="group inline-flex items-center font-medium text-white transition-colors hover:text-white/80 hover:no-underline"
+              className="group inline-flex items-center font-medium text-primary! transition-colors hover:text-white/80 hover:no-underline"
             >
               Learn more{" "}
               <i className="ph-bold ph-arrow-right ml-2 transition-transform group-hover:translate-x-1" />
@@ -398,7 +407,7 @@ function FeatureSection({
           <div className="w-full flex-1 perspective-1000">
             <div
               className={clsx(
-                "relative transform transition-all duration-700 hover:scale-[1.02]",
+                "relative transform transition-all duration-700",
                 align === "left" ? "rotate-y-3" : "-rotate-y-3"
               )}
             >
@@ -459,29 +468,68 @@ function FeatureBlocks() {
 
 function NpmPackages() {
   const packages = [
-    { name: "@react-email-dnd/editor", desc: "The drag-and-drop surface" },
-    { name: "@react-email-dnd/renderer", desc: "Convert JSON to React/HTML" },
-    { name: "@react-email-dnd/shared", desc: "Types and schemas" },
+    {
+      name: "@react-email-dnd/editor",
+      role: "The Interface",
+      desc: "A complete drag-and-drop authoring environment. Handles canvas state, drag interactions, property panels, and selection logic.",
+      icon: "ph-fill ph-pencil-simple",
+    },
+    {
+      name: "@react-email-dnd/renderer",
+      role: "The Output",
+      desc: "Takes the JSON document and transforms it into production-ready HTML or React components. Manages styles, fonts, and compatibility.",
+      icon: "ph-fill ph-code",
+    },
+    {
+      name: "@react-email-dnd/shared",
+      role: "The Contract",
+      desc: "Contains the core type definitions, validation schemas, and utility functions that ensure the editor and renderer speak the same language.",
+      icon: "ph-fill ph-share-network",
+    },
   ]
+
   return (
-    <section className="border-t border-white/10 bg-[#111] py-20">
-      <div className="container mx-auto max-w-5xl px-4">
-        <h3 className="mb-8 text-center font-mono text-sm uppercase tracking-widest text-white/40">
-          Install the primitives
-        </h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <section className="border-t border-white/10 bg-[#111] py-24">
+      <div className="container mx-auto max-w-6xl px-4">
+        <div className="mb-16 text-center">
+          <h3 className="mb-4 font-display text-3xl text-white">
+            Install the primitives
+          </h3>
+          <p className="text-white/60">
+            Everything you need to build your own email editor, split into
+            modular packages.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {packages.map((pkg) => (
             <a
               key={pkg.name}
               href={`https://www.npmjs.com/package/${pkg.name}`}
               target="_blank"
               rel="noreferrer"
-              className="group flex flex-col rounded-lg border border-white/5 bg-white/5 p-4 transition-all hover:border-white/20 hover:bg-white/10 hover:no-underline"
+              className="group relative flex flex-col overflow-hidden rounded-2xl border text-primary! border-white/5 bg-white/5 p-8 transition-all hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-2xl hover:no-underline!"
             >
-              <span className="font-mono text-sm text-white transition-colors group-hover:text-blue-300">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary! ring-1 ring-primary/20 group-hover:bg-primary/20 group-hover:text-primary!">
+                <i className={clsx(pkg.icon, "text-2xl")} />
+              </div>
+
+              <div className="mb-2 flex items-center gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-white/40">
+                  {pkg.role}
+                </span>
+              </div>
+
+              <h4 className="mb-3 font-mono text-sm font-semibold text-white group-hover:text-primary! transition-colors">
                 {pkg.name}
-              </span>
-              <span className="mt-1 text-xs text-white/40">{pkg.desc}</span>
+              </h4>
+
+              <p className="text-sm leading-relaxed text-white/60">
+                {pkg.desc}
+              </p>
+
+              {/* Shine effect */}
+              <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/5 to-transparent opacity-0 transition-all duration-500 group-hover:translate-x-full group-hover:opacity-100" />
             </a>
           ))}
         </div>
@@ -512,9 +560,12 @@ export default function Home(): JSX.Element {
       title="React Email DnD"
       description="The visual builder for React Email"
     >
-      <div className="min-h-screen bg-[#0d0d0d] font-sans selection:bg-purple-500/30 selection:text-purple-200">
+      <div
+        id="tw-scope"
+        className="min-h-screen overflow-x-hidden bg-[#0d0d0d] font-sans selection:bg-purple-500/30 selection:text-purple-200"
+      >
         <Header />
-        <main>
+        <main data-theme="dark">
           <FeatureBlocks />
           <NpmPackages />
         </main>
