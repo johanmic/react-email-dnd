@@ -13,18 +13,26 @@ const config = {
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here
-  url: "https://react-email-dnd.dev",
+  url: "https://johanmic.github.io",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: "/",
+  baseUrl: "/react-email-dnd/",
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: "react-email-dnd", // Usually your GitHub org/user name.
-  projectName: "docs", // Usually your repo name.
+  organizationName: "johanmic",
+  projectName: "react-email-dnd",
+
+  deploymentBranch: "gh-pages",
+  trailingSlash: false,
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "warn",
+
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: "warn",
+    },
+  },
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
@@ -44,7 +52,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/johanmickelin/react-email-dnd/tree/main/docs",
+            "https://github.com/johanmic/react-email-dnd/tree/main/docs",
         },
         blog: false,
         theme: {
@@ -74,7 +82,7 @@ const config = {
             label: "Docs",
           },
           {
-            href: "https://github.com/johanmickelin/react-email-dnd",
+            href: "https://github.com/johanmic/react-email-dnd",
             label: "GitHub",
             position: "right",
           },
@@ -130,10 +138,10 @@ const config = {
                 ),
                 "@react-email/components": path.resolve(
                   __dirname,
-                  "../node_modules/@react-email/components"
+                  "../packages/editor/node_modules/@react-email/components"
                 ),
-                "react": path.resolve(__dirname, "../node_modules/react"),
-                "react-dom": path.resolve(__dirname, "../node_modules/react-dom"),
+                "react": path.resolve(__dirname, "./node_modules/react"),
+                "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
               },
             },
             plugins: [
