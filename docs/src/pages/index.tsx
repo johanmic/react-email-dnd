@@ -285,52 +285,43 @@ function HomepageHeader() {
       <div className="container mx-auto max-w-7xl px-4">
         <div className="flex flex-col gap-[clamp(2.5rem,6vw,4rem)]">
           <div className="mx-auto flex flex-col items-center px-3 text-center">
-            <h1 className="mb-4 inline-flex flex-wrap items-center justify-center gap-2 text-white">
+            <h1 className="mb-4 inline-flex flex-wrap items-center justify-center gap-2 text-white text-5xl md:text-6xl font-display">
               {themeConfig.navbar?.logo?.src && (
                 <img
                   src={themeConfig.navbar.logo.src}
                   alt={siteConfig.title}
-                  className="h-auto w-12 md:w-24"
+                  className="h-auto w-16 md:w-28"
                 />
               )}
               {siteConfig.title}
-              <div className="text-xs text-base-content/70 border border-base-content/70 rounded-full px-2 py-1">
-                Beta
-              </div>
             </h1>
-            <p className="mb-8 text-center max-w-2xl mx-auto leading-[1.7] text-base-content/80">
-              Editor, Renderer and utilities to make visual email editing for
-              React Email. Built with custom styling, or integrated with{" "}
-              <a
-                href="https://daisyui.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline! text-base-content!"
-              >
-                DaisyUI
-              </a>
-              .
+            <div className="mb-6 text-xs font-bold text-primary-content/80 uppercase tracking-widest border border-primary-content/30 rounded-full px-3 py-1">
+              Beta Release
+            </div>
+            <p className="mb-8 text-center max-w-2xl mx-auto leading-[1.7] text-xl text-primary-content/90">
+              The drag-and-drop email editor for React applications. 
+              Built on React Email, powered by standard JSON, and styled with DaisyUI.
             </p>
             <div className="flex w-full flex-col items-center justify-center gap-4 lg:flex-row no-underline!">
               <Link
-                className="btn btn-lg btn-neutral rounded-full text-neutral-content! no-underline!"
+                className="btn btn-lg btn-neutral rounded-full text-neutral-content! no-underline! px-8"
                 to="/docs/quickstart"
               >
                 Get Started
               </Link>
               <Link
-                className="btn btn-lg! btn-outline! hover:btn-primary! hover:text-primary-content! no-underline! rounded-full text-neutral!"
-                to="/docs/json-structure"
+                className="btn btn-lg! btn-outline! text-white! hover:bg-white! hover:text-primary! no-underline! rounded-full border-white!"
+                to="/docs/intro"
               >
-                Read the docs
+                Read Documentation
               </Link>
             </div>
           </div>
           <div className="flex w-full flex-col items-center gap-3 px-3 lg:px-0">
-            <p className="w-full text-center text-sm uppercase tracking-widest text-base-content/70">
-              Working example
+            <p className="w-full text-center text-sm uppercase tracking-widest text-primary-content/60 font-semibold">
+              Interactive Demo
             </p>
-            <div className="w-full overflow-hidden rounded-2xl border border-base-300 bg-base-100 p-[clamp(0.75rem,3vw,1.25rem)] shadow-2xl">
+            <div className="w-full overflow-hidden rounded-2xl border border-white/20 bg-base-100 p-[clamp(0.75rem,3vw,1.25rem)] shadow-2xl">
               <div className="h-192 md:h-128 overflow-hidden rounded-xl bg-linear-to-br from-base-200 to-base-300">
                 <LiveEditorPreview />
               </div>
@@ -359,7 +350,7 @@ const npmPackages = [
   },
   {
     name: "@react-email-dnd/shared",
-    type: "Validation & Utilities",
+    type: "Shared",
     description: "Shared types, schema validation, and padding/color helpers.",
     href: "https://www.npmjs.com/package/@react-email-dnd/shared",
   },
@@ -367,36 +358,30 @@ const npmPackages = [
 
 function NpmPackages() {
   return (
-    <section className="bg-base-200! py-[clamp(3rem,7vw,4.5rem)] text-base-content">
+    <section className="bg-base-100 py-16 text-base-content border-t border-base-200">
       <div className="container mx-auto max-w-7xl px-4">
-        <h2 className="mb-4 text-center text-3xl">Packages on npm</h2>
-        <p className="mb-12 text-center">
-          <code className="text-primary! bg-base-100! rounded-md px-1 py-0.5">
-            @react-email-dnd
-          </code>{" "}
-          is divided up in to multiple packages.
-        </p>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="mb-12 text-center text-3xl font-display text-primary">Packages</h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           {npmPackages.map((pkg) => (
             <a
               key={pkg.name}
-              className="card card-border bg-base-300! p-6 no-underline! text-primary! transition hover:-translate-y-1 hover:shadow-xl"
+              className="card card-compact bg-base-200 hover:bg-base-300 transition-colors border border-base-300 p-6 no-underline! group"
               href={pkg.href}
               target="_blank"
               rel="noreferrer"
             >
-              <span className="mb-2 text-xs uppercase tracking-widest text-base-content/60">
-                {pkg.type}
-              </span>
-              <h3 className="mb-2 text-lg text-primary! font-semibold">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-base-content/50 group-hover:text-primary transition-colors">
+                  {pkg.type}
+                </span>
+                <i className="ph-bold ph-arrow-up-right text-base-content/30 group-hover:text-primary" />
+              </div>
+              <h3 className="mb-2 text-lg font-bold text-base-content group-hover:text-primary transition-colors font-mono text-sm">
                 {pkg.name}
               </h3>
-              <p className="mb-4 text-sm leading-relaxed text-base-content/70!">
+              <p className="text-sm text-base-content/70">
                 {pkg.description}
               </p>
-              <span className="mt-auto text-sm text-primary">
-                View on npm →
-              </span>
             </a>
           ))}
         </div>
@@ -408,59 +393,80 @@ function NpmPackages() {
 function Features() {
   const features = [
     {
-      icon: "ph-fill ph-palette",
-      title: "Customizable",
-      link: "docs/packages/editor/styling-colors-paddings",
-      description:
-        "Custom styles, colors, and complete control over your email design system. Match your brand perfectly.",
-    },
-    {
-      icon: "ph-fill ph-text-aa",
-      title: "Custom Fonts",
-      link: "docs/packages/editor/fonts",
-      description:
-        "Bring any font you want. Full support for custom web fonts to maintain brand consistency.",
-    },
-    {
-      icon: "ph-fill ph-envelope-simple",
+      icon: "ph-fill ph-atom",
       title: "Built on React Email",
-      link: "/docs/intro",
-      description:
-        "Leverages the power of React Email framework for reliable, production-ready email rendering.",
+      link: "https://react.email",
+      external: true,
+      description: (
+        <>
+          The output uses standard{" "}
+          <span className="font-semibold text-primary">React Email</span>{" "}
+          components. Generate clean, responsive email code that works across clients.
+        </>
+      ),
     },
     {
-      icon: "ph-fill ph-cube",
+      icon: "ph-fill ph-palette",
+      title: "DaisyUI Themes",
+      link: "/docs/packages/renderer/daisyui",
+      description: (
+        <>
+          Customize the editor and use{" "}
+          <span className="font-semibold text-secondary">DaisyUI</span> themes in
+          your emails. Bring your design system directly into the email builder.
+        </>
+      ),
+    },
+    {
+      icon: "ph-fill ph-cube-transparent",
       title: "Custom Components",
       link: "/docs/custom-components",
-      description:
-        "Bring any React Email block, add variables, and create reusable components for your team.",
+      description: (
+        <>
+          Create custom components from any React Email component or existing email.
+          Extend the editor with your own blocks.
+        </>
+      ),
     },
   ]
 
   return (
-    <section className="bg-base-200 py-[clamp(3rem,7vw,4.5rem)] text-base-content">
+    <section className="bg-base-200 py-24 text-base-content">
       <div className="container mx-auto max-w-7xl px-4">
-        <h2 className="mb-4 text-center text-3xl">Features</h2>
-        <p className="mb-12 text-center">
-          Everything you need to build beautiful, production-ready emails
-        </p>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-display mb-6">
+            Why React Email DnD?
+          </h2>
+          <p className="text-xl text-base-content/70 max-w-3xl mx-auto">
+            A complete toolkit for building visual email editors.
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {features.map((feature) => (
             <Link
               to={feature.link}
               key={feature.title}
-              className="card card-border bg-base-300! no-underline! text-primary! p-6 transition-all duration-300! ease-out hover:scale-105 hover:shadow-xl"
+              target={feature.external ? "_blank" : undefined}
+              className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 no-underline! text-inherit border border-base-300"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                <i
-                  className={clsx(feature.icon, "text-2xl text-primary")}
-                  aria-hidden="true"
-                />
+              <div className="card-body items-center text-center p-8">
+                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <i
+                    className={clsx(feature.icon, "text-4xl")}
+                    aria-hidden="true"
+                  />
+                </div>
+                <h3 className="card-title text-2xl mb-3 font-display">{feature.title}</h3>
+                <p className="text-base leading-relaxed text-base-content/70">
+                  {feature.description}
+                </p>
+                <div className="card-actions mt-6">
+                  <span className="btn btn-ghost btn-sm text-primary gap-2">
+                    Learn more <i className="ph-bold ph-arrow-right" />
+                  </span>
+                </div>
               </div>
-              <h3 className="mb-2 text-lg font-semibold">{feature.title}</h3>
-              <p className="text-sm leading-relaxed text-base-content/70">
-                {feature.description}
-              </p>
             </Link>
           ))}
         </div>
@@ -478,6 +484,13 @@ export default function Home(): JSX.Element {
     link.href =
       "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css"
     document.head.appendChild(link)
+    
+    const linkBold = document.createElement("link")
+    linkBold.rel = "stylesheet"
+    linkBold.type = "text/css"
+    linkBold.href =
+      "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css"
+    document.head.appendChild(linkBold)
 
     // return () => {
     //   document.head.removeChild(link)
@@ -486,16 +499,14 @@ export default function Home(): JSX.Element {
 
   return (
     <Layout
-      title="React Email DnD docs"
-      description="Authoring and rendering documentation for the React Email drag-and-drop toolkit"
+      title="React Email DnD"
+      description="Drag-and-drop email builder for React applications"
     >
-      <div data-theme="dark">
+      <div data-theme="dark" className="font-sans">
         <HomepageHeader />
         <main>
-          <NpmPackages />
-          {/* <CustomComponents /> */}
           <Features />
-          {/* ´<CustomizationExamples /> */}
+          <NpmPackages />
         </main>
       </div>
     </Layout>

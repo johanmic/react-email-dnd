@@ -28,6 +28,10 @@ const config = {
 
   onBrokenLinks: "throw",
 
+  stylesheets: [
+    "https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap",
+  ],
+
   markdown: {
     hooks: {
       onBrokenMarkdownLinks: "warn",

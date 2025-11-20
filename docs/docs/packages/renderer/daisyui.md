@@ -6,7 +6,7 @@ this then needs to added to the renderer
 
 ```tsx
 import themes from "../themes.json"
-import email from "../../emails/daiyui.json"
+import email from "../../emails/daisyui.json"
 
 const forest = themes.forest
 const colors = [

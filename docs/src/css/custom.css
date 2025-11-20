@@ -1,4 +1,3 @@
-
 /**
  * Any CSS included here will be global. The classic template
  * bundles Infima by default. Infima is a CSS framework designed to
@@ -16,6 +15,19 @@
 }
 
 @import "tailwindcss/utilities.css" layer(utilities);
+
+:root {
+  --font-fredoka: "Fredoka One", cursive;
+  --ifm-font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-fredoka) !important;
+}
+
+.hero-title {
+  font-family: var(--font-fredoka);
+}
 
 @custom-variant dark (&:is([data-theme="dark"] *));
 @plugin "daisyui" {
@@ -113,5 +125,3 @@ pre[class*='language-'] {
 .token-line {
   white-space: pre;
 }
-
-
