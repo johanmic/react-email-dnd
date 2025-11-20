@@ -10,6 +10,11 @@
     "renderer",
     "shared"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johanmic/react-email-dnd.git"
+  },
+  "homepage": "https://github.com/johanmic/react-email-dnd#readme",
   "private": true,
   "packageManager": "pnpm@9",
   "workspaces": [

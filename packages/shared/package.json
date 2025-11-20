@@ -1,7 +1,7 @@
 {
   "name": "@react-email-dnd/shared",
   "author": "Johan Mickelin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shared schema types and validation utilities for react-email-dnd.",
   "keywords": [
     "react",
@@ -10,6 +10,12 @@
     "shared",
     "schema"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johanmic/react-email-dnd.git",
+    "directory": "packages/shared"
+  },
+  "homepage": "https://dnd.email/docs/json-structure",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
