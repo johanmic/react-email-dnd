@@ -1,177 +1,75 @@
 import React from "react"
-import type { JSX } from "react"
-import clsx from "clsx"
+import Layout from "@theme/Layout"
 import Link from "@docusaurus/Link"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
-import Layout from "@theme/Layout"
-// import CodeBlock from "@theme/CodeBlock"
 import BrowserOnly from "@docusaurus/BrowserOnly"
+import clsx from "clsx"
 
-// @ts-expect-error -- workspace path alias resolved via pnpm workspaces
-import type { CanvasDocument, Padding } from "@react-email-dnd/shared"
-
-// Suppress ResizeObserver loop errors at module level
-// This harmless error occurs during drag operations when ResizeObserver
-// callbacks trigger layout changes. We catch it early before webpack-dev-server's overlay.
-if (typeof window !== "undefined") {
-  // Store original methods before any other code can modify them
-  const originalConsoleError = console.error.bind(console)
-  const originalConsoleWarn = console.warn.bind(console)
-  const originalConsoleLog = console.log.bind(console)
-
-  // Intercept all console methods that might log the error
-  console.error = (...args: unknown[]) => {
-    const message = String(args.join(" "))
-    if (
-      message.includes("ResizeObserver loop") ||
-      message.includes(
-        "ResizeObserver loop completed with undelivered notifications"
-      )
-    ) {
-      // Silently ignore - don't log, don't throw
-      return
-    }
-    originalConsoleError(...args)
-  }
-
-  console.warn = (...args: unknown[]) => {
-    const message = String(args.join(" "))
-    if (
-      message.includes("ResizeObserver loop") ||
-      message.includes(
-        "ResizeObserver loop completed with undelivered notifications"
-      )
-    ) {
-      return
-    }
-    originalConsoleWarn(...args)
-  }
-
-  // Also catch in console.log just in case
-  console.log = (...args: unknown[]) => {
-    const message = String(args.join(" "))
-    if (
-      message.includes("ResizeObserver loop") ||
-      message.includes(
-        "ResizeObserver loop completed with undelivered notifications"
-      )
-    ) {
-      return
-    }
-    originalConsoleLog(...args)
-  }
-
-  // Handle window error events - catch in capture phase (before bubbling)
-  const handleError = (e: ErrorEvent) => {
-    const errorMessage = e.message || String(e.error || "")
-    if (
-      errorMessage.includes("ResizeObserver loop") ||
-      errorMessage.includes(
-        "ResizeObserver loop completed with undelivered notifications"
-      )
-    ) {
-      e.preventDefault()
-      e.stopImmediatePropagation()
-      e.stopPropagation()
-      return false
-    }
-  }
-
-  // Handle unhandled promise rejections
-  const handleRejection = (e: PromiseRejectionEvent) => {
-    const reason = String(e.reason || "")
-    if (
-      reason.includes("ResizeObserver loop") ||
-      reason.includes(
-        "ResizeObserver loop completed with undelivered notifications"
-      )
-    ) {
-      e.preventDefault()
-      e.stopImmediatePropagation()
-      e.stopPropagation()
-      return false
-    }
-  }
-
-  // Register listeners in capture phase to intercept before other handlers
-  window.addEventListener("error", handleError, true)
-  window.addEventListener("unhandledrejection", handleRejection, true)
-
-  // Also listen to 'error' event on document
-  document.addEventListener("error", handleError, true)
+// --- Types ---
+type CanvasDocument = {
+  version: number
+  meta: Record<string, any>
+  variables: Record<string, any>
+  sections: any[]
 }
 
+// --- Error Suppression ---
+if (typeof window !== "undefined") {
+  const originalConsoleError = console.error.bind(console)
+  console.error = (...args: unknown[]) => {
+    const msg = String(args.join(" "))
+    if (msg.includes("ResizeObserver")) return
+    originalConsoleError(...args)
+  }
+}
+
+// --- Demo Document ---
 const demoDocument: CanvasDocument = {
   version: 1,
-  meta: {
-    title: "Monochrome welcome",
-    previewText: "Minimal palettes, maximal control.",
-  },
+  meta: { title: "Demo", previewText: "Preview" },
   variables: {},
   sections: [
     {
-      id: "section-hero",
+      id: "hero",
       type: "section",
-      align: "left",
-      padding: "8",
-      margin: "0",
+      padding: "20px",
       rows: [
         {
-          id: "row-hero",
+          id: "r1",
           type: "row",
-          gutter: 16,
-          padding: "0",
-          margin: "0",
-          align: "left",
           columns: [
             {
-              id: "column-hero",
+              id: "c1",
               type: "column",
-              align: "left",
-              padding: "0",
-              margin: "0",
               blocks: [
                 {
-                  id: "heading-hero",
+                  id: "h1",
                   type: "heading",
                   props: {
                     content: "Build perfect emails",
-                    as: "h2",
-                    align: "left",
-                    fontSize: 26,
-                    color: "#FFFFFF",
-                    lineHeight: "1.4",
-                    fontWeight: "600",
-                    margin: "0 0 16px",
+                    as: "h1",
+                    fontSize: 32,
+                    color: "#ffffff",
                   },
                 },
                 {
-                  id: "text-hero",
+                  id: "t1",
                   type: "text",
                   props: {
-                    content:
-                      "Drag, customize, and ship email layouts with the exact tokens your brand approves",
-                    align: "left",
+                    content: "Drag, drop, and deliver.",
+                    color: "#a1a1aa",
                     fontSize: 16,
-                    color: "#FFFFFF",
-                    lineHeight: "1.6",
-                    margin: "0 0 20px",
                   },
                 },
                 {
-                  id: "button-hero",
+                  id: "b1",
                   type: "button",
                   props: {
-                    label: "Send in black & white",
-                    href: "#",
-                    align: "left",
-                    backgroundColor: "#000000",
-                    color: "#ffffff",
-                    borderRadius: 4,
+                    label: "Get Started",
+                    backgroundColor: "#fff",
+                    color: "#000",
                     padding: "12px 24px",
-                    fontSize: 14,
-                    fontWeight: "600",
-                    margin: "0",
+                    borderRadius: 8,
                   },
                 },
               ],
@@ -183,79 +81,194 @@ const demoDocument: CanvasDocument = {
   ],
 }
 
-function LiveEditor() {
-  const React = require("react") as typeof import("react")
-  const { CanvasProvider, EmailEditor } = require("@react-email-dnd/editor")
+// --- Visual Components ---
 
-  type ThemeName = "light" | "dark" | "synthwave" | "dim" | "lofi" | "retro"
-
-  const themeOptions: Array<{ label: string; value: ThemeName }> = [
-    { label: "Light", value: "light" },
-    { label: "Dark", value: "dark" },
-    { label: "Synthwave", value: "synthwave" },
-    { label: "Dim", value: "dim" },
-    { label: "Lo-fi", value: "lofi" },
-    { label: "Retro", value: "retro" },
+function ReactEmailGridVisual() {
+  const components = [
+    { name: "Container", icon: "ph-fill ph-bounding-box" },
+    { name: "Section", icon: "ph-fill ph-rows" },
+    { name: "Row", icon: "ph-fill ph-columns" },
+    { name: "Column", icon: "ph-fill ph-rectangle" },
+    { name: "Image", icon: "ph-fill ph-image" },
+    { name: "Heading", icon: "ph-fill ph-text-h" },
+    { name: "Text", icon: "ph-fill ph-text-aa" },
+    { name: "Divider", icon: "ph-fill ph-minus" },
+    { name: "Button", icon: "ph-fill ph-square" },
   ]
-  const [theme, setTheme] = React.useState<ThemeName>("dark")
 
   return (
-    <div
-      id="tw-scope"
-      className="flex w-full flex-col gap-3"
-      data-theme={theme}
-    >
-      <div
-        className="flex w-full flex-wrap justify-center gap-2 p-2"
-        role="toolbar"
-        aria-label="Theme selector"
-      >
-        {themeOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setTheme(option.value)}
-            className={clsx(
-              "min-w-[120px] flex-1 basis-[140px] btn btn-sm rounded-full px-4 py-1 text-sm tracking-wide text-neutral transition-colors",
-              {
-                "bg-primary text-primary-content": theme === option.value,
-              },
-              {
-                "bg-neutral text-neutral-content": theme !== option.value,
-              }
-            )}
-            aria-pressed={theme === option.value}
+    <div className="relative mx-auto max-w-lg p-8">
+      <div className="grid grid-cols-2 gap-4 opacity-90 sm:grid-cols-3 transform perspective-1000 rotate-x-12 rotate-z-2">
+        {components.map((comp, i) => (
+          <div
+            key={comp.name}
+            className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1e] p-6 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-white/20 hover:bg-primary! hover:shadow-2xl"
+            style={{ transitionDelay: `${i * 50}ms` }}
           >
-            {option.label}
-          </button>
+            {/* Glow effect */}
+            <div className="absolute -inset-px rounded-xl bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-white/5 text-white transition-transform group-hover:scale-110 group-hover:bg-white/10">
+              <i className={clsx(comp.icon, "text-2xl")} />
+            </div>
+            <span className="relative font-mono text-xs font-medium text-white/60 transition-colors group-hover:text-white">
+              {`<${comp.name} />`}
+            </span>
+          </div>
         ))}
       </div>
-      <div className="w-full  overflow-auto rounded-2xl border border-base-300 bg-primary/10 p-3 shadow-inner">
-        <div className="rounded-2xl border border-base-300 bg-primary/10 p-2">
-          <CanvasProvider
-            initialDocument={demoDocument}
-            onDocumentChange={() => {}}
-            className="flex h-full w-full min-w-0 flex-col"
-          >
-            <EmailEditor
-              className="flex h-full w-full flex-col"
-              showHeader={true}
-              daisyui={true}
-              colorMode="primary"
-              // padding={livePaddingPresets}
-              sideBarColumns={1}
-              // colors={["#000000", "#ffffff"]}
-              // textColors={[
-              //   { hex: "#000000", label: "Ink" },
-              //   { hex: "#ffffff", label: "Paper" },
-              // ]}
-              // bgColors={[
-              //   { hex: "#ffffff", label: "Paper" },
-              //   { hex: "#000000", label: "Carbon" },
-              // ]}
-            />
-          </CanvasProvider>
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-purple-500/10 via-transparent to-blue-500/10 blur-3xl" />
+    </div>
+  )
+}
+
+function DaisyUIThemeVisual() {
+  const colors = [
+    { name: "primary", hex: "#6419e6", bg: "bg-[#6419e6]" },
+    { name: "secondary", hex: "#d926a9", bg: "bg-[#d926a9]" },
+    { name: "accent", hex: "#1fb2a6", bg: "bg-[#1fb2a6]" },
+    { name: "neutral", hex: "#2a323c", bg: "bg-[#2a323c]" },
+  ]
+
+  return (
+    <div className="mx-auto max-w-lg rounded-xl border border-white/10 bg-[#111] p-6 shadow-2xl">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-green-400" />
+          <span className="text-sm font-medium text-white">Theme Config</span>
         </div>
+        <span className="font-mono text-xs text-white/40">daisyui.json</span>
+      </div>
+      <div className="mb-6 grid grid-cols-2 gap-3">
+        {colors.map((c) => (
+          <div
+            key={c.name}
+            className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/5 p-2"
+          >
+            <div className={clsx("h-8 w-8 rounded-md shadow-sm", c.bg)} />
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-white/80">
+                {c.name}
+              </span>
+              <span className="font-mono text-[10px] text-white/40">
+                {c.hex}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-3">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+          <div className="h-full w-3/4 bg-gradient-to-r from-[#6419e6] to-[#d926a9]" />
+        </div>
+        <div className="flex gap-2">
+          <button className="rounded-md bg-[#6419e6] px-4 py-1.5 text-xs font-medium text-white">
+            Save
+          </button>
+          <button className="rounded-md border border-white/20 bg-[#111] px-4 py-1.5 text-xs font-medium text-white">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CustomComponentVisual() {
+  return (
+    <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6 sm:flex-row sm:gap-8">
+      {/* Code Side */}
+      <div className="group relative w-full flex-1">
+        <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 blur opacity-20 transition duration-1000 group-hover:opacity-40" />
+        <div className="relative rounded-lg border border-white/10 bg-[#1e1e1e] p-5 shadow-2xl">
+          <div className="mb-3 flex items-center justify-between border-b border-white/5 pb-2">
+            <span className="font-mono text-[10px] text-white/40">
+              Product.tsx
+            </span>
+            <div className="h-1.5 w-1.5 rounded-full bg-blue-500/50" />
+          </div>
+          <div className="space-y-1.5 font-mono text-[10px] leading-relaxed">
+            <div className="text-purple-400">
+              export const <span className="text-yellow-200">Product</span> = (
+              <span className="text-orange-300">props</span>) ={">"}
+            </div>
+            <div className="pl-2 text-white/60">{"<Container>"}</div>
+            <div className="pl-4 text-blue-300">
+              {"<Img src={props.img} />"}
+            </div>
+            <div className="pl-4 text-blue-300">
+              {"<Text>{props.title}</Text>"}
+            </div>
+            <div className="pl-2 text-white/60">{"</Container>"}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Arrow */}
+      <div className="hidden text-white/20 sm:block">
+        <i className="ph-bold ph-arrow-right text-2xl" />
+      </div>
+      <div className="block text-white/20 sm:hidden">
+        <i className="ph-bold ph-arrow-down text-2xl" />
+      </div>
+
+      {/* Editor Side */}
+      <div className="w-full flex-1">
+        <div className="rounded-lg border border-white/10 bg-[#111] p-1 shadow-2xl">
+          <div className="group relative rounded border border-dashed border-white/20 bg-[#0d0d0d] p-4 transition-colors hover:border-blue-500/50">
+            {/* Floating Label */}
+            <div className="absolute -top-2.5 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-blue-600 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg ring-2 ring-[#0d0d0d]">
+              <i className="ph-fill ph-cube" />
+              <span>Custom Block</span>
+            </div>
+
+            <div className="flex items-center gap-4 opacity-90">
+              <div className="flex h-12 w-12 items-center justify-center rounded border border-white/5 bg-white/5">
+                <i className="ph-fill ph-image text-2xl text-white/20" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="h-2.5 w-3/4 rounded bg-white/20" />
+                <div className="h-2 w-1/2 rounded bg-blue-500/30" />
+              </div>
+            </div>
+          </div>
+          {/* Mock Properties */}
+          <div className="mt-3 flex gap-2 px-2 pb-1">
+            <div className="h-1.5 w-16 rounded bg-white/10" />
+            <div className="h-1.5 w-8 rounded bg-white/5" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Live Editor Wrapper ---
+function Editor() {
+  const { CanvasProvider, EmailEditor } = require("@react-email-dnd/editor")
+  return (
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-900 shadow-2xl">
+      <div className="flex items-center gap-2 border-b border-white/5 bg-neutral-800 px-4 py-2">
+        <div className="h-3 w-3 rounded-full bg-red-500/80" />
+        <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
+        <div className="h-3 w-3 rounded-full bg-green-500/80" />
+        <span className="ml-4 font-mono text-xs text-white/30">editor.tsx</span>
+      </div>
+      <div className="relative flex-1 bg-neutral-900">
+        <CanvasProvider
+          initialDocument={demoDocument}
+          onDocumentChange={() => {}}
+          className="absolute inset-0 flex flex-col"
+        >
+          <EmailEditor
+            className="flex h-full w-full flex-col"
+            showHeader={false}
+            daisyui={true}
+            colorMode="primary"
+            sideBarColumns={1}
+          />
+        </CanvasProvider>
       </div>
     </div>
   )
@@ -265,67 +278,64 @@ function LiveEditorPreview() {
   return (
     <BrowserOnly
       fallback={
-        <div className="flex h-128 items-center justify-center rounded-xl border border-dashed border-base-300 text-sm text-base-content/70">
-          Loading live editor...
+        <div className="flex h-96 items-center justify-center rounded-xl border border-white/10 bg-neutral-900 font-mono text-sm text-white/30">
+          Loading...
         </div>
       }
     >
-      {() => <LiveEditor />}
+      {() => <Editor />}
     </BrowserOnly>
   )
 }
 
-function HomepageHeader() {
-  const { siteConfig } = useDocusaurusContext()
-  const themeConfig = siteConfig.themeConfig as {
-    navbar?: { logo?: { src?: string; srcDark?: string } }
-  }
+// --- Sections ---
+function Header() {
   return (
-    <header className="bg-primary py-[clamp(3.5rem,8vw,6rem)]">
-      <div className="container mx-auto max-w-7xl px-4">
-        <div className="flex flex-col gap-[clamp(2.5rem,6vw,4rem)]">
-          <div className="mx-auto flex flex-col items-center px-3 text-center">
-            <h1 className="mb-4 inline-flex flex-wrap items-center justify-center gap-2 text-white text-5xl md:text-6xl font-display">
-              {themeConfig.navbar?.logo?.src && (
-                <img
-                  src={themeConfig.navbar.logo.src}
-                  alt={siteConfig.title}
-                  className="h-auto w-16 md:w-28"
-                />
-              )}
-              {siteConfig.title}
-            </h1>
-            <div className="mb-6 text-xs font-bold text-primary-content/80 uppercase tracking-widest border border-primary-content/30 rounded-full px-3 py-1">
-              Beta Release
-            </div>
-            <p className="mb-8 text-center max-w-2xl mx-auto leading-[1.7] text-xl text-primary-content/90">
-              The drag-and-drop email editor for React applications. 
-              Built on React Email, powered by standard JSON, and styled with DaisyUI.
-            </p>
-            <div className="flex w-full flex-col items-center justify-center gap-4 lg:flex-row no-underline!">
-              <Link
-                className="btn btn-lg btn-neutral rounded-full text-neutral-content! no-underline! px-8"
-                to="/docs/quickstart"
-              >
-                Get Started
-              </Link>
-              <Link
-                className="btn btn-lg! btn-outline! text-white! hover:bg-white! hover:text-primary! no-underline! rounded-full border-white!"
-                to="/docs/intro"
-              >
-                Read Documentation
-              </Link>
-            </div>
+    <header className="relative overflow-hidden bg-[#0d0d0d] py-24 lg:py-32">
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[600px] w-[1000px] -translate-x-1/2 rounded-full bg-purple-500/20 opacity-50 blur-[120px] mix-blend-screen" />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[600px] w-[800px] rounded-full bg-blue-500/10 opacity-30 blur-[100px]" />
+
+      <div className="container relative z-10 mx-auto max-w-6xl px-4">
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-8 inline-flex cursor-default items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 transition-transform hover:scale-105 backdrop-blur-sm">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+            <span className="text-xs font-medium tracking-wide text-white/80">
+              v0.2.0 Beta Available
+            </span>
           </div>
-          <div className="flex w-full flex-col items-center gap-3 px-3 lg:px-0">
-            <p className="w-full text-center text-sm uppercase tracking-widest text-primary-content/60 font-semibold">
-              Interactive Demo
-            </p>
-            <div className="w-full overflow-hidden rounded-2xl border border-white/20 bg-base-100 p-[clamp(0.75rem,3vw,1.25rem)] shadow-2xl">
-              <div className="h-192 md:h-128 overflow-hidden rounded-xl bg-linear-to-br from-base-200 to-base-300">
-                <LiveEditorPreview />
-              </div>
+
+          <h1 className="mb-6 font-display text-5xl text-white drop-shadow-2xl tracking-tight md:text-7xl">
+            React Email <br className="md:hidden" />
+            <span className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+              Drag & Drop
+            </span>
+          </h1>
+
+          <p className="mb-10 max-w-2xl text-lg leading-relaxed text-white/60 md:text-xl">
+            The visual builder for React Email. Equip your marketing team with a
+            beautiful editor, while you keep control of the code.
+          </p>
+
+          <div className="mb-20 flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
+            <Link
+              to="/docs/quickstart"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-base font-bold text-black transition-all hover:scale-105 hover:bg-white/90 hover:no-underline active:scale-95"
+            >
+              Get Started
+            </Link>
+            <Link
+              to="/docs/intro"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/10 px-8 text-base font-medium text-white transition-all hover:scale-105 hover:bg-white/20 hover:no-underline active:scale-95 backdrop-blur-sm"
+            >
+              Read Documentation
+            </Link>
+          </div>
+
+          <div className="w-full max-w-5xl perspective-1000">
+            <div className="relative h-[500px] w-full transform rounded-xl bg-[#111] shadow-2xl ring-1 ring-white/10 transition-transform duration-500 hover:rotate-x-1 md:h-[600px]">
+              <LiveEditorPreview />
             </div>
+            <div className="absolute -bottom-4 left-4 right-4 -z-10 h-24 bg-gradient-to-b from-purple-500/10 to-transparent blur-2xl" />
           </div>
         </div>
       </div>
@@ -333,55 +343,145 @@ function HomepageHeader() {
   )
 }
 
-const npmPackages = [
-  {
-    name: "@react-email-dnd/editor",
-    type: "Editor",
-    description:
-      "Drag-and-drop editor surface, Canvas orchestration, ready UI.",
-    href: "https://www.npmjs.com/package/@react-email-dnd/editor",
-  },
-  {
-    name: "@react-email-dnd/renderer",
-    type: "Renderer",
-    description:
-      "Render Canvas documents to HTML, React trees, or text output.",
-    href: "https://www.npmjs.com/package/@react-email-dnd/renderer",
-  },
-  {
-    name: "@react-email-dnd/shared",
-    type: "Shared",
-    description: "Shared types, schema validation, and padding/color helpers.",
-    href: "https://www.npmjs.com/package/@react-email-dnd/shared",
-  },
-]
+function FeatureSection({
+  title,
+  description,
+  link,
+  icon,
+  visual,
+  align = "left",
+  isLast = false,
+}: {
+  title: string
+  description: React.ReactNode
+  link: string
+  icon: string
+  visual: React.ReactNode
+  align?: "left" | "right"
+  isLast?: boolean
+}) {
+  return (
+    <section
+      className={clsx(
+        "relative overflow-hidden py-24 lg:py-32",
+        "bg-[#0d0d0d]"
+      )}
+    >
+      {!isLast && (
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      )}
+      <div className="container mx-auto max-w-6xl px-4">
+        <div
+          className={clsx(
+            "flex flex-col items-center gap-16 lg:gap-24",
+            align === "left" ? "lg:flex-row" : "lg:flex-row-reverse"
+          )}
+        >
+          <div className="z-10 flex-1 text-center lg:text-left">
+            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white shadow-inner">
+              <i className={clsx(icon, "text-2xl")} />
+            </div>
+            <h2 className="mb-4 font-display text-3xl leading-tight text-white md:text-4xl">
+              {title}
+            </h2>
+            <p className="mb-8 text-lg leading-relaxed text-white/60">
+              {description}
+            </p>
+            <Link
+              to={link}
+              className="group inline-flex items-center font-medium text-white transition-colors hover:text-white/80 hover:no-underline"
+            >
+              Learn more{" "}
+              <i className="ph-bold ph-arrow-right ml-2 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+          <div className="w-full flex-1 perspective-1000">
+            <div
+              className={clsx(
+                "relative transform transition-all duration-700 hover:scale-[1.02]",
+                align === "left" ? "rotate-y-3" : "-rotate-y-3"
+              )}
+            >
+              <div className="absolute inset-0 -z-10 rounded-full bg-white/5 blur-[60px] opacity-20" />
+              {visual}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FeatureBlocks() {
+  return (
+    <div className="bg-[#0d0d0d]">
+      <FeatureSection
+        align="left"
+        title="Built on React Email"
+        icon="ph-fill ph-code"
+        link="https://react.email"
+        visual={<ReactEmailGridVisual />}
+        description={
+          <>
+            Don't throw away your components. The editor outputs standard{" "}
+            <strong className="text-white">React Email</strong> code that works
+            with your existing render pipeline. It's just React.
+          </>
+        }
+      />
+      <FeatureSection
+        align="right"
+        title="Theming with DaisyUI"
+        icon="ph-fill ph-palette"
+        link="/docs/packages/renderer/daisyui"
+        visual={<DaisyUIThemeVisual />}
+        description={
+          <>
+            Why reinvent the wheel? Use{" "}
+            <strong className="text-white">DaisyUI</strong> themes to style your
+            emails. Extract colors from your web app and inject them directly
+            into your email templates.
+          </>
+        }
+      />
+      <FeatureSection
+        isLast
+        align="left"
+        title="Custom Components"
+        icon="ph-fill ph-shapes"
+        link="/docs/custom-components"
+        visual={<CustomComponentVisual />}
+        description="Need a complex product picker or a dynamic chart? Create custom blocks in React and expose them to the editor with a simple schema."
+      />
+    </div>
+  )
+}
 
 function NpmPackages() {
+  const packages = [
+    { name: "@react-email-dnd/editor", desc: "The drag-and-drop surface" },
+    { name: "@react-email-dnd/renderer", desc: "Convert JSON to React/HTML" },
+    { name: "@react-email-dnd/shared", desc: "Types and schemas" },
+  ]
   return (
-    <section className="bg-base-100 py-16 text-base-content border-t border-base-200">
-      <div className="container mx-auto max-w-7xl px-4">
-        <h2 className="mb-12 text-center text-3xl font-display text-primary">Packages</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          {npmPackages.map((pkg) => (
+    <section className="border-t border-white/10 bg-[#111] py-20">
+      <div className="container mx-auto max-w-5xl px-4">
+        <h3 className="mb-8 text-center font-mono text-sm uppercase tracking-widest text-white/40">
+          Install the primitives
+        </h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {packages.map((pkg) => (
             <a
               key={pkg.name}
-              className="card card-compact bg-base-200 hover:bg-base-300 transition-colors border border-base-300 p-6 no-underline! group"
-              href={pkg.href}
+              href={`https://www.npmjs.com/package/${pkg.name}`}
               target="_blank"
               rel="noreferrer"
+              className="group flex flex-col rounded-lg border border-white/5 bg-white/5 p-4 transition-all hover:border-white/20 hover:bg-white/10 hover:no-underline"
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-base-content/50 group-hover:text-primary transition-colors">
-                  {pkg.type}
-                </span>
-                <i className="ph-bold ph-arrow-up-right text-base-content/30 group-hover:text-primary" />
-              </div>
-              <h3 className="mb-2 text-lg font-bold text-base-content group-hover:text-primary transition-colors font-mono text-sm">
+              <span className="font-mono text-sm text-white transition-colors group-hover:text-blue-300">
                 {pkg.name}
-              </h3>
-              <p className="text-sm text-base-content/70">
-                {pkg.description}
-              </p>
+              </span>
+              <span className="mt-1 text-xs text-white/40">{pkg.desc}</span>
             </a>
           ))}
         </div>
@@ -390,122 +490,32 @@ function NpmPackages() {
   )
 }
 
-function Features() {
-  const features = [
-    {
-      icon: "ph-fill ph-atom",
-      title: "Built on React Email",
-      link: "https://react.email",
-      external: true,
-      description: (
-        <>
-          The output uses standard{" "}
-          <span className="font-semibold text-primary">React Email</span>{" "}
-          components. Generate clean, responsive email code that works across clients.
-        </>
-      ),
-    },
-    {
-      icon: "ph-fill ph-palette",
-      title: "DaisyUI Themes",
-      link: "/docs/packages/renderer/daisyui",
-      description: (
-        <>
-          Customize the editor and use{" "}
-          <span className="font-semibold text-secondary">DaisyUI</span> themes in
-          your emails. Bring your design system directly into the email builder.
-        </>
-      ),
-    },
-    {
-      icon: "ph-fill ph-cube-transparent",
-      title: "Custom Components",
-      link: "/docs/custom-components",
-      description: (
-        <>
-          Create custom components from any React Email component or existing email.
-          Extend the editor with your own blocks.
-        </>
-      ),
-    },
-  ]
-
-  return (
-    <section className="bg-base-200 py-24 text-base-content">
-      <div className="container mx-auto max-w-7xl px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-display mb-6">
-            Why React Email DnD?
-          </h2>
-          <p className="text-xl text-base-content/70 max-w-3xl mx-auto">
-            A complete toolkit for building visual email editors.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {features.map((feature) => (
-            <Link
-              to={feature.link}
-              key={feature.title}
-              target={feature.external ? "_blank" : undefined}
-              className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 no-underline! text-inherit border border-base-300"
-            >
-              <div className="card-body items-center text-center p-8">
-                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <i
-                    className={clsx(feature.icon, "text-4xl")}
-                    aria-hidden="true"
-                  />
-                </div>
-                <h3 className="card-title text-2xl mb-3 font-display">{feature.title}</h3>
-                <p className="text-base leading-relaxed text-base-content/70">
-                  {feature.description}
-                </p>
-                <div className="card-actions mt-6">
-                  <span className="btn btn-ghost btn-sm text-primary gap-2">
-                    Learn more <i className="ph-bold ph-arrow-right" />
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 export default function Home(): JSX.Element {
-  // Load Phosphor Icons web font
   React.useEffect(() => {
-    const link = document.createElement("link")
-    link.rel = "stylesheet"
-    link.type = "text/css"
-    link.href =
+    // Load icons
+    const loadCSS = (href: string) => {
+      const link = document.createElement("link")
+      link.rel = "stylesheet"
+      link.href = href
+      document.head.appendChild(link)
+    }
+    loadCSS(
       "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css"
-    document.head.appendChild(link)
-    
-    const linkBold = document.createElement("link")
-    linkBold.rel = "stylesheet"
-    linkBold.type = "text/css"
-    linkBold.href =
+    )
+    loadCSS(
       "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css"
-    document.head.appendChild(linkBold)
-
-    // return () => {
-    //   document.head.removeChild(link)
-    // }
+    )
   }, [])
 
   return (
     <Layout
       title="React Email DnD"
-      description="Drag-and-drop email builder for React applications"
+      description="The visual builder for React Email"
     >
-      <div data-theme="dark" className="font-sans">
-        <HomepageHeader />
+      <div className="min-h-screen bg-[#0d0d0d] font-sans selection:bg-purple-500/30 selection:text-purple-200">
+        <Header />
         <main>
-          <Features />
+          <FeatureBlocks />
           <NpmPackages />
         </main>
       </div>
