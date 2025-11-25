@@ -140,4 +140,62 @@ describe('renderEmailDocument', () => {
     // Verify heading is rendered
     expect(screen.getByText('Test Heading')).toBeInTheDocument();
   });
+
+  it('substitutes variables in custom blocks', () => {
+    const customDefinition: CustomBlockDefinition<{ message: string }> = {
+      id: 'custom-hero',
+      type: 'custom',
+      label: 'Hero',
+      icon: headingDefinition.icon,
+      defaults: {
+        componentName: 'HeroBlock',
+        props: { message: 'Default message' },
+      },
+      component: ({ message }: { message: string }) => (
+        <div data-testid="email-custom-block-vars">{message}</div>
+      ),
+    };
+
+    const doc: CanvasDocument = {
+      ...documentWithCustomBlock,
+      variables: {
+        name: 'Johan',
+      },
+      sections: [
+        {
+          ...documentWithCustomBlock.sections[0],
+          rows: [
+            {
+              ...documentWithCustomBlock.sections[0].rows[0],
+              columns: [
+                {
+                  ...documentWithCustomBlock.sections[0].rows[0].columns[0],
+                  blocks: [
+                    {
+                      id: 'custom-block-vars',
+                      type: 'custom',
+                      props: {
+                        componentName: 'HeroBlock',
+                        props: { message: 'Hello {{name}}' },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    render(
+      <>
+        {renderEmailDocument(doc, undefined, {
+          customBlocks: [customDefinition],
+        })}
+      </>,
+    );
+
+    expect(screen.getByTestId('email-custom-block-vars')).toHaveTextContent('Hello Johan');
+  });
 });

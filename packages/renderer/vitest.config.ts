@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, configDefaults } from 'vitest/config';
 import { resolve } from 'path';
 
 export default defineConfig({
@@ -7,6 +7,7 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'lcov'],
     },
+    exclude: [...configDefaults.exclude, '**/example/**'],
   },
   resolve: {
     alias: {

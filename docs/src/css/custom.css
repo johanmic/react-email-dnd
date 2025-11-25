@@ -17,11 +17,17 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 :root {
-  --font-fredoka: "Fredoka One", cursive;
+  --font-fredoka: "Amaranth", cursive;
   --ifm-font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-h1, h2, h3, h4, h5, h6, .font-display {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display {
   font-family: var(--font-fredoka) !important;
 }
 
@@ -30,6 +36,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 @custom-variant dark (&:is([data-theme="dark"] *));
+
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark, dim, synthwave, lofi, retro;
 }
@@ -107,7 +114,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 @source "./**/*.{ts,tsx}";
 @source "../../../packages/editor/src/**/*.{ts,tsx}";
 @source "../../../packages/shared/src/**/*.{ts,tsx}";
-@source "../../../packages/renderer/src/**/*.{ts,tsx}"; 
+@source "../../../packages/renderer/src/**/*.{ts,tsx}";
 
 /* Code blocks should size to their content and allow horizontal scrolling */
 pre {

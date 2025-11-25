@@ -84,8 +84,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@phosphor-icons/react": "^2.1.10",
-    "@react-email-dnd/renderer": "workspace:^0.2.0",
-    "@react-email-dnd/shared": "workspace:^0.2.0",
+    "@react-email-dnd/renderer": "file:../renderer",
+    "@react-email-dnd/shared": "file:../shared",
     "clsx": "^2.1.1",
     "ramda": "^0.32.0"
   },

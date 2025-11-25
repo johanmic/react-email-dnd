@@ -27,10 +27,10 @@ import type {
   CanvasContentBlock,
   CanvasRow,
   CanvasSection,
-  CustomBlockDefinition,
   CustomBlockProps,
   BlockDefinition,
   StructurePaletteItem,
+  CustomBlockRegistry,
 } from '@react-email-dnd/shared';
 import { Plus } from '@phosphor-icons/react';
 import { Button } from './button';
@@ -48,7 +48,7 @@ import {
   resolveMarginClasses,
   resolveMarginStyle,
 } from '../utils/padding';
-import { collectBlockVariableMatches } from '../utils/templateVariables';
+import { collectBlockVariableMatches, deepSubstitute } from '../utils/templateVariables';
 
 type ColorMode = 'hierarchy' | 'primary' | 'none' | 'output';
 
@@ -59,7 +59,7 @@ export interface CanvasProps {
   colorModeDepth?: number | null;
   unlockable?: boolean;
   showHidden?: boolean;
-  customBlockRegistry?: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  customBlockRegistry?: CustomBlockRegistry;
   inlineInsertionMode?: boolean;
   inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
   onAddSection?: () => void;
@@ -176,12 +176,12 @@ function renderBlock(
   block: CanvasContentBlock,
   options: {
     daisyui?: boolean;
-    customBlocks: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+    customBlockRegistry: CustomBlockRegistry;
     variables?: Record<string, unknown>;
     previewVariables?: boolean;
   },
 ) {
-  const { daisyui, customBlocks, variables, previewVariables } = options;
+  const { daisyui, customBlockRegistry, variables, previewVariables } = options;
   switch (block.type) {
     case 'button':
       return (
@@ -218,13 +218,16 @@ function renderBlock(
       return <Image {...block.props} daisyui={daisyui} />;
     case 'custom':
       const customProps = block.props as CustomBlockProps;
-      const definition = customBlocks[customProps.componentName];
+      const definition = customBlockRegistry[customProps.componentName];
       if (definition) {
         const Component = definition.component;
         // Merge variables into custom block props, with variables taking precedence
         return (
           <Component
-            {...{ ...(customProps.props as Record<string, unknown>), ...(variables ?? {}) }}
+            {...{
+              ...(deepSubstitute(customProps.props, variables) as Record<string, unknown>),
+              ...(variables ?? {}),
+            }}
           />
         );
       }
@@ -927,7 +930,7 @@ function CanvasBlockView({
   colorMode?: ColorMode;
   isParentLocked?: boolean;
   showHidden?: boolean;
-  customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  customBlockRegistry: CustomBlockRegistry;
   isCompactLayout?: boolean;
 }) {
   const { selectBlock, selectedBlockId, variables, isMobileExperience, previewVariables } =
@@ -1185,7 +1188,7 @@ function CanvasBlockView({
       >
         {renderBlock(block, {
           daisyui,
-          customBlocks: customBlockRegistry,
+          customBlockRegistry,
           variables,
           previewVariables,
         })}
@@ -1221,7 +1224,7 @@ function CanvasColumnView({
   section: CanvasSection;
   unlockable?: boolean;
   showHidden?: boolean;
-  customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  customBlockRegistry: CustomBlockRegistry;
   inlineInsertionMode?: boolean;
   inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
   onAddBlock?: (columnId: string, blockKey: string, index?: number) => void;
@@ -1622,7 +1625,7 @@ function CanvasRowView({
   section: CanvasSection;
   unlockable?: boolean;
   showHidden?: boolean;
-  customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  customBlockRegistry: CustomBlockRegistry;
   inlineInsertionMode?: boolean;
   inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
   onAddColumn?: (rowId: string, columnCount?: number, index?: number) => void;
@@ -1906,7 +1909,7 @@ function CanvasSectionView({
   colorModeDepth?: number | null;
   unlockable?: boolean;
   showHidden?: boolean;
-  customBlockRegistry: Record<string, CustomBlockDefinition<Record<string, unknown>>>;
+  customBlockRegistry: CustomBlockRegistry;
   inlineInsertionMode?: boolean;
   inlineInsertionVariant?: 'icon-only' | 'icon-with-label';
   onAddRow?: (sectionId: string, columnCount?: number, index?: number) => void;

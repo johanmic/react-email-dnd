@@ -16,3 +16,4 @@ node_modules
 dist
 .cursor
 .react-email
+packages/react-email-dnd/**/*

@@ -82,9 +82,7 @@ export function Button(
     hasBackgroundClass || daisyui ? undefined : (backgroundColor ?? defaultBackground);
   const inlineTextColor = hasTextClass || daisyui ? undefined : (color ?? defaultTextColor);
 
-  const displayLabel = previewVariables
-    ? replaceVariables(label, variables, daisyui)
-    : label;
+  const displayLabel = previewVariables ? replaceVariables(label, variables, daisyui) : label;
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
     if (editorMode) {
@@ -161,13 +159,10 @@ export function Button(
     return 'py-5';
   };
 
-  // Use button element for better semantics and DaisyUI compatibility
-  const ButtonElement = editorMode ? 'button' : EmailButton;
-
   return (
     <div style={wrapperStyle} className={clsx('w-full', getAlignmentClass())}>
-      <ButtonElement
-        {...(editorMode ? {} : { href })}
+      <EmailButton
+        href={href}
         className={clsx(
           // Base responsive classes
           'inline-block no-underline cursor-pointer transition-all duration-200',
@@ -244,7 +239,7 @@ export function Button(
         onClick={handleClick}
       >
         {displayLabel}
-      </ButtonElement>
+      </EmailButton>
     </div>
   );
 }

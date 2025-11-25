@@ -111,7 +111,7 @@ export function substituteObject(
   if (!value) return value
   
   // Handle special case where the entire value is a variable placeholder
-  if (typeof value === "string" && value.match(/^\{\{([a-zA-Z0-9_.-]+)\}\}$/)) {
+  if (typeof value === "string" && value.match(/^\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}$/)) {
     const key = value.slice(2, -2).trim()
 
     if (!context.variables) {

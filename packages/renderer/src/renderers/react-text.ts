@@ -1,4 +1,7 @@
-import type { CanvasDocument } from "@react-email-dnd/shared"
+import {
+  type CanvasDocument,
+  buildCustomBlockRegistry,
+} from "@react-email-dnd/shared"
 import { deepSubstitute, substitute } from "../utils"
 import type { RenderContext, RendererOptions } from "../types"
 import { DAISYUI_COLOR_KEYS } from "../utils/daisyui"
@@ -60,6 +63,10 @@ export function renderReactText(
     document.meta.description ?? document.meta.title ?? "Preview text"
   const lines: Line[] = []
 
+  const customBlocksRegistry = Array.isArray(options.customBlocks)
+    ? buildCustomBlockRegistry(options.customBlocks)
+    : options.customBlocks
+
   // Collect custom component names from the document
   const customComponentNames = new Set<string>()
   document.sections
@@ -90,10 +97,10 @@ export function renderReactText(
   )
 
   // Add custom component imports if customBlocks registry is provided
-  if (options.customBlocks && customComponentNames.size > 0) {
+  if (customBlocksRegistry && customComponentNames.size > 0) {
     pushLine(lines, 0, "")
     customComponentNames.forEach((componentName) => {
-      const def = options.customBlocks![componentName]
+      const def = customBlocksRegistry![componentName]
       if (def) {
         // For react-text, we'll just add a comment since we can't actually import the component
         pushLine(lines, 0, `// Custom component: ${componentName}`)
@@ -400,10 +407,10 @@ export function renderReactText(
 
                       // Check if we have the custom component in the registry
                       if (
-                        options.customBlocks &&
-                        options.customBlocks[componentName]
+                        customBlocksRegistry &&
+                        customBlocksRegistry[componentName]
                       ) {
-                        const def = options.customBlocks[componentName]
+                        const def = customBlocksRegistry[componentName]
                         // For react-text output, we'll render a placeholder with the component name and props
                         pushLine(
                           lines,
@@ -422,6 +429,11 @@ export function renderReactText(
                         )
                         pushLine(lines, 9, "</div>")
                       } else {
+                        if (context.throwOnMissingCustomBlocks) {
+                          throw new Error(
+                            `Custom block "${componentName}" not found in registry`
+                          )
+                        }
                         // Fallback when no customBlocks registry is provided
                         pushLine(
                           lines,

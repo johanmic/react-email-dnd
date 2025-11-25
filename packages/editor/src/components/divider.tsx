@@ -42,6 +42,7 @@ export function Divider(props: DividerBlockProps & { daisyui?: boolean }) {
   const wrapperStyle: CSSProperties = {
     textAlign: align,
     width: '100%',
+    margin,
   };
 
   const defaultColor = '#e5e7eb';
@@ -79,7 +80,6 @@ export function Divider(props: DividerBlockProps & { daisyui?: boolean }) {
     border: 'none',
     borderTop:
       daisyui || !inlineColor ? undefined : `${thickness}px solid ${inlineColor}`,
-    margin,
     ...(paddingStyle ? { padding: paddingStyle } : {}),
     width,
     display: 'inline-block',

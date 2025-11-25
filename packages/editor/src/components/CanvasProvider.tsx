@@ -28,10 +28,11 @@ import {
 import { withCombinedClassNames } from '../utils/classNames';
 
 interface CanvasState {
-  past: CanvasDocument[];
+  past: HistoryEntry[];
   present: CanvasDocument;
-  future: CanvasDocument[];
+  future: HistoryEntry[];
   savedSnapshot: CanvasDocument;
+  lastAction: 'updateTitle' | null;
   selectedBlockId: string | null;
   selectedContainer:
     | { kind: 'section'; id: string }
@@ -43,6 +44,7 @@ interface CanvasState {
   forceLayoutMode: 'mobile' | 'desktop' | null;
   showInlineInsertion: boolean;
   previewVariables: boolean;
+  debug: boolean;
 }
 
 type CanvasAction =
@@ -83,6 +85,11 @@ type CanvasAction =
   | { type: 'setShowInlineInsertion'; show: boolean }
   | { type: 'setPreviewVariables'; enabled: boolean };
 
+interface HistoryEntry {
+  document: CanvasDocument;
+  savedSnapshot: CanvasDocument;
+}
+
 interface CanvasProviderProps {
   children: ReactNode;
   initialDocument?: CanvasDocument;
@@ -92,6 +99,8 @@ interface CanvasProviderProps {
   uploadFile?: (file: File) => Promise<string>;
   /** Dynamic variables that override document variables. These are not saved and are available to custom blocks. */
   variables?: Record<string, unknown>;
+  /** Enable debug logging */
+  debug?: boolean;
 }
 
 export interface CanvasStoreValue {
@@ -112,6 +121,7 @@ export interface CanvasStoreValue {
   previewVariables: boolean;
   isMobileExperience: boolean;
   variables: Record<string, unknown>;
+  debug: boolean;
   /** If provided by provider, components can use this to upload files */
   uploadFile?: (file: File) => Promise<string>;
   /** Portal root element for modals and overlays */
@@ -149,7 +159,11 @@ export interface CanvasStoreValue {
 
 const CanvasStoreContext = createContext<CanvasStoreValue | null>(null);
 
-function createInitialState(initialDocument?: CanvasDocument): CanvasState {
+function createInitialState(args: {
+  initialDocument?: CanvasDocument;
+  debug?: boolean;
+}): CanvasState {
+  const { initialDocument, debug = false } = args;
   const sourceDocument = initialDocument
     ? applyLayoutDefaults(initialDocument)
     : createEmptyDocument();
@@ -160,6 +174,7 @@ function createInitialState(initialDocument?: CanvasDocument): CanvasState {
     present: base,
     future: [],
     savedSnapshot: cloneCanvasDocument(base),
+    lastAction: null,
     selectedBlockId: null,
     selectedContainer: null,
     previewMode: 'desktop',
@@ -167,6 +182,7 @@ function createInitialState(initialDocument?: CanvasDocument): CanvasState {
     forceLayoutMode: null,
     showInlineInsertion: false,
     previewVariables: false,
+    debug,
   };
 }
 
@@ -175,13 +191,18 @@ function pushToHistory(state: CanvasState, nextDocument: CanvasDocument): Canvas
     return state;
   }
 
-  const past = [...state.past, cloneCanvasDocument(state.present)];
+  const pastEntry: HistoryEntry = {
+    document: cloneCanvasDocument(state.present),
+    savedSnapshot: cloneCanvasDocument(state.savedSnapshot),
+  };
+  const past = [...state.past, pastEntry];
 
   return {
     past,
     present: cloneCanvasDocument(nextDocument),
     future: [],
     savedSnapshot: state.savedSnapshot,
+    lastAction: null,
     selectedBlockId: state.selectedBlockId,
     selectedContainer: state.selectedContainer,
     previewMode: state.previewMode,
@@ -189,6 +210,7 @@ function pushToHistory(state: CanvasState, nextDocument: CanvasDocument): Canvas
     forceLayoutMode: state.forceLayoutMode,
     showInlineInsertion: state.showInlineInsertion,
     previewVariables: state.previewVariables,
+    debug: state.debug,
   };
 }
 
@@ -204,6 +226,7 @@ function replaceHistory(
     present,
     future: [],
     savedSnapshot: markAsSaved ? cloneCanvasDocument(present) : state.savedSnapshot,
+    lastAction: null,
     selectedBlockId: state.selectedBlockId,
     selectedContainer: state.selectedContainer,
     previewMode: state.previewMode,
@@ -211,6 +234,7 @@ function replaceHistory(
     forceLayoutMode: state.forceLayoutMode,
     showInlineInsertion: state.showInlineInsertion,
     previewVariables: state.previewVariables,
+    debug: state.debug,
   };
 }
 
@@ -233,6 +257,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         return {
           ...state,
           present: nextDocument,
+          lastAction: null,
         };
       }
 
@@ -249,12 +274,25 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         title: action.title,
       };
 
-      return pushToHistory(state, nextDocument);
+      if (state.lastAction === 'updateTitle') {
+        return {
+          ...state,
+          present: nextDocument,
+          lastAction: 'updateTitle',
+        };
+      }
+
+      const updatedState = pushToHistory(state, nextDocument);
+      return {
+        ...updatedState,
+        lastAction: 'updateTitle',
+      };
     }
     case 'save': {
       return {
         ...state,
         savedSnapshot: cloneCanvasDocument(action.snapshot),
+        lastAction: null,
       };
     }
     case 'undo': {
@@ -264,12 +302,17 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
 
       const previous = state.past[state.past.length - 1];
       const nextPast = state.past.slice(0, -1);
+      const futureEntry: HistoryEntry = {
+        document: cloneCanvasDocument(state.present),
+        savedSnapshot: cloneCanvasDocument(state.savedSnapshot),
+      };
 
       return {
         past: nextPast,
-        present: cloneCanvasDocument(previous),
-        future: [cloneCanvasDocument(state.present), ...state.future],
-        savedSnapshot: state.savedSnapshot,
+        present: cloneCanvasDocument(previous.document),
+        future: [futureEntry, ...state.future],
+        savedSnapshot: cloneCanvasDocument(previous.savedSnapshot),
+        lastAction: null,
         selectedBlockId: state.selectedBlockId,
         selectedContainer: state.selectedContainer,
         previewMode: state.previewMode,
@@ -277,6 +320,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         forceLayoutMode: state.forceLayoutMode,
         showInlineInsertion: state.showInlineInsertion,
         previewVariables: state.previewVariables,
+        debug: state.debug,
       };
     }
     case 'selectBlock': {
@@ -284,6 +328,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         ...state,
         selectedBlockId: action.blockId,
         selectedContainer: null,
+        lastAction: null,
       };
     }
     case 'selectContainer': {
@@ -291,6 +336,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
         ...state,
         selectedContainer: action.container,
         selectedBlockId: null,
+        lastAction: null,
       };
     }
     case 'updateBlockProps': {
@@ -299,14 +345,15 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
     }
     case 'updateContainerProps': {
       const { target } = action;
-      console.log('🔄 updateContainerProps called:', target);
+      if (state.debug) console.log('🔄 updateContainerProps called:', target);
       let next = state.present;
       if (target.kind === 'section') {
         next = {
           ...next,
           sections: next.sections.map((s) => (s.id === target.id ? { ...s, ...target.props } : s)),
         };
-        console.log('📝 Updated section:', target.id, 'with props:', target.props);
+        if (state.debug)
+          console.log('📝 Updated section:', target.id, 'with props:', target.props);
       } else if (target.kind === 'row') {
         next = {
           ...next,
@@ -315,7 +362,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
             rows: s.rows.map((r) => (r.id === target.id ? { ...r, ...target.props } : r)),
           })),
         };
-        console.log('📝 Updated row:', target.id, 'with props:', target.props);
+        if (state.debug) console.log('📝 Updated row:', target.id, 'with props:', target.props);
       } else if (target.kind === 'column') {
         next = {
           ...next,
@@ -327,9 +374,10 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
             })),
           })),
         };
-        console.log('📝 Updated column:', target.id, 'with props:', target.props);
+        if (state.debug)
+          console.log('📝 Updated column:', target.id, 'with props:', target.props);
       }
-      console.log('📄 New document state:', next);
+      if (state.debug) console.log('📄 New document state:', next);
       return pushToHistory(state, next);
     }
     case 'setPreviewMode': {
@@ -339,6 +387,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
       return {
         ...state,
         previewMode: action.mode,
+        lastAction: null,
       };
     }
     case 'setLayoutMode': {
@@ -348,6 +397,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
       return {
         ...state,
         layoutMode: action.mode,
+        lastAction: null,
       };
     }
     case 'setForceLayoutMode': {
@@ -357,6 +407,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
       return {
         ...state,
         forceLayoutMode: action.mode,
+        lastAction: null,
       };
     }
     case 'setShowInlineInsertion': {
@@ -366,6 +417,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
       return {
         ...state,
         showInlineInsertion: action.show,
+        lastAction: null,
       };
     }
     case 'setPreviewVariables': {
@@ -375,6 +427,7 @@ function canvasReducer(state: CanvasState, action: CanvasAction): CanvasState {
       return {
         ...state,
         previewVariables: action.enabled,
+        lastAction: null,
       };
     }
     case 'upsertVariable': {
@@ -407,8 +460,13 @@ export function CanvasProvider({
   onDocumentChange,
   uploadFile,
   variables: dynamicVariables,
+  debug = false,
 }: CanvasProviderProps) {
-  const [state, dispatch] = useReducer(canvasReducer, initialDocument, createInitialState);
+  const [state, dispatch] = useReducer(
+    canvasReducer,
+    { initialDocument, debug },
+    createInitialState,
+  );
   const lastInitialDocumentRef = useRef<CanvasDocument | null>(null);
   const lastNotifiedDocumentRef = useRef<CanvasDocument | null>(null);
   const portalRootRef = useRef<HTMLDivElement | null>(null);
@@ -442,8 +500,13 @@ export function CanvasProvider({
     }
 
     lastInitialDocumentRef.current = cloneCanvasDocument(initialDocument);
+
+    if (documentsAreEqual(state.present, initialDocument)) {
+      return;
+    }
+
     setDocument(initialDocument, { replaceHistory: true, markAsSaved: true });
-  }, [initialDocument, setDocument]);
+  }, [initialDocument, setDocument, state.present]);
 
   useEffect(() => {
     if (!onDocumentChange) {
@@ -466,15 +529,15 @@ export function CanvasProvider({
 
   const save = useCallback(() => {
     if (documentsAreEqual(state.present, state.savedSnapshot)) {
-      console.log('💾 Save skipped - no changes detected');
+      if (state.debug) console.log('💾 Save skipped - no changes detected');
       return;
     }
 
     const snapshot = cloneCanvasDocument(state.present);
-    console.log('💾 SAVING DOCUMENT:', snapshot);
+    if (state.debug) console.log('💾 SAVING DOCUMENT:', snapshot);
     dispatch({ type: 'save', snapshot });
     onSave?.(withCombinedClassNames(snapshot));
-  }, [onSave, state.present, state.savedSnapshot]);
+  }, [onSave, state.present, state.savedSnapshot, state.debug]);
 
   const canUndo = state.past.length > 0;
 
@@ -580,6 +643,7 @@ export function CanvasProvider({
       previewVariables: state.previewVariables,
       isMobileExperience,
       variables: mergedVariables,
+      debug: state.debug,
       uploadFile,
       portalRoot: portalRootRef.current,
       updateTitle,
@@ -612,6 +676,7 @@ export function CanvasProvider({
       state.previewVariables,
       isMobileExperience,
       mergedVariables,
+      state.debug,
       uploadFile,
       updateTitle,
       setDocument,

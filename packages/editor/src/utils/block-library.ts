@@ -5,30 +5,21 @@ import type {
   CustomBlockProps,
 } from '@react-email-dnd/shared';
 
-function slugify(value: string): string {
-  return value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-')
-    .trim();
-}
-
-function ensureKey(value: string): string {
-  const cleaned = slugify(value);
-  return cleaned.length > 0 ? cleaned : 'custom-block';
-}
+import { ensureKey } from '@react-email-dnd/shared';
 
 export function getBlockPaletteKey(block: BlockDefinition<CanvasContentBlock>): string {
-  if (block.id && block.id.length > 0) {
-    return block.id;
-  }
   if (block.type === 'custom') {
     const defaults = block.defaults as CustomBlockProps;
-    const componentName = defaults.componentName ?? 'custom';
-    return `custom-${ensureKey(componentName)}`;
+    if (defaults.componentName) {
+      return `custom-${ensureKey(defaults.componentName)}`;
+    }
+    if (block.id && block.id.length > 0) {
+      return block.id;
+    }
+    return 'custom-block';
+  }
+  if (block.id && block.id.length > 0) {
+    return block.id;
   }
   return block.type;
 }
@@ -44,27 +35,6 @@ export function buildBlockDefinitionMap(
 ): BlockDefinitionMap {
   return blocks.reduce<BlockDefinitionMap>((acc, block) => {
     acc[getSidebarBlockId(block)] = block;
-    return acc;
-  }, {});
-}
-
-export function buildCustomBlockRegistry(
-  blocks: BlockDefinition<CanvasContentBlock>[],
-): // eslint-disable-next-line @typescript-eslint/no-explicit-any
-Record<string, CustomBlockDefinition<any>> {
-  // Allow heterogeneous custom components; each definition carries its own prop type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return blocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
-    if (block.type !== 'custom') {
-      return acc;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const customBlock = block as CustomBlockDefinition<any>;
-    const componentName = customBlock.defaults.componentName;
-    if (!componentName) {
-      return acc;
-    }
-    acc[componentName] = customBlock;
     return acc;
   }, {});
 }

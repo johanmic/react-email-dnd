@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import type {
   CanvasDocument,
   CustomBlockRegistry,
+  CustomBlockDefinition,
 } from "@react-email-dnd/shared"
 
 export type ColorOption =
@@ -27,13 +28,15 @@ export interface RendererOptions {
   /** Optional component name used for react-text output (defaults to EmailTemplate). */
   componentName?: string
   /** Optional registry of custom blocks for React rendering. */
-  customBlocks?: CustomBlockRegistry
+  customBlocks?: CustomBlockRegistry | CustomBlockDefinition<any>[]
   /** When true, enable Tailwind config injection for daisyUI theming. */
   daisyui?: boolean
   /** Optional theme colors to inject into Tailwind config when daisyui is enabled. */
   theme?: Record<string, string>
   /** Optional high-level color palette (hex/class/label) used to extend Tailwind theme colors. */
   colors?: ColorOption[]
+  /** When true, throw if a custom block is missing from the registry. Defaults to true. */
+  throwOnMissingCustomBlocks?: boolean
 }
 
 export interface RenderRequest {
@@ -50,6 +53,7 @@ export type RenderResult =
 export interface RenderContext {
   variables?: Record<string, unknown>
   throwOnMissingVariables?: boolean
+  throwOnMissingCustomBlocks?: boolean
 }
 
 export type RenderFunction<Format extends RendererFormat, Result> = (

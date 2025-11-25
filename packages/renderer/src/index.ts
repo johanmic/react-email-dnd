@@ -10,10 +10,19 @@ import type {
 } from "./types"
 import { buildDaisyUIBaseStyles } from "./utils/daisyui"
 
-function createContext(options: RendererOptions): RenderContext {
+function createContext(
+  document: RenderRequest["document"],
+  options: RendererOptions
+): RenderContext {
+  const mergedVariables =
+    document.variables || options.variables
+      ? { ...(document.variables ?? {}), ...(options.variables ?? {}) }
+      : undefined
+
   return {
-    variables: options.variables,
+    variables: mergedVariables,
     throwOnMissingVariables: options.throwOnMissingVariables ?? true,
+    throwOnMissingCustomBlocks: options.throwOnMissingCustomBlocks ?? true,
   }
 }
 
@@ -21,7 +30,7 @@ export function renderDocument({
   document,
   options,
 }: RenderRequest): RenderResult {
-  const context = createContext(options)
+  const context = createContext(document, options)
 
   // Extract theme from document first, then merge with options.theme
   // Document theme may contain colors if extended beyond the schema

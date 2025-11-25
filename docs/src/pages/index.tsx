@@ -100,21 +100,61 @@ export default function Email() {
 
 function ReactEmailGridVisual() {
   const components = [
-    { name: "Container", icon: "ph-fill ph-bounding-box" },
-    { name: "Section", icon: "ph-fill ph-rows" },
-    { name: "Row", icon: "ph-fill ph-columns" },
-    { name: "Column", icon: "ph-fill ph-rectangle" },
-    { name: "Image", icon: "ph-fill ph-image" },
-    { name: "Heading", icon: "ph-fill ph-text-h" },
-    { name: "Text", icon: "ph-fill ph-text-aa" },
-    { name: "Divider", icon: "ph-fill ph-minus" },
+    {
+      name: "HTML",
+      icon: "ph-fill ph-bounding-box",
+      link: "https://react.email/docs/components/html",
+    },
+    {
+      name: "Container",
+      icon: "ph-fill ph-bounding-box",
+      link: "https://react.email/docs/components/container",
+    },
+    {
+      name: "Section",
+      icon: "ph-fill ph-rows",
+      link: "https://react.email/docs/components/section",
+    },
+    {
+      name: "Row",
+      icon: "ph-fill ph-columns",
+      link: "https://react.email/docs/components/row",
+    },
+    {
+      name: "Column",
+      icon: "ph-fill ph-rectangle",
+      link: "https://react.email/docs/components/column",
+    },
+    {
+      name: "Image",
+      icon: "ph-fill ph-image",
+      link: "https://react.email/docs/components/image",
+    },
+    {
+      name: "Heading",
+      icon: "ph-fill ph-text-h",
+      link: "https://react.email/docs/components/heading",
+    },
+    {
+      name: "Text",
+      icon: "ph-fill ph-text-aa",
+      link: "https://react.email/docs/components/text",
+    },
+    {
+      name: "Divider",
+      icon: "ph-fill ph-minus",
+      link: "https://react.email/docs/components/divider",
+    },
   ]
 
   return (
     <div className="relative mx-auto max-w-lg p-8">
       <div className="grid grid-cols-2 gap-4 opacity-90 sm:grid-cols-3 transform perspective-1000 rotate-x-12 rotate-z-2">
         {components.map((comp, i) => (
-          <div
+          <a
+            href={comp.link}
+            target="_blank"
+            rel="noreferrer"
             key={comp.name}
             className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1e] p-6 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-primary hover:bg-[#1e1e1e] hover:shadow-2xl hover:shadow-primary/20"
             style={{ transitionDelay: `${i * 50}ms` }}
@@ -128,7 +168,7 @@ function ReactEmailGridVisual() {
             <span className="relative font-mono text-xs font-medium text-white/60 transition-colors group-hover:text-primary">
               {`<${comp.name} />`}
             </span>
-          </div>
+          </a>
         ))}
       </div>
       {/* Decorative background elements */}
@@ -326,24 +366,9 @@ function Header() {
           </h1>
 
           <p className="mb-10 max-w-2xl text-lg leading-relaxed text-white/60 md:text-xl">
-            The visual builder for React Email. Equip your marketing team with a
-            beautiful editor, while you keep control of the code.
+            A highly customizable drag and drop email editor that renders to
+            React Email. Build Transactional or Marketing emails with ease.
           </p>
-
-          <div className="mb-20 flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
-            <Link
-              to="/docs/quickstart"
-              className="btn btn-primary btn-soft rounded-full p-6 no-underline! hover:opacity-90 hover:bg-primary/10 border-none "
-            >
-              Get Started
-            </Link>
-            <Link
-              to="/docs/intro"
-              className="btn btn-neutral btn-outline text-neutral-content! border-neutral-content! hover:bg-neutral-content/10! hover:text-neutral-content! border-none rounded-full p-6 no-underline!"
-            >
-              Read Documentation
-            </Link>
-          </div>
 
           <div className="w-full max-w-5xl perspective-1000">
             <div className="relative h-[500px] w-full transform rounded-xl bg-[#111] shadow-2xl ring-1 ring-white/10 transition-transform duration-500 hover:rotate-x-1 md:h-[600px]">
@@ -432,9 +457,9 @@ function FeatureBlocks() {
         visual={<ReactEmailGridVisual />}
         description={
           <>
-            Don't throw away your components. The editor outputs standard{" "}
-            <strong className="text-white">React Email</strong> code that works
-            with your existing render pipeline. It's just React.
+            The editor outputs standard{" "}
+            <strong className="text-white">React Email</strong> structures that
+            can be rendered with your existing render pipeline.
           </>
         }
       />
@@ -446,10 +471,8 @@ function FeatureBlocks() {
         visual={<DaisyUIThemeVisual />}
         description={
           <>
-            Why reinvent the wheel? Use{" "}
-            <strong className="text-white">DaisyUI</strong> themes to style your
-            emails. Extract colors from your web app and inject them directly
-            into your email templates.
+            Integrate with your existing DaisyUI themes both in editor and your
+            outcome emails.
           </>
         }
       />

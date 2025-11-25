@@ -1,5 +1,8 @@
 import type { ReactElement } from "react"
-import type { CanvasDocument } from "@react-email-dnd/shared"
+import {
+  type CanvasDocument,
+  buildCustomBlockRegistry,
+} from "@react-email-dnd/shared"
 import { deepSubstitute, substitute } from "../utils"
 import {
   resolveMarginClasses,
@@ -83,6 +86,10 @@ export function renderReact(
   baseStyles?: string
 ): ReactElement {
   const previewText = document.meta.description ?? document.meta.title
+
+  const customBlocksRegistry = Array.isArray(options.customBlocks)
+    ? buildCustomBlockRegistry(options.customBlocks)
+    : options.customBlocks
 
   // For DaisyUI, map color keys to their actual hex values so Tailwind can inline them
   // Email clients don't support CSS variables, so we must use direct color values
@@ -1006,7 +1013,12 @@ export function renderReact(
                                             )
                                           }
                                           case "custom": {
-                                            if (!options.customBlocks) {
+                                            if (!customBlocksRegistry) {
+                                              if (context.throwOnMissingCustomBlocks) {
+                                                throw new Error(
+                                                  `Custom block "${block.props.componentName}" not found in registry (registry is empty or undefined)`
+                                                )
+                                              }
                                               return (
                                                 <div
                                                   key={block.id}
@@ -1025,10 +1037,15 @@ export function renderReact(
                                               )
                                             }
                                             const def =
-                                              options.customBlocks[
+                                              customBlocksRegistry[
                                                 block.props.componentName
                                               ]
                                             if (!def) {
+                                              if (context.throwOnMissingCustomBlocks) {
+                                                throw new Error(
+                                                  `Custom block "${block.props.componentName}" not found in registry`
+                                                )
+                                              }
                                               return (
                                                 <div
                                                   key={block.id}
@@ -1056,6 +1073,7 @@ export function renderReact(
                                               <Component
                                                 key={block.id}
                                                 {...(props as any)}
+                                                {...context.variables}
                                               />
                                             )
                                           }

@@ -13,9 +13,9 @@ import { headingDefinition } from './heading';
 import { imageDefinition } from './image';
 import { textDefinition } from './text';
 import clsx from 'clsx';
-import { useMemo } from 'react';
-import { useCanvasStore } from '../hooks/useCanvasStore';
+import { useContext, useMemo } from 'react';
 import { getSidebarBlockId } from '../utils/block-library';
+import { CanvasStoreContext } from './CanvasProvider';
 export const DEFAULT_STRUCTURE_ITEMS: StructurePaletteItem[] = [
   { id: 'structure-section', label: 'Section', icon: SquaresFourIcon },
   { id: 'structure-row', label: 'Row', icon: RowsIcon },
@@ -62,7 +62,8 @@ export function Sidebar({
     '[Sidebar] Received blocks prop:',
     blocks.map((b) => b.type),
   );
-  const { variables } = useCanvasStore();
+  const canvasStore = useContext(CanvasStoreContext);
+  const variables = canvasStore?.variables ?? {};
 
   const variableEntries = useMemo(() => Object.entries(variables), [variables]);
 

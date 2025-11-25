@@ -13,12 +13,15 @@ import type {
   ImageBlockProps,
   CustomBlockDefinition,
   CustomBlockProps,
+  CustomBlockRegistry,
 } from '@react-email-dnd/shared';
+import { buildCustomBlockRegistry } from '@react-email-dnd/shared';
 import { Button } from '../components/button';
 import { Divider } from '../components/divider';
 import { Heading } from '../components/heading';
 import { Image } from '../components/image';
 import { Text } from '../components/text';
+import { deepSubstitute, substituteString } from './templateVariables';
 
 const ReactEmailModule = ReactEmailComponents as {
   Row: React.ComponentType<RowProps>;
@@ -33,62 +36,40 @@ function combineClasses(...values: Array<string | null | undefined>): string | u
   return merged.length > 0 ? merged : undefined;
 }
 
-function extractStringVariables(
-  values?: Record<string, unknown>,
-): Record<string, string> | undefined {
-  if (!values) return undefined;
-  const entries = Object.entries(values).reduce<Record<string, string>>((acc, [key, value]) => {
-    if (typeof value === 'string') {
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
-  return Object.keys(entries).length > 0 ? entries : undefined;
-}
-
-/**
- * Renders a content block using the appropriate component
- */
-function substitute(
-  str: string | undefined,
-  variables: Record<string, string> | undefined,
-): string | undefined {
-  if (!str) return str;
-  if (!variables) return str;
-  return str.replace(/\{\{\s*([a-zA-Z0-9_\.\-]+)\s*\}\}/g, (_, key: string) => {
-    return Object.prototype.hasOwnProperty.call(variables, key) ? variables[key] : `{{${key}}}`;
-  });
-}
-
 function withSubstitutions(
   block: CanvasContentBlock,
-  variables: Record<string, string> | undefined,
+  variables: Record<string, unknown> | undefined,
 ): CanvasContentBlock {
   // Only substitute known string props
   const next = JSON.parse(JSON.stringify(block)) as CanvasContentBlock;
   switch (next.type) {
     case 'button': {
       const p = next.props as ButtonBlockProps;
-      p.label = substitute(p.label, variables) ?? p.label;
-      p.href = substitute(p.href, variables);
+      p.label = substituteString(p.label, variables) ?? p.label;
+      p.href = substituteString(p.href, variables);
       return next;
     }
     case 'text': {
       const p = next.props as TextBlockProps;
-      p.content = substitute(p.content, variables) ?? p.content;
+      p.content = substituteString(p.content, variables) ?? p.content;
       return next;
     }
     case 'heading': {
       const p = next.props as HeadingBlockProps;
-      p.content = substitute(p.content, variables) ?? p.content;
+      p.content = substituteString(p.content, variables) ?? p.content;
       return next;
     }
     case 'image': {
       const p = next.props as ImageBlockProps;
-      p.src = substitute(p.src, variables) ?? p.src;
-      p.placeholder = substitute(p.placeholder, variables) ?? p.placeholder;
-      p.alt = substitute(p.alt, variables);
-      p.href = substitute(p.href, variables);
+      p.src = substituteString(p.src, variables) ?? p.src;
+      p.placeholder = substituteString(p.placeholder, variables) ?? p.placeholder;
+      p.alt = substituteString(p.alt, variables);
+      p.href = substituteString(p.href, variables);
+      return next;
+    }
+    case 'custom': {
+      const p = next.props as CustomBlockProps;
+      p.props = deepSubstitute(p.props, variables) as Record<string, unknown>;
       return next;
     }
     default:
@@ -98,10 +79,8 @@ function withSubstitutions(
 
 function renderEmailBlock(
   block: CanvasContentBlock,
-  variables: Record<string, string> | undefined,
-  // Using `any` by design to allow heterogeneous custom block props across definitions.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customRegistry: Record<string, CustomBlockDefinition<any>>,
+  variables: Record<string, unknown> | undefined,
+  customRegistry: CustomBlockRegistry,
 ) {
   const b = withSubstitutions(block, variables);
   switch (block.type) {
@@ -116,11 +95,16 @@ function renderEmailBlock(
     case 'image':
       return <Image {...(b.props as ImageBlockProps)} />;
     case 'custom':
-      const customProps = block.props as CustomBlockProps;
+      const customProps = b.props as CustomBlockProps;
       const definition = customRegistry[customProps.componentName];
       if (definition) {
         const Component = definition.component;
-        return <Component {...(customProps.props as Record<string, unknown>)} />;
+        return (
+          <Component
+            {...(customProps.props as Record<string, unknown>)}
+            {...(variables ?? {})}
+          />
+        );
       }
       return <div data-component={customProps.componentName}>{customProps.componentName}</div>;
     default:
@@ -133,9 +117,8 @@ function renderEmailBlock(
  */
 function renderEmailColumn(
   column: CanvasColumn,
-  variables: Record<string, string> | undefined,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customRegistry: Record<string, CustomBlockDefinition<any>>,
+  variables: Record<string, unknown> | undefined,
+  customRegistry: CustomBlockRegistry,
 ) {
   const columnStyle: Record<string, unknown> = {};
   if (column.backgroundColor) columnStyle.backgroundColor = column.backgroundColor;
@@ -168,9 +151,8 @@ function renderEmailColumn(
  */
 function renderEmailRow(
   row: CanvasRow,
-  variables: Record<string, string> | undefined,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customRegistry: Record<string, CustomBlockDefinition<any>>,
+  variables: Record<string, unknown> | undefined,
+  customRegistry: CustomBlockRegistry,
 ) {
   const rowStyle: Record<string, unknown> = {};
   if (row.gutter != null) rowStyle.gap = `${row.gutter}px`;
@@ -197,9 +179,8 @@ function renderEmailRow(
  */
 function renderEmailSection(
   section: CanvasSection,
-  variables: Record<string, string> | undefined,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customRegistry: Record<string, CustomBlockDefinition<any>>,
+  variables: Record<string, unknown> | undefined,
+  customRegistry: CustomBlockRegistry,
 ) {
   const sectionStyle: Record<string, unknown> = {};
   if (section.backgroundColor) sectionStyle.backgroundColor = section.backgroundColor;
@@ -226,9 +207,8 @@ function renderEmailSection(
 
 export interface RenderEmailDocumentOptions {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customBlocks?: CustomBlockDefinition<any>[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customBlockRegistry?: Record<string, CustomBlockDefinition<any>>;
+  customBlocks?: CustomBlockDefinition<any>[] | CustomBlockRegistry;
+  customBlockRegistry?: CustomBlockRegistry;
 }
 
 /**
@@ -241,27 +221,22 @@ export interface RenderEmailDocumentOptions {
  */
 export function renderEmailDocument(
   document: CanvasDocument,
-  runtimeVariables?: Record<string, string>,
+  runtimeVariables?: Record<string, unknown>,
   options: RenderEmailDocumentOptions = {},
 ) {
-  const documentVariables = extractStringVariables(document.variables);
   const merged =
-    documentVariables || runtimeVariables
-      ? { ...(documentVariables ?? {}), ...(runtimeVariables ?? {}) }
+    document.variables || runtimeVariables
+      ? { ...(document.variables ?? {}), ...(runtimeVariables ?? {}) }
       : undefined;
-  // Using `any` by design at the registry boundary; each entry keeps its own prop type.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const registry: Record<string, CustomBlockDefinition<any>> =
+  const registry: CustomBlockRegistry =
     options.customBlockRegistry ??
-    (options.customBlocks
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        options.customBlocks.reduce<Record<string, CustomBlockDefinition<any>>>((acc, block) => {
-          acc[block.defaults.componentName] = block;
-          return acc;
-        }, {})
-      : {});
+    (Array.isArray(options.customBlocks)
+      ? buildCustomBlockRegistry(options.customBlocks)
+      : options.customBlocks ?? {});
 
-  return <>{document.sections.map((section) => renderEmailSection(section, merged, registry))}</>;
+  return (
+    <>{document.sections.map((section) => renderEmailSection(section, merged, registry))}</>
+  );
 }
 
 /**

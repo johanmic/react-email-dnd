@@ -1,6 +1,7 @@
 import './styles.css';
 
 export {
+  buildCustomBlockRegistry,
   buttonBlockPropsSchema,
   buttonBlockSchema,
   canvasColumnSchema,

@@ -58,7 +58,7 @@ describe("renderDocument", () => {
   it("returns HTML for html format", () => {
     const result = renderDocument({
       document: sampleDocument,
-      options: { format: "html", indent: 2 },
+      options: { format: "html", indent: 2, variables: { name: "Alice" } },
     })
 
     expect(result.format).toBe("html")

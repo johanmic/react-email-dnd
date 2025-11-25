@@ -50,9 +50,11 @@ import type {
   BlockDefinition,
   CustomBlockDefinition,
   FontDefinition,
+  CustomBlockRegistry,
 } from '@react-email-dnd/shared';
 import clsx from 'clsx';
-import { buildBlockDefinitionMap, buildCustomBlockRegistry } from '../utils/block-library';
+import { buildBlockDefinitionMap } from '../utils/block-library';
+import { buildCustomBlockRegistry } from '@react-email-dnd/shared';
 import { withCombinedClassNames } from '../utils/classNames';
 import { normalizePaddingOptions } from '../utils/padding';
 export type EmailEditorProps = {
@@ -88,10 +90,10 @@ export type EmailEditorProps = {
   bgColors?: ColorOption[];
   /** Number of columns to display in the sidebar. Default is 2. */
   sideBarColumns?: 1 | 2 | 3;
-  /** Custom content blocks that should be available from the sidebar */
+  /** Custom content blocks that should be available from the sidebar (array or registry) */
   // Using `any` by design to allow heterogeneous custom block props across definitions.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customBlocks?: CustomBlockDefinition<any>[];
+  customBlocks?: CustomBlockDefinition<any>[] | CustomBlockRegistry;
   /** Preset padding options displayed as quick-select buttons */
   padding?: Record<string, Padding>;
   /** Available fonts for selection in text, heading, and button blocks */
@@ -150,15 +152,26 @@ export function EmailEditor(props: EmailEditorProps) {
     setForceLayoutMode,
     setShowInlineInsertion,
     isMobileExperience,
+    debug,
   } = useCanvasStore();
   const sections = document.sections;
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeDragData, setActiveDragData] = useState<ActiveDragData | null>(null);
 
+  const customBlockDefinitions = useMemo(
+    () =>
+      Array.isArray(customBlocks)
+        ? customBlocks
+        : customBlocks
+          ? Object.values(customBlocks)
+          : [],
+    [customBlocks],
+  );
+
   // Build all blocks (for rendering) - includes all custom blocks
   const allBlocks = useMemo(() => {
-    return [...DEFAULT_CONTENT_ITEMS, ...customBlocks] as BlockDefinition<CanvasContentBlock>[];
-  }, [customBlocks]);
+    return [...DEFAULT_CONTENT_ITEMS, ...customBlockDefinitions] as BlockDefinition<CanvasContentBlock>[];
+  }, [customBlockDefinitions]);
 
   // Filter blocks for sidebar display only (when blocks prop is provided)
   const contentBlocks = useMemo(() => {
@@ -170,11 +183,12 @@ export function EmailEditor(props: EmailEditorProps) {
     // Filter blocks to only include those in the blocks array
     const blocksSet = new Set(blocks);
     const filteredBlocks = allBlocks.filter((block) => blocksSet.has(block.type));
-    console.log('[EmailEditor] Filtering blocks:', {
-      requested: blocks,
-      allBlockTypes: allBlocks.map((b) => b.type),
-      filteredTypes: filteredBlocks.map((b) => b.type),
-    });
+    if (debug)
+      console.log('[EmailEditor] Filtering blocks:', {
+        requested: blocks,
+        allBlockTypes: allBlocks.map((b) => b.type),
+        filteredTypes: filteredBlocks.map((b) => b.type),
+      });
     return filteredBlocks;
   }, [allBlocks, blocks]);
 
@@ -192,8 +206,14 @@ export function EmailEditor(props: EmailEditorProps) {
   const blockDefinitionMap = useMemo(() => buildBlockDefinitionMap(contentBlocks), [contentBlocks]);
 
   // Build customBlockRegistry from all custom blocks (not filtered) so they can be rendered
-  // even if they're not in the sidebar
-  const customBlockRegistry = useMemo(() => buildCustomBlockRegistry(allBlocks), [allBlocks]);
+  // even if they're not in the sidebar. Allow callers to pass a registry directly.
+  const customBlockRegistry = useMemo(
+    () =>
+      customBlocks && !Array.isArray(customBlocks)
+        ? customBlocks
+        : buildCustomBlockRegistry(allBlocks),
+    [allBlocks, customBlocks],
+  );
 
   const paddingOptionEntries = useMemo(() => normalizePaddingOptions(padding), [padding]);
 
@@ -422,10 +442,11 @@ export function EmailEditor(props: EmailEditorProps) {
     const data = event.active.data.current as ActiveDragData | undefined;
     setActiveId(id);
     setActiveDragData(data || null);
-    console.log('🟢 DRAG START:', {
-      activeId: id,
-      activeData: data,
-    });
+    if (debug)
+      console.log('🟢 DRAG START:', {
+        activeId: id,
+        activeData: data,
+      });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -441,23 +462,25 @@ export function EmailEditor(props: EmailEditorProps) {
     const activeData = event.active.data.current as ActiveDragData | undefined;
     const overData = event.over.data.current as OverDragData | undefined;
 
-    console.log('🔴 DRAG END:', {
-      activeId,
-      overId,
-      activeType: activeData?.type,
-      overType: overData?.type,
-      activeData,
-      overData,
-    });
+    if (debug)
+      console.log('🔴 DRAG END:', {
+        activeId,
+        overId,
+        activeType: activeData?.type,
+        overType: overData?.type,
+        activeData,
+        overData,
+      });
 
     // Handle drops back to sidebar (cancellation)
     if (overId.startsWith('sidebar-drop-')) {
       const originalId = overId.replace('sidebar-drop-', '');
       if (activeId === originalId) {
-        console.log('🚫 Drop cancelled - returned to original sidebar position:', {
-          activeId,
-          originalId,
-        });
+        if (debug)
+          console.log('🚫 Drop cancelled - returned to original sidebar position:', {
+            activeId,
+            originalId,
+          });
         return;
       }
     }
@@ -466,7 +489,7 @@ export function EmailEditor(props: EmailEditorProps) {
     if (activeId.startsWith('structure-')) {
       if (overData?.type === 'canvas-row-dropzone' && activeId !== 'structure-section') {
         if (isSectionDisabled(overData.sectionId)) {
-          console.log('🚫 Cannot add row to disabled section');
+          if (debug) console.log('🚫 Cannot add row to disabled section');
           return;
         }
 
@@ -493,7 +516,7 @@ export function EmailEditor(props: EmailEditorProps) {
       if (result) {
         commitSections(() => result);
       } else {
-        console.log('🚫 Drop not allowed:', { activeId, overId });
+        if (debug) console.log('🚫 Drop not allowed:', { activeId, overId });
       }
       return;
     }
@@ -507,7 +530,7 @@ export function EmailEditor(props: EmailEditorProps) {
 
       if (overData?.type === 'canvas-block-dropzone') {
         if (isColumnDisabled(overData.columnId)) {
-          console.log('🚫 Cannot drop into disabled column');
+          if (debug) console.log('🚫 Cannot drop into disabled column');
           return;
         }
 
@@ -524,7 +547,7 @@ export function EmailEditor(props: EmailEditorProps) {
         }
         // Check if target column is disabled
         if (isColumnDisabled(targetPosition.columnId)) {
-          console.log('🚫 Cannot drop into disabled column');
+          if (debug) console.log('🚫 Cannot drop into disabled column');
           return;
         }
         const overRect = event.over?.rect;
@@ -540,7 +563,7 @@ export function EmailEditor(props: EmailEditorProps) {
       if (overData?.type === 'canvas-column') {
         // Check if target column is disabled
         if (isColumnDisabled(overData.columnId)) {
-          console.log('🚫 Cannot drop into disabled column');
+          if (debug) console.log('🚫 Cannot drop into disabled column');
           return;
         }
         const targetPosition = findColumnPosition(sections, overData.columnId);
@@ -562,7 +585,7 @@ export function EmailEditor(props: EmailEditorProps) {
       if (overData?.type === 'canvas-row-container') {
         // Check if target row is disabled
         if (isRowDisabled(overData.rowId)) {
-          console.log('🚫 Cannot drop into disabled row');
+          if (debug) console.log('🚫 Cannot drop into disabled row');
           return;
         }
         const targetRow = findRowPosition(sections, overData.rowId);
@@ -583,7 +606,7 @@ export function EmailEditor(props: EmailEditorProps) {
         const columnId = targetRow.row.columns[targetColumnIndex].id;
         // Check if target column is disabled
         if (isColumnDisabled(columnId)) {
-          console.log('🚫 Cannot drop into disabled column');
+          if (debug) console.log('🚫 Cannot drop into disabled column');
           return;
         }
         const targetIndex = targetRow.row.columns[targetColumnIndex].blocks.length;
@@ -596,7 +619,7 @@ export function EmailEditor(props: EmailEditorProps) {
       if (overData?.type === 'canvas-section') {
         // Check if target section is disabled
         if (isSectionDisabled(overData.sectionId)) {
-          console.log('🚫 Cannot drop into disabled section');
+          if (debug) console.log('🚫 Cannot drop into disabled section');
           return;
         }
         // Bubble into the section: ensure it has a row, then insert at end of first column
@@ -618,13 +641,13 @@ export function EmailEditor(props: EmailEditorProps) {
             }
             // Check if target row is disabled
             if (isRowDisabled(lastRow.id)) {
-              console.log('🚫 Cannot drop into disabled row');
+              if (debug) console.log('🚫 Cannot drop into disabled row');
               return previous;
             }
             const firstColumnId = lastRow.columns[0].id;
             // Check if target column is disabled
             if (isColumnDisabled(firstColumnId)) {
-              console.log('🚫 Cannot drop into disabled column');
+              if (debug) console.log('🚫 Cannot drop into disabled column');
               return previous;
             }
             return addBlockToColumnAtIndex(
@@ -640,7 +663,7 @@ export function EmailEditor(props: EmailEditorProps) {
       }
 
       // Only allow drops on valid droppable areas - no fallback behavior
-      console.log('🚫 Drop not allowed - no valid drop target:', { activeId, overId });
+      if (debug) console.log('🚫 Drop not allowed - no valid drop target:', { activeId, overId });
       return;
     }
 
@@ -654,7 +677,7 @@ export function EmailEditor(props: EmailEditorProps) {
 
       if (overData?.type === 'canvas-row-dropzone') {
         if (isSectionDisabled(overData.sectionId)) {
-          console.log('🚫 Cannot move row to disabled section');
+          if (debug) console.log('🚫 Cannot move row to disabled section');
           return;
         }
 
@@ -698,7 +721,7 @@ export function EmailEditor(props: EmailEditorProps) {
 
         // Check if target section is disabled
         if (isSectionDisabled(targetPosition.sectionId)) {
-          console.log('🚫 Cannot move row to disabled section');
+          if (debug) console.log('🚫 Cannot move row to disabled section');
           return;
         }
 
@@ -723,7 +746,7 @@ export function EmailEditor(props: EmailEditorProps) {
       if (overData?.type === 'canvas-section') {
         // Check if target section is disabled
         if (isSectionDisabled(overData.sectionId)) {
-          console.log('🚫 Cannot move row to disabled section');
+          if (debug) console.log('🚫 Cannot move row to disabled section');
           return;
         }
         commitSections((previous) =>
@@ -796,7 +819,7 @@ export function EmailEditor(props: EmailEditorProps) {
       if (overData?.type === 'canvas-row-container') {
         // Check if target row is disabled
         if (isRowDisabled(overData.rowId)) {
-          console.log('🚫 Cannot move column to disabled row');
+          if (debug) console.log('🚫 Cannot move column to disabled row');
           return;
         }
         commitSections((previous) =>
@@ -826,7 +849,7 @@ export function EmailEditor(props: EmailEditorProps) {
 
       if (overData?.type === 'canvas-block-dropzone') {
         if (isColumnDisabled(overData.columnId)) {
-          console.log('🚫 Cannot move block to disabled column');
+          if (debug) console.log('🚫 Cannot move block to disabled column');
           return;
         }
 
@@ -851,7 +874,7 @@ export function EmailEditor(props: EmailEditorProps) {
 
         // Check if target column is disabled
         if (isColumnDisabled(targetPosition.columnId)) {
-          console.log('🚫 Cannot move block to disabled column');
+          if (debug) console.log('🚫 Cannot move block to disabled column');
           return;
         }
 
@@ -876,7 +899,7 @@ export function EmailEditor(props: EmailEditorProps) {
       if (overData?.type === 'canvas-column') {
         // Check if target column is disabled
         if (isColumnDisabled(overData.columnId)) {
-          console.log('🚫 Cannot move block to disabled column');
+          if (debug) console.log('🚫 Cannot move block to disabled column');
           return;
         }
         const targetPosition = findColumnPosition(sections, overData.columnId);
@@ -901,7 +924,7 @@ export function EmailEditor(props: EmailEditorProps) {
       if (overData?.type === 'canvas-row-container') {
         // Check if target row is disabled
         if (isRowDisabled(overData.rowId)) {
-          console.log('🚫 Cannot move block to disabled row');
+          if (debug) console.log('🚫 Cannot move block to disabled row');
           return;
         }
         const targetRow = findRowPosition(sections, overData.rowId);
@@ -923,7 +946,7 @@ export function EmailEditor(props: EmailEditorProps) {
         const columnId = targetRow.row.columns[targetColumnIndex].id;
         // Check if target column is disabled
         if (isColumnDisabled(columnId)) {
-          console.log('🚫 Cannot move block to disabled column');
+          if (debug) console.log('🚫 Cannot move block to disabled column');
           return;
         }
         const targetIndex = targetRow.row.columns[targetColumnIndex].blocks.length;

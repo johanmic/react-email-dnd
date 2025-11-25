@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, type ChangeEvent } from 'react';
+import { useState, useMemo, useEffect, useRef, useLayoutEffect, type ChangeEvent } from 'react';
 import { useCanvasStore } from '../hooks/useCanvasStore';
 import {
   ArrowCounterClockwiseIcon,
@@ -114,6 +114,9 @@ export function Header({
   } = useCanvasStore();
   const [reactTextOpen, setReactTextOpen] = useState(false);
   const [reactTextOutput, setReactTextOutput] = useState('');
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const titleChangeFromInputRef = useRef(false);
+  const replaceOnNextTypeRef = useRef(false);
 
   const closeReactText = () => {
     setReactTextOpen(false);
@@ -121,6 +124,14 @@ export function Header({
   };
 
   const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    titleChangeFromInputRef.current = true;
+    const incoming = (event.nativeEvent as InputEvent | undefined)?.data;
+    if (replaceOnNextTypeRef.current) {
+      replaceOnNextTypeRef.current = false;
+      const replacement = incoming ?? event.target.value.slice(-1);
+      updateTitle(replacement ?? '');
+      return;
+    }
     updateTitle(event.target.value);
   };
 
@@ -155,6 +166,18 @@ export function Header({
     return !headerItems || headerItems.includes(item);
   };
 
+  useLayoutEffect(() => {
+    if (titleChangeFromInputRef.current) {
+      titleChangeFromInputRef.current = false;
+      return;
+    }
+    replaceOnNextTypeRef.current = true;
+    if (titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.setSelectionRange(0, titleInputRef.current.value.length);
+    }
+  }, [document.meta.title]);
+
   return (
     <header
       className={clsx(
@@ -169,11 +192,13 @@ export function Header({
         <div className={clsx('flex flex-col md:flex-row items-start gap-3 flex-1 min-w-[200px]')}>
           <div className="flex-1 max-w-xl w-full">
             <input
+              ref={titleInputRef}
               id={TITLE_INPUT_ID}
               type="text"
               value={document.meta.title}
               onChange={handleTitleChange}
               placeholder="Untitled email"
+              aria-label="Email title"
               className={clsx(
                 !daisyui &&
                   'w-full px-3 py-2 border border-slate-300/60 rounded-lg text-[0.95rem] text-slate-900 bg-slate-50 transition focus:outline-none focus:border-green-500/60 focus:ring-2 focus:ring-green-500/20 focus:bg-white',

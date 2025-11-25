@@ -29,7 +29,7 @@ bun add @react-email-dnd/editor @react-email-dnd/shared @react-email-dnd/rendere
 
   </TabItem>
   <TabItem value="yarn" label="yarn">
-
+  
 ```bash
 yarn add @react-email-dnd/editor @react-email-dnd/shared @react-email-dnd/renderer
 ```
