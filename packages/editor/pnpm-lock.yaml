@@ -24,11 +24,11 @@ importers:
         specifier: ^2.1.10
         version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@react-email-dnd/renderer':
-        specifier: file:../renderer
-        version: file:../renderer(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@react-email/components@0.5.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-email@4.3.2)(react@18.3.1)
+        specifier: workspace:^0.3.0
+        version: link:../renderer
       '@react-email-dnd/shared':
-        specifier: file:../shared
-        version: file:../shared(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: workspace:^0.3.0
+        version: link:../shared
       '@react-email/components':
         specifier: 0.5.0
         version: 0.5.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -559,7 +559,7 @@ packages:
       react: '>= 16.8'
       react-dom: '>= 16.8'
 
-  '@react-email-dnd/renderer@file:../renderer':
+  '@react-email-dnd/renderer@link:../renderer':
     resolution: {directory: ../renderer, type: directory}
     peerDependencies:
       '@react-email/components': 0.5.0
@@ -567,7 +567,7 @@ packages:
       react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
       react-email: ^4.2.8
 
-  '@react-email-dnd/shared@file:../shared':
+  '@react-email-dnd/shared@link:../shared':
     resolution: {directory: ../shared, type: directory}
     peerDependencies:
       '@phosphor-icons/react': ^2.1.10
@@ -3478,9 +3478,9 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@react-email-dnd/renderer@file:../renderer(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@react-email/components@0.5.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-email@4.3.2)(react@18.3.1)':
+  '@react-email-dnd/renderer@link:../renderer(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@react-email/components@0.5.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-email@4.3.2)(react@18.3.1)':
     dependencies:
-      '@react-email-dnd/shared': file:../shared(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@react-email-dnd/shared': link:../shared(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@react-email/components': 0.5.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -3488,7 +3488,7 @@ snapshots:
     transitivePeerDependencies:
       - '@phosphor-icons/react'
 
-  '@react-email-dnd/shared@file:../shared(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@react-email-dnd/shared@link:../shared(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@phosphor-icons/react': 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1

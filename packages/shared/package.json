@@ -1,7 +1,7 @@
 {
   "name": "@react-email-dnd/shared",
   "author": "Johan Mickelin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Shared schema types and validation utilities for react-email-dnd.",
   "keywords": [
     "react",

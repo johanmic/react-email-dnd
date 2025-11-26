@@ -1,6 +1,6 @@
 {
   "name": "react-email-dnd-docs",
-  "version": "0.1.1",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "docusaurus start --port 3090",

@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@react-email-dnd/shared':
-        specifier: file:../shared
-        version: file:../shared(@phosphor-icons/react@2.1.10(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        specifier: workspace:^0.3.0
+        version: link:../shared
       react:
         specifier: ^17.0.0 || ^18.0.0 || ^19.0.0
         version: 19.2.0
@@ -406,7 +406,7 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@react-email-dnd/shared@file:../shared':
+  '@react-email-dnd/shared@link:../shared':
     resolution: {directory: ../shared, type: directory}
     peerDependencies:
       '@phosphor-icons/react': ^2.1.10
@@ -1734,7 +1734,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@react-email-dnd/shared@file:../shared(@phosphor-icons/react@2.1.10(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@react-email-dnd/shared@link:../shared(@phosphor-icons/react@2.1.10(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@phosphor-icons/react': 2.1.10(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react: 19.2.0
