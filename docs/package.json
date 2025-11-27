@@ -1,6 +1,6 @@
 {
   "name": "react-email-dnd-docs",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "scripts": {
     "dev": "docusaurus start --port 3090",
@@ -19,7 +19,7 @@
     "@docusaurus/preset-classic": "3.x",
     "@mdx-js/react": "3.x",
     "@phosphor-icons/react": "^2.1.10",
-    "@react-email-dnd/editor": "workspace:*",
+    "@react-email-dnd/editor": "^0.3.0",
     "@tailwindcss/postcss": "^4.1.13",
     "clsx": "^1.2.1",
     "daisyui": "^5.1.25",

@@ -1,6 +1,6 @@
 {
   "name": "@react-email-dnd/editor",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Composable drag-and-drop primitives for email layout canvases in React.",
   "keywords": [
     "react",
@@ -45,7 +45,7 @@
     "test": "vitest"
   },
   "peerDependencies": {
-    "@react-email/components": "0.5.0",
+    "@react-email/components": "^0.5.0",
     "react": "^18.2.0 || ^19.0.0",
     "react-dom": "^18.2.0 || ^19.0.0"
   },
@@ -84,8 +84,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@phosphor-icons/react": "^2.1.10",
-    "@react-email-dnd/renderer": "workspace:^0.3.0",
-    "@react-email-dnd/shared": "workspace:^0.3.0",
+    "@react-email-dnd/renderer": "^0.3.1",
+    "@react-email-dnd/shared": "^0.3.1",
     "clsx": "^2.1.1",
     "ramda": "^0.32.0"
   },

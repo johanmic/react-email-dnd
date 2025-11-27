@@ -63,6 +63,7 @@ Transforms a `CanvasDocument` into the requested format.
 | `daisyui`                 | `boolean`                 | `false` | Enables DaisyUI theming support and CSS injection.                         |
 | `theme`                   | `Record<string, string>`  | -       | Key-value pairs for theme colors (extends Tailwind config).                |
 | `colors`                  | `ColorOption[]`           | `[]`    | Palette of colors to generate Tailwind classes for (used with DaisyUI).    |
+| `throwOnMissingCustomBlocks` | `boolean`                 | `true`  | If `true`, throws an error when a custom block is used in the doc but missing. |
 
 ### `RenderResult`
 

@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- bug fixes
+- bug fixes, variable rendering support
 
 ## 0.2.0
 
