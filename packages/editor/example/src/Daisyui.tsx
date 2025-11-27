@@ -20,8 +20,10 @@ import { useState, useCallback } from 'react';
 import { createSampleCanvasDocument, bb } from './sample-document';
 import { customBlocks } from './components/custom-blocks';
 import { Footer } from './components/footer';
+
+
 import themes from '../themes.json';
-const THEME_NAME = 'winter';
+const THEME_NAME = 'dark';
 const theme = themes[THEME_NAME];
 const baseColorNames = [
   'primary',
@@ -73,6 +75,14 @@ const textColors = [
     label: 'Accent',
   },
 ];
+
+const variables = {
+              name: 'Steve',
+              lastName: 'Zamboni',
+              image:
+                'https://images.unsplash.com/photo-1742745181459-815e9815ac05?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            }
+            
 import { advancedFonts as fonts } from './font-examples';
 
 console.log({ textColors, bgColors, fonts });
@@ -179,12 +189,7 @@ function App() {
             onSave={handleSave}
             onDocumentChange={handleDocumentChange}
             uploadFile={uploadFile}
-            variables={{
-              name: 'Steve',
-              lastName: 'Zamboni',
-              image:
-                'https://images.unsplash.com/photo-1662986474431-2070b2d28d89?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8ZGFyayUyMHNoYWRvd3xlbnwwfDJ8MHx8fDA%3D',
-            }}
+            variables={variables}
           >
             <EmailEditor
               colors={colors}
