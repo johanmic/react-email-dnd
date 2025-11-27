@@ -39,8 +39,8 @@ importers:
         specifier: ^2.1.10
         version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@react-email-dnd/editor':
-        specifier: workspace:*
-        version: link:../packages/editor
+        specifier: ^0.3.0
+        version: 0.3.1(@react-email/components@0.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-email@3.0.7(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@tailwindcss/postcss':
         specifier: ^4.1.13
         version: 4.1.17
@@ -97,11 +97,11 @@ importers:
         specifier: ^2.1.10
         version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@react-email-dnd/renderer':
-        specifier: workspace:^0.3.0
-        version: link:../renderer
+        specifier: ^0.3.1
+        version: 0.3.1(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@react-email/components@0.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-email@3.0.7(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@react-email-dnd/shared':
-        specifier: workspace:^0.3.0
-        version: link:../shared
+        specifier: ^0.3.1
+        version: 0.3.1(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@react-email/components':
         specifier: ^0.5.0
         version: 0.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -261,8 +261,8 @@ importers:
   packages/renderer:
     dependencies:
       '@react-email-dnd/shared':
-        specifier: workspace:^0.3.0
-        version: link:../shared
+        specifier: ^0.3.0
+        version: 0.3.1(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       react:
         specifier: ^18.2.0 || ^19.0.0
         version: 18.3.1
@@ -2736,6 +2736,26 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  '@react-email-dnd/editor@0.3.1':
+    resolution: {integrity: sha512-pzfsi3ynuyT5MHxfOQ9d9ANTv3A7R5/pFDiCDAejvYzxah1Lmx3xpLxl7co9VX1X+tvga+MM9oArDHNDyMXn9A==}
+    peerDependencies:
+      '@react-email/components': ^0.5.0
+      react: ^18.2.0 || ^19.0.0
+      react-dom: ^18.2.0 || ^19.0.0
+
+  '@react-email-dnd/renderer@0.3.1':
+    resolution: {integrity: sha512-VPtedcY5H0jBqLZRACDVWaMXJGJBTOk50kB/7bKIBohKyeZIxX/ES4+pc9urV8MqMsR0qhDKvzE6+ZjtnnngPQ==}
+    peerDependencies:
+      '@react-email/components': ^0.5.0
+      react: ^18.2.0 || ^19.0.0
+      react-dom: ^18.2.0 || ^19.0.0
+      react-email: ^3.0.0 || ^5.0.0
+
+  '@react-email-dnd/shared@0.3.1':
+    resolution: {integrity: sha512-QY5TYTvd11yGYuIkwUogFp5I1XwzYDdmixBfwEfLEgCCBrI8DDXsTv9UJKWBCV6I87I9iqalG8Q4b0iBrHtUwg==}
+    peerDependencies:
+      '@phosphor-icons/react': ^2.1.10
 
   '@react-email/body@0.0.9':
     resolution: {integrity: sha512-bSGF6j+MbfQKYnnN+Kf57lGp/J+ci+435OMIv/BKAtfmNzHL+ptRrsINJELiO8QzwnZmQjTGKSMAMMJiQS+xwQ==}
@@ -12425,6 +12445,38 @@ snapshots:
       react: 18.3.1
     optionalDependencies:
       '@types/react': 19.2.6
+
+  '@react-email-dnd/editor@0.3.1(@react-email/components@0.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-email@3.0.7(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@dnd-kit/core': 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@dnd-kit/modifiers': 9.0.0(@dnd-kit/core@6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+      '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+      '@dnd-kit/utilities': 3.2.2(react@18.3.1)
+      '@phosphor-icons/react': 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@react-email-dnd/renderer': 0.3.1(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@react-email/components@0.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-email@3.0.7(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+      '@react-email-dnd/shared': 0.3.1(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+      '@react-email/components': 0.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      clsx: 2.1.1
+      ramda: 0.32.0
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+    transitivePeerDependencies:
+      - react-email
+
+  '@react-email-dnd/renderer@0.3.1(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@react-email/components@0.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-email@3.0.7(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@react-email-dnd/shared': 0.3.1(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+      '@react-email/components': 0.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      react-email: 3.0.7(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+    transitivePeerDependencies:
+      - '@phosphor-icons/react'
+
+  '@react-email-dnd/shared@0.3.1(@phosphor-icons/react@2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
+    dependencies:
+      '@phosphor-icons/react': 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      zod: 3.25.76
 
   '@react-email/body@0.0.9(react@18.3.1)':
     dependencies:

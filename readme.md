@@ -1,4 +1,4 @@
-<video src="https://github.com/user-attachments/assets/3eddf79f-2c1d-448d-b13b-82cad12495a9" width="100%" autoplay loop muted playsinline></video>
+<video src="https://github.com/user-attachments/assets/b91f0dfa-0e3a-4fce-a516-ff56715d7ca3" width="100%" autoplay loop muted playsinline></video>
 
 # React Email DND
 
