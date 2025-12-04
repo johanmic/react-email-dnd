@@ -1,4 +1,3 @@
-import { describe, expect, test } from '@jest/globals';
 import {
   canvasDocumentSchema,
   isCanvasDocument,
@@ -127,8 +126,8 @@ describe('canvasDocumentSchema', () => {
       expect(result.error.issues[0].path).toContain('type');
     }
 
-    expect(() => parseCanvasDocument(invalidDocument)).toThrowErrorMatchingInlineSnapshot(
-      '"Invalid enum value. Expected \"button\" | \"text\" | \"heading\" | \"divider\" | \"image\" | \"custom\", received \"video\""',
+    expect(() => parseCanvasDocument(invalidDocument)).toThrow(
+      /Invalid discriminator value/,
     );
   });
 

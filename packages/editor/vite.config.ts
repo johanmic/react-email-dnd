@@ -35,13 +35,18 @@ export default defineConfig({
       external: [
         'react',
         'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        'react-dom/client',
         '@react-email-dnd/renderer',
         '@react-email-dnd/shared',
         '@dnd-kit/core',
         '@dnd-kit/sortable',
         '@dnd-kit/utilities',
+        '@dnd-kit/modifiers',
         '@phosphor-icons/react',
         'clsx',
+        'ramda',
         '@react-email/components',
       ],
       output: {

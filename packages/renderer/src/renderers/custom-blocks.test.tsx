@@ -1,9 +1,10 @@
 import { renderDocument } from "../index"
 import type { CanvasDocument } from "@react-email-dnd/shared"
 import { describe, it, expect } from "vitest"
+import { Cube } from "@phosphor-icons/react"
 
 const mockDocument: CanvasDocument = {
-  id: "doc-1",
+  version: 1,
   meta: {
     title: "Test Document",
     description: "Test Description",
@@ -36,7 +37,6 @@ const mockDocument: CanvasDocument = {
       ],
     },
   ],
-  theme: {},
 }
 
 describe("throwOnMissingCustomBlocks", () => {
@@ -111,8 +111,8 @@ describe("throwOnMissingCustomBlocks", () => {
   })
 
   it("should work correctly when custom block is present", () => {
-    const MyCustomBlock = () => <div>Custom Block</div>
-    
+    const MyCustomBlock = ({ foo }: { foo: string }) => <div>Custom Block: {foo}</div>
+
     expect(() => {
       renderDocument({
         document: mockDocument,
@@ -120,8 +120,14 @@ describe("throwOnMissingCustomBlocks", () => {
           format: "react",
           customBlocks: {
             MyCustomBlock: {
+              type: "custom",
+              label: "My Custom Block",
+              icon: Cube,
+              defaults: {
+                componentName: "MyCustomBlock",
+                props: { foo: "default" },
+              },
               component: MyCustomBlock,
-              schema: {},
             },
           },
         },
