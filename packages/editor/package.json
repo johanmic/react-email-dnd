@@ -42,7 +42,7 @@
     "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@react-email/components": ">=0.0.22",

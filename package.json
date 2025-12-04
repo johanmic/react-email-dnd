@@ -29,7 +29,7 @@
     "dev:packages": "pnpm -r --filter \"./packages/*\" --parallel dev",
     "build": "pnpm run build:packages",
     "build:packages": "pnpm --filter @react-email-dnd/shared build && pnpm --filter @react-email-dnd/renderer build && pnpm --filter @react-email-dnd/editor build",
-    "test": "pnpm -r test",
+    "test": "pnpm --filter @react-email-dnd/shared --filter @react-email-dnd/renderer --filter @react-email-dnd/editor test",
     "lint": "pnpm -r lint",
     "version": "changeset version && pnpm install --no-frozen-lockfile",
     "prepublish:check": "pnpm run build:packages && pnpm run test",

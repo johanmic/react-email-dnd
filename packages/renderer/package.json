@@ -37,7 +37,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@react-email-dnd/shared": "workspace:^"
@@ -57,6 +57,7 @@
     }
   },
   "devDependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@react-email/components": "^0.0.22",
     "@types/react": "^19.1.16",
     "react-email": "^3.0.1",
