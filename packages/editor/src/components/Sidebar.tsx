@@ -2,6 +2,7 @@
 
 import { ColumnsIcon, RowsIcon, SquaresFourIcon } from '@phosphor-icons/react';
 import { SidebarItem } from './SidebarItem';
+import { DarkModeToggle } from './DarkModeToggle';
 import type {
   BlockDefinition,
   CanvasContentBlock,
@@ -39,6 +40,7 @@ export interface SidebarProps {
   columns?: 1 | 2 | 3;
   variablesLocked?: boolean;
   hidden?: boolean;
+  showDarkModeToggle?: boolean;
 }
 
 function getVariableType(value: unknown): 'string' | 'number' | 'object' {
@@ -53,6 +55,7 @@ export function Sidebar({
   daisyui = false,
   columns = 2,
   hidden = false,
+  showDarkModeToggle = false,
   ...props
 }: SidebarProps) {
   // variablesLocked is available via props but not currently used
@@ -88,9 +91,14 @@ export function Sidebar({
         'w-96': columns === 3,
         'flex flex-col gap-5 bg-slate-50': !daisyui,
         'border-black': !daisyui,
-        'flex flex-col gap-5 border-primary': daisyui,
+        'flex flex-col gap-5 border-primary bg-base-100': daisyui,
       })}
     >
+      {showDarkModeToggle && (
+        <div className="flex justify-end">
+          <DarkModeToggle minimize daisyui={daisyui} />
+        </div>
+      )}
       {structureItems.length > 0 && (
         <div className="flex flex-col gap-3 items-center">
           <p

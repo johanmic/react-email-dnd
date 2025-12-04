@@ -1,6 +1,9 @@
 {
   "author": "Johan Mickelin",
   "name": "@react-email-dnd",
+  "license": "MIT",
+  "version": "0.3.2",
+  "description": "A monorepo for the react-email-dnd project.",
   "keywords": [
     "react",
     "email",
@@ -24,12 +27,14 @@
   "scripts": {
     "dev": "pnpm --filter react-email-dnd-docs dev",
     "dev:packages": "pnpm -r --filter \"./packages/*\" --parallel dev",
-    "build": "pnpm -r build",
+    "build": "pnpm run build:packages",
+    "build:packages": "pnpm --filter @react-email-dnd/shared build && pnpm --filter @react-email-dnd/renderer build && pnpm --filter @react-email-dnd/editor build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "version": "changeset version && pnpm install --no-frozen-lockfile",
-    "publish-packages": "pnpm -r publish --access public --no-git-checks",
-    "release": "pnpm run version && pnpm -r build && pnpm run publish-packages",
+    "prepublish:check": "pnpm run build:packages && pnpm run test",
+    "publish-packages": "pnpm -r --filter \"./packages/*\" publish --access public --no-git-checks",
+    "release": "pnpm run version && pnpm run prepublish:check && pnpm run publish-packages",
     "docs": "pnpm --filter react-email-dnd-docs start",
     "docs:build": "pnpm --filter react-email-dnd-docs build",
     "docs:serve": "pnpm --filter react-email-dnd-docs serve"

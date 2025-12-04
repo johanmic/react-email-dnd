@@ -1,7 +1,7 @@
 {
   "name": "@react-email-dnd/shared",
   "author": "Johan Mickelin",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Shared schema types and validation utilities for react-email-dnd.",
   "keywords": [
     "react",
@@ -45,7 +45,13 @@
   "peerDependencies": {
     "@phosphor-icons/react": "^2.1.10"
   },
+  "peerDependenciesMeta": {
+    "@phosphor-icons/react": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@types/jest": "^29.5.12",
     "@types/react": "^19.1.16",
     "jest": "^29.7.0",

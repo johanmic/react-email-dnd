@@ -69,6 +69,7 @@ export * from './components/Sidebar';
 export * from './components/SidebarItem';
 export * from './components/CanvasProvider';
 export { Header } from './components/Header';
+export { DarkModeToggle } from './components/DarkModeToggle';
 export { EmailEditor } from './components/EmailEditor';
 export type { EmailEditorProps, HeaderItem } from './components/EmailEditor';
 export * from './components/PropertiesPanel';

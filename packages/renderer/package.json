@@ -2,7 +2,7 @@
   "name": "@react-email-dnd/renderer",
   "author": "Johan Mickelin",
   "license": "MIT",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Rendering utilities for react-email-dnd documents.",
   "keywords": [
     "react",
@@ -40,13 +40,21 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@react-email-dnd/shared": "^0.3.0"
+    "@react-email-dnd/shared": "workspace:^"
   },
   "peerDependencies": {
-    "react": "^18.2.0 || ^19.0.0",
-    "react-dom": "^18.2.0 || ^19.0.0",
-    "react-email": "^3.0.0 || ^5.0.0",
-    "@react-email/components": "^0.5.0"
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "react-email": ">=3.0.0",
+    "@react-email/components": ">=0.0.22"
+  },
+  "peerDependenciesMeta": {
+    "react-email": {
+      "optional": true
+    },
+    "@react-email/components": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@react-email/components": "^0.0.22",

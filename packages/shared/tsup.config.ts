@@ -8,4 +8,8 @@ export default defineConfig({
   clean: true,
   minify: false,
   noExternal: ['zod'],
+  external: [
+    'react',
+    '@phosphor-icons/react',
+  ],
 });
