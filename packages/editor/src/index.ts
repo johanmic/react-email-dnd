@@ -87,3 +87,4 @@ export * from './utils/drag-drop';
 export * from './utils/json';
 export * from './utils/block-library';
 export * from './utils/templates';
+export * from './utils/template-previews';
