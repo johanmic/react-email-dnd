@@ -59,6 +59,7 @@ function App() {
 ## Features
 
 - 🎨 **Visual Drag & Drop** - Intuitive interface for building emails
+- 📧 **Ready-Made Templates** - 8 professional email templates included
 - 🧩 **Custom Blocks** - Extend with your own components
 - 🎭 **Theming Support** - Full color and styling customization
 - 📱 **Responsive Preview** - See how emails look on different devices
@@ -66,6 +67,35 @@ function App() {
 - 🖼️ **Image Upload** - Built-in file upload integration
 - 🎯 **DaisyUI Support** - Optional DaisyUI styling integration
 - 📝 **JSON Output** - Structured, portable email definitions
+
+## Email Templates
+
+The editor package includes 8 ready-made email templates to help you get started quickly:
+
+```tsx
+import { createDocumentFromTemplate } from '@react-email-dnd/editor';
+
+// Create a document from a template
+const document = createDocumentFromTemplate('welcome');
+
+// Use it with the editor
+<CanvasProvider initialDocument={document}>
+  <EmailEditor />
+</CanvasProvider>
+```
+
+### Available Templates
+
+- **blank** - Empty canvas for custom designs
+- **welcome** - User onboarding email
+- **password-reset** - Password recovery flow
+- **verification** - Email verification with code
+- **newsletter** - Marketing campaign template
+- **order-confirmation** - E-commerce order receipt
+- **notification** - System alerts and updates
+- **invitation** - Team collaboration invites
+
+For complete template documentation, see [TEMPLATES.md](./TEMPLATES.md).
 
 ## Basic Usage
 
