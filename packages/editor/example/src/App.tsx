@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { Vanilla } from './Vanilla';
 import DaisyuiApp from './Daisyui';
+import { Templates } from './Templates';
 import { useState } from 'react';
 
 function App() {
@@ -12,6 +13,9 @@ function App() {
       <header className="">
         <h1 className="text-2xl font-bold text-primary/80">React Email DnD</h1>
         <nav className="flex gap-4">
+          <Link to="/templates" className="btn btn-accent">
+            Templates
+          </Link>
           <Link to="/daisyui" className="btn btn-primary">
             Daisyui
           </Link>
@@ -29,7 +33,8 @@ function App() {
         {header}
         <main className="flex-1 overflow-hidden">
           <Routes>
-            <Route path="/" element={<Navigate to="/daisyui" replace />} />
+            <Route path="/" element={<Navigate to="/templates" replace />} />
+            <Route path="/templates" element={<Templates />} />
             <Route path="/daisyui" element={<DaisyuiApp />} />
             <Route path="/vanilla" element={<Vanilla />} />
           </Routes>
