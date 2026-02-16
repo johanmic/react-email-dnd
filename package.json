@@ -28,7 +28,7 @@
     "dev": "pnpm --filter react-email-dnd-docs dev",
     "dev:packages": "pnpm -r --filter \"./packages/*\" --parallel dev",
     "build": "pnpm run build:packages",
-    "build:packages": "pnpm --filter @react-email-dnd/shared build && pnpm --filter @react-email-dnd/renderer build && pnpm --filter @react-email-dnd/editor build",
+    "build:packages": "pnpm --filter @react-email-dnd/shared build && pnpm --filter @react-email-dnd/ai build && pnpm --filter @react-email-dnd/renderer build && pnpm --filter @react-email-dnd/editor build",
     "test": "pnpm --filter @react-email-dnd/shared --filter @react-email-dnd/renderer --filter @react-email-dnd/editor test",
     "lint": "pnpm -r lint",
     "version": "changeset version && pnpm install --no-frozen-lockfile",
