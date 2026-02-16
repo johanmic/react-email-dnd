@@ -1,0 +1,237 @@
+/* AI Panel Styles */
+.ai-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ai-panel-header {
+  margin-bottom: 0.5rem;
+}
+
+.ai-panel-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #1a1a1a;
+}
+
+.ai-panel-description {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0;
+}
+
+.ai-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ai-panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.ai-panel-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.ai-panel-textarea,
+.ai-panel-input,
+.ai-panel-select {
+  padding: 0.625rem;
+  font-size: 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.ai-panel-textarea:focus,
+.ai-panel-input:focus,
+.ai-panel-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ai-panel-textarea:disabled,
+.ai-panel-input:disabled,
+.ai-panel-select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ai-panel-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.ai-panel-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.ai-panel-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #333;
+  cursor: pointer;
+}
+
+.ai-panel-checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.ai-panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ai-panel-button {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-panel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ai-panel-button-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.ai-panel-button-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.ai-panel-button-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.ai-panel-button-secondary:hover:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.ai-panel-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: ai-panel-spin 0.6s linear infinite;
+}
+
+@keyframes ai-panel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ai-panel-error {
+  padding: 0.75rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  color: #991b1b;
+  font-size: 0.875rem;
+}
+
+.ai-panel-success {
+  padding: 0.75rem;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  color: #166534;
+  font-size: 0.875rem;
+}
+
+/* Compact Panel Styles */
+.ai-compact-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ai-compact-panel-input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ai-compact-panel-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+.ai-compact-panel-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.ai-compact-panel-input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ai-compact-panel-button {
+  padding: 0.5rem 0.75rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+  min-width: 2.5rem;
+}
+
+.ai-compact-panel-button:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.ai-compact-panel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ai-compact-panel-error {
+  padding: 0.5rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  color: #991b1b;
+  font-size: 0.75rem;
+}

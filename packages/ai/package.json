@@ -1,0 +1,66 @@
+{
+  "name": "@react-email-dnd/ai",
+  "author": "Johan Mickelin",
+  "license": "MIT",
+  "version": "0.3.2",
+  "description": "AI-powered content generation and template utilities for react-email-dnd.",
+  "keywords": [
+    "react",
+    "email",
+    "dnd",
+    "ai",
+    "openai",
+    "generation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johanmic/react-email-dnd.git",
+    "directory": "packages/ai"
+  },
+  "homepage": "https://dnd.email/docs/packages/ai",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "dependencies": {
+    "@react-email-dnd/shared": "workspace:^",
+    "openai": "^4.73.0",
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  }
+}

@@ -68,3 +68,6 @@ jobs:
 
       - name: Typecheck editor
         run: pnpm --filter @react-email-dnd/editor typecheck
+
+      - name: Typecheck ai
+        run: pnpm --filter @react-email-dnd/ai typecheck

@@ -1,0 +1,1 @@
+export { generateTemplateFromDescription } from './generateTemplate';

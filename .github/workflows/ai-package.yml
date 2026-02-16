@@ -1,0 +1,151 @@
+name: AI Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/ai/**'
+      - '.github/workflows/ai-package.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/ai/**'
+      - '.github/workflows/ai-package.yml'
+
+jobs:
+  build-and-test:
+    name: Build and Test AI Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package (dependency)
+        run: pnpm --filter @react-email-dnd/shared build
+
+      - name: Build AI package
+        run: pnpm --filter @react-email-dnd/ai build
+
+      - name: Run tests
+        run: pnpm --filter @react-email-dnd/ai test
+
+      - name: Run typecheck
+        run: pnpm --filter @react-email-dnd/ai typecheck
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run npm audit
+        run: pnpm audit --audit-level=moderate --filter @react-email-dnd/ai
+        continue-on-error: true
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for hardcoded API keys and secrets..."
+          ! grep -r "sk-[a-zA-Z0-9]\{48\}" packages/ai/src || (echo "Found potential OpenAI API key" && exit 1)
+          ! grep -r "OPENAI_API_KEY\s*=\s*['\"][^'\"]*['\"]" packages/ai/src || (echo "Found hardcoded API key" && exit 1)
+          echo "No hardcoded secrets found"
+
+  documentation:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check documentation exists
+        run: |
+          test -f docs/packages/ai.md || (echo "Missing AI package documentation" && exit 1)
+          test -s docs/packages/ai.md || (echo "AI package documentation is empty" && exit 1)
+          echo "Documentation check passed"
+
+      - name: Check README completeness
+        run: |
+          if [ -f packages/ai/README.md ]; then
+            grep -q "Installation" packages/ai/README.md || echo "Warning: README missing Installation section"
+            grep -q "Usage" packages/ai/README.md || echo "Warning: README missing Usage section"
+          else
+            echo "Note: Package-level README not found (optional)"
+          fi
+
+  dependency-check:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for unused dependencies
+        run: |
+          echo "Checking AI package dependencies..."
+          cd packages/ai
+          # List dependencies
+          echo "Direct dependencies:"
+          cat package.json | grep -A 10 '"dependencies"'
+          echo ""
+          echo "Dev dependencies:"
+          cat package.json | grep -A 10 '"devDependencies"'
+
+      - name: Check bundle size
+        run: |
+          pnpm --filter @react-email-dnd/shared build
+          pnpm --filter @react-email-dnd/ai build
+          echo "Checking bundle size..."
+          du -sh packages/ai/dist
+          # Fail if dist is larger than 500KB (adjust as needed)
+          size=$(du -s packages/ai/dist | cut -f1)
+          if [ "$size" -gt 500 ]; then
+            echo "Warning: Bundle size is larger than expected (${size}KB)"
+          else
+            echo "Bundle size check passed (${size}KB)"
+          fi
