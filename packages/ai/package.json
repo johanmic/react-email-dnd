@@ -1,0 +1,50 @@
+{
+  "name": "@react-email-dnd/ai",
+  "author": "Johan Mickelin",
+  "version": "0.3.2",
+  "description": "AI utilities and integrations for react-email-dnd.",
+  "keywords": [
+    "react",
+    "email",
+    "dnd",
+    "ai",
+    "artificial-intelligence"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johanmic/react-email-dnd.git",
+    "directory": "packages/ai"
+  },
+  "homepage": "https://dnd.email/docs/packages/ai",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0"
+  },
+  "license": "MIT"
+}
